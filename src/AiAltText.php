@@ -57,17 +57,16 @@ class AiAltText extends Plugin
             'aiAltTextService' => AiAltTextService::class,
         ]);
 
-        $this->attachEventHandlers();
-
-        // Register the controller
+        // Register template path
         Event::on(
-            UrlManager::class,
-            UrlManager::EVENT_REGISTER_SITE_URL_RULES,
-            function(RegisterUrlRulesEvent $event) {
-                $event->rules['ai-alt-text/generate'] = 'ai-alt-text/ai-alt-text/generate';
-                $event->rules['ai-alt-text/generate-multiple'] = 'ai-alt-text/ai-alt-text/generate-multiple';
+            View::class,
+            View::EVENT_REGISTER_CP_TEMPLATE_ROOTS,
+            function($event) {
+                $event->roots[$this->id] = $this->getBasePath() . '/templates';
             }
         );
+
+        $this->attachEventHandlers();
 
         // Any code that creates an element query or loads Twig should be deferred until
         // after Craft is fully initialized, to avoid conflicts with other plugins/modules
@@ -103,7 +102,7 @@ class AiAltText extends Plugin
     protected function settingsHtml(): ?string
     {
         return Craft::$app->view->renderTemplate(
-            'ai-alt-text/settings',
+            'ai-alt-text/_settings',
             [
                 'plugin' => $this,
                 'settings' => $this->getSettings(),
