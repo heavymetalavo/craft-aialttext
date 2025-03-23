@@ -18,7 +18,7 @@ use craft\base\Model;
 class OpenAiRequest extends Model
 {
     public string $model;
-    public array $input;
+    public array $input = [];
 
     /**
      * Defines the validation rules for the request model.
