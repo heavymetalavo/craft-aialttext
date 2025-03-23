@@ -40,6 +40,23 @@ class OpenAiService extends Component
     }
 
     /**
+     * Sets an error message to the session (if in web context)
+     * 
+     * @param string $message The error message to set
+     */
+    private function setSessionError(string $message): void
+    {
+        try {
+            // Only set session error if we're in a web request context
+            if (!Craft::$app->getRequest()->getIsConsoleRequest()) {
+                Craft::$app->getSession()->setError($message);
+            }
+        } catch (Exception $sessionException) {
+            Craft::error('Could not set session error: ' . $sessionException->getMessage(), __METHOD__);
+        }
+    }
+
+    /**
      * Sends a request to the OpenAI API
      *
      * This method handles the communication with the OpenAI API, including:
@@ -78,22 +95,29 @@ class OpenAiService extends Component
                 if (!$responseModel->hasError()) {
                     $responseModel->setError('Failed to parse OpenAI API response');
                 }
-                Craft::warning('Response parsing failed: ' . $responseModel->getErrorMessage(), __METHOD__);
+                $errorMsg = 'Response parsing failed: ' . $responseModel->getErrorMessage();
+                Craft::warning($errorMsg, __METHOD__);
+                $this->setSessionError($errorMsg);
             }
 
             // Make sure the response model is valid
             if (!$responseModel->validate()) {
-                Craft::warning('Response validation failed: ' . json_encode($responseModel->getErrors()), __METHOD__);
+                $errorMsg = 'Response validation failed: ' . json_encode($responseModel->getErrors());
+                Craft::warning($errorMsg, __METHOD__);
                 // Set error if not already set
                 if (!$responseModel->hasError()) {
-                    $responseModel->setError('Response validation failed: ' . json_encode($responseModel->getErrors()));
+                    $responseModel->setError($errorMsg);
                 }
+                $this->setSessionError($errorMsg);
             }
 
             return $responseModel;
 
         } catch (Exception $e) {
-            Craft::error('OpenAI API request failed: ' . $e->getMessage(), __METHOD__);
+            $errorMsg = 'OpenAI API request failed: ' . $e->getMessage();
+            Craft::error($errorMsg, __METHOD__);
+            $this->setSessionError($errorMsg);
+            
             $errorResponse = new OpenAiResponse();
             $errorResponse->setError($e->getMessage());
             return $errorResponse;
@@ -119,7 +143,9 @@ class OpenAiService extends Component
             
             // Make sure we have a valid URL
             if (empty($imageUrl)) {
-                throw new Exception('Asset URL is empty. Make sure the asset is accessible.');
+                $errorMsg = 'Asset URL is empty. Make sure the asset is accessible.';
+                $this->setSessionError($errorMsg);
+                throw new Exception($errorMsg);
             }
             
             $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
@@ -142,7 +168,9 @@ class OpenAiService extends Component
 
             // Validate the request
             if (!$request->validate()) {
-                throw new Exception('Invalid request: ' . json_encode($request->getErrors()));
+                $errorMsg = 'Invalid request: ' . json_encode($request->getErrors());
+                $this->setSessionError($errorMsg);
+                throw new Exception($errorMsg);
             }
 
             // Convert to array explicitly to avoid potential object-to-array conversion issues
@@ -153,12 +181,16 @@ class OpenAiService extends Component
 
             // Check for errors from the API
             if ($response->hasError()) {
-                throw new Exception($response->getErrorMessage());
+                $errorMsg = $response->getErrorMessage();
+                $this->setSessionError($errorMsg);
+                throw new Exception($errorMsg);
             }
 
             // If output is empty, log and return empty string
             if (empty($response->output_text)) {
-                Craft::warning('No alt text was generated for asset: ' . $asset->filename, __METHOD__);
+                $errorMsg = 'No alt text was generated for asset: ' . $asset->filename;
+                Craft::warning($errorMsg, __METHOD__);
+                $this->setSessionError($errorMsg);
                 return '';
             }
 
@@ -167,16 +199,7 @@ class OpenAiService extends Component
         } catch (Exception $e) {
             $errorMessage = 'Failed to generate alt text: ' . $e->getMessage();
             Craft::error($errorMessage, __METHOD__);
-            
-            // Try-catch for session errors in queue/console context
-            try {
-                // Only set session error if we're in a web request context
-                if (!Craft::$app->getRequest()->getIsConsoleRequest()) {
-                    Craft::$app->getSession()->setError($errorMessage);
-                }
-            } catch (Exception $sessionException) {
-                Craft::error('Could not set session error: ' . $sessionException->getMessage(), __METHOD__);
-            }
+            $this->setSessionError($errorMessage);
             
             // Return empty string on errors
             return '';
