@@ -17,7 +17,7 @@ use craft\base\Model;
 class OpenAiRequest extends Model
 {
     public string $model;
-    public array $messages;
+    public array $input;
     public ?int $max_tokens = null;
 
     /**
@@ -28,11 +28,10 @@ class OpenAiRequest extends Model
     public function defineRules(): array
     {
         return [
-            [['model', 'messages'], 'required'],
+            [['model', 'input'], 'required'],
             ['model', 'string'],
-            ['messages', 'validateMessages'],
+            ['input', 'safe'],
             ['max_tokens', 'integer'],
-            ['max_tokens', 'number', 'min' => 1],
         ];
     }
 
@@ -79,6 +78,10 @@ class OpenAiRequest extends Model
             $data['messages'] = array_map(function($message) {
                 return $message->toArray();
             }, $this->messages);
+        }
+
+        if ($this->max_tokens !== null) {
+            $data['max_tokens'] = $this->max_tokens;
         }
 
         return $data;
