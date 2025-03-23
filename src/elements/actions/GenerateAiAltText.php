@@ -77,7 +77,7 @@ class GenerateAiAltText extends ElementAction
                 'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename}', [
                     'filename' => $asset->filename,
                 ]),
-                'assetId' => $asset->id,
+                'elementId' => $asset->id,
                 'userId' => $user->id,
             ]));
         }
