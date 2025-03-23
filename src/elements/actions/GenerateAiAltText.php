@@ -18,12 +18,12 @@ class GenerateAiAltText extends ElementAction
 {
     public static function displayName(): string
     {
-        return Craft::t('ai-alt-text-generator', 'Generate AI Alt Text');
+        return Craft::t('ai-alt-text', 'Generate AI Alt Text');
     }
 
     public function getTriggerLabel(): string
     {
-        return Craft::t('ai-alt-text-generator', 'Generate AI Alt Text');
+        return Craft::t('ai-alt-text', 'Generate AI Alt Text');
     }
 
     public function getTriggerHtml(): ?string
@@ -69,7 +69,7 @@ class GenerateAiAltText extends ElementAction
             }
 
             $queue->push(new GenerateAiAltText([
-                'description' => Craft::t('ai-alt-text-generator', 'Generating alt text for {filename}', [
+                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename}', [
                     'filename' => $asset->filename,
                 ]),
                 'assetId' => $asset->id,
