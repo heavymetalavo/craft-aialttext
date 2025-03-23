@@ -64,21 +64,20 @@ class GenerateAiAltText extends ElementAction
         $elementsService = Craft::$app->getElements();
         $queue = Craft::$app->getQueue();
 
-        foreach ($query->all() as $asset) {
-            if (!$asset instanceof Asset) {
+        foreach ($query->all() as $element) {
+            if (!$element instanceof Asset) {
                 continue;
             }
 
-            if ($asset->kind !== Asset::KIND_IMAGE) {
+            if ($element->kind !== Asset::KIND_IMAGE) {
                 continue;
             }
 
             $queue->push(new GenerateAiAltTextJob([
                 'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename}', [
-                    'filename' => $asset->filename,
+                    'filename' => $element->filename,
                 ]),
-                'elementId' => $asset->id,
-                'userId' => $user->id,
+                'elementId' => $element->id,
             ]));
         }
 
