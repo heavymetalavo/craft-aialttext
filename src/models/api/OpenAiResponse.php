@@ -10,12 +10,12 @@ use craft\base\Model;
  * Represents a response from the OpenAI chat completion API.
  * This model handles the structure and validation of API responses, including the generated content and any errors.
  * 
- * @property array $output The generated content from the API
+ * @property string $output The generated content from the API
  * @property array|null $error Error information if the request failed
  */
 class OpenAiResponse extends Model
 {
-    public array $output = [];
+    public string $output = '';
     public ?array $error = null;
 
     /**
@@ -27,8 +27,8 @@ class OpenAiResponse extends Model
     {
         return [
             ['output', 'required'],
-            ['output', 'isArray'],
-            ['error', 'isArray'],
+            ['output', 'string'],
+            ['error', 'safe'],
         ];
     }
 
@@ -55,11 +55,11 @@ class OpenAiResponse extends Model
     /**
      * Gets the generated text from the response.
      * 
-     * @return string The generated text, or an empty string if no text is available
+     * @return string The generated text
      */
     public function getText(): string
     {
-        return is_string($this->output) ? $this->output : '';
+        return $this->output;
     }
 
     /**

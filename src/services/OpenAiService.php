@@ -65,7 +65,7 @@ class OpenAiService extends Component
                 throw new Exception('Invalid request: ' . json_encode($request->getErrors()));
             }
 
-            $response = $client->post($this->baseUrl . '/responses', [
+            $response = $client->post($this->baseUrl . '/chat/completions', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type' => 'application/json',
@@ -75,8 +75,7 @@ class OpenAiService extends Component
 
             $responseData = json_decode($response->getBody(), true);
             $responseModel = new OpenAiResponse();
-            $responseModel->output = $responseData['output'] ?? [];
-            $responseModel->error = $responseData['error'] ?? null;
+            $responseModel->output = $responseData['choices'][0]['message']['content'] ?? '';
 
             if (!$responseModel->validate()) {
                 throw new Exception('Invalid response: ' . json_encode($responseModel->getErrors()));
@@ -91,7 +90,7 @@ class OpenAiService extends Component
         } catch (Exception $e) {
             Craft::error('OpenAI API request failed: ' . $e->getMessage(), __METHOD__);
             $errorResponse = new OpenAiResponse();
-            $errorResponse->output = [];
+            $errorResponse->output = '';
             $errorResponse->error = ['message' => $e->getMessage()];
             return $errorResponse;
         }
@@ -111,20 +110,25 @@ class OpenAiService extends Component
      */
     public function generateAltText(Asset $asset): string
     {
-        $textContent = new OpenAiContent();
-        $textContent->type = 'text';
-        $textContent->text = new TextContent();
-        $textContent->text->text = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
-
-        $imageContent = new OpenAiContent();
-        $imageContent->type = 'image_url';
-        $imageContent->image_url = new ImageContent();
-        $imageContent->image_url->url = $asset->getUrl();
-        $imageContent->image_url->detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel);
+        $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
+        $imageUrl = $asset->getUrl();
+        $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel);
 
         $message = new OpenAiMessage();
         $message->role = 'user';
-        $message->content = [$textContent, $imageContent];
+        $message->content = [
+            [
+                'type' => 'text',
+                'text' => $prompt
+            ],
+            [
+                'type' => 'image_url',
+                'image_url' => [
+                    'url' => $imageUrl,
+                    'detail' => $detail
+                ]
+            ]
+        ];
 
         $request = new OpenAiRequest();
         $request->model = $this->model;
@@ -134,13 +138,12 @@ class OpenAiService extends Component
         $response = $this->sendRequest($request);
         
         if ($response->hasError()) {
-            return '';
+            throw new Exception($response->getErrorMessage());
         }
 
         $altText = $response->getText();
         if (!$altText) {
-            Craft::error('No text in response', __METHOD__);
-            return '';
+            throw new Exception('No text in response');
         }
 
         return $altText;
