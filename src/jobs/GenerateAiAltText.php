@@ -32,7 +32,7 @@ class GenerateAiAltText extends BaseJob
             throw new ElementNotFoundException("Asset not found: {$this->elementId}");
         }
 
-        $altText = AiAltText::getInstance()->aiAltTextGeneratorService->generateAltText($asset);
+        $altText = AiAltText::getInstance()->aiAltTextService->generateAltText($asset);
 
         if (!$altText) {
             throw new Exception("Failed to generate alt text for asset: {$this->elementId}");
