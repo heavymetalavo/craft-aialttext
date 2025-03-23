@@ -45,23 +45,18 @@ To add this field:
 ## Plugin Settings
 
 After installation, configure the plugin at **Settings → AI Alt Text**:
-
-### OpenAI API Settings
-
 - **API Key** - Your OpenAI API key. You can get one from [OpenAI's API Platform](https://platform.openai.com/api-keys).
 
-- **Model** - The OpenAI model to use for generating alt text. Recommended models that support vision:
-  - `gpt-4o-mini` - Good balance of quality and cost
-  - `gpt-4o` - Most advanced model with best results (recommended)
-  - There are probably others, OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models) (which doesn't actually list any)
+- **Model** - The OpenAI model to use for generating alt text. Some models that support vision:
+  - Default: `gpt-4o-mini` - Fast, affordable small model for focused tasks
+  - `gpt-4o` - Fast, intelligent, flexible GPT model
+  - `o1` - High-intelligence reasoning model
+  - One could find out which models are capable of vision [on the models page](https://platform.openai.com/docs/models), clicking into a model's detail page e.g. [GPT-4o mini](https://platform.openai.com/docs/models/gpt-4o-mini) and look for "**Input**: Text, image" in the features columns at the top.
 
 - **Prompt** - The text prompt sent to the AI to generate alt text. Default:
   ```
   Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.
   ```
-
-### Image Settings
-
 - **Image Detail Level** - How detailed the image analysis should be:
   - `low` - Less detailed, faster and cheaper (default to protect against unexpected costs)
   - `high` - More detailed, slower and more expensive (higher resolution analysis)
@@ -86,7 +81,7 @@ For more information about these settings, refer to the [OpenAI API documentatio
 
 ## Disclaimer
 
-We take no responsibility for excessive API token usage that may result from code mistakes, bugs, or security vulnerabilities within this plugin.
+We've take some steps to try prevent unexpected costs with default plugin settings (e.g. detail: `low` and model: `gpt-4o-mini`) though we take no responsibility for excessive API token usage that may result from code mistakes, bugs, or security vulnerabilities within this plugin.
 
 If you are concerned about unexpected charges we recommend:
 - Set up rate limits and spending caps at the API account level in your [OpenAI account settings](https://platform.openai.com/account/billing/limits)
