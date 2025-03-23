@@ -7,18 +7,16 @@ use craft\base\Model;
 /**
  * OpenAI Request Model
  * 
- * Represents a request to the OpenAI chat completion API.
- * This model handles the structure and validation of API requests, including the model to use and messages to send.
+ * Represents a request to the OpenAI API.
+ * This model handles the structure and validation of API requests, including the model to use and input to send.
  * 
- * @property string $model The OpenAI model to use (e.g., 'gpt-4-vision-preview')
- * @property string $prompt The prompt to use for the request
- * @property array $image The image to use for the request
- * @property int|null $max_tokens Maximum number of tokens to generate in the response
+ * @property string $model The OpenAI model to use (e.g., 'gpt-4o-mini')
+ * @property array $input The input array containing the role and content
  */
 class OpenAiRequest extends Model
 {
     public string $model;
-    public array $input = [];
+    public $input = [];
 
     /**
      * Defines the validation rules for the request model.
