@@ -19,14 +19,15 @@ Go to the Plugin Store in your project's Control Panel and search for "Ai Alt Te
 Open your terminal and run the following commands:
 
 ```bash
-# go to the project directory
-cd /path/to/my-project.test
-
 # tell Composer to load the plugin
 composer require heavymetalavo/craft-aialttext
+# or
+ddev composer require heavymetalavo/craft-aialttext
 
 # tell Craft to install the plugin
 ./craft plugin/install ai-alt-text
+# or
+ddev craft plugin/install ai-alt-text
 ```
 
 ## Field Requirements
@@ -34,7 +35,7 @@ composer require heavymetalavo/craft-aialttext
 This plugin requires a native Craft field for alt text with the handle `alt` to be added to all asset volumes where you want to generate alt text. The plugin will use this field to store the generated alt text.
 
 To add this field:
-1. Go to **Settings → Assets → Volume name →  → + Add → search for the `alt` field and click → save**
+1. Go to **Settings → Assets → Volume name → + Add → search for the `alt` field and click → save**
 2. Scroll to Field Layout section
 3. Click the `+ Add` button
 4. Search for the `alt` field and click 
@@ -63,8 +64,8 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 - **Image Detail Level** - How detailed the image analysis should be:
   - `low` - Less detailed, faster and cheaper (default to protect against unexpected costs)
-  - `auto` - Let OpenAI decide
   - `high` - More detailed, slower and more expensive (higher resolution analysis)
+  - `auto` - Let OpenAI decide
 
 For more information about these settings, refer to the [OpenAI API documentation](https://platform.openai.com/docs/guides/images).
 
@@ -87,6 +88,16 @@ Generate alt text for single multiple assets:
 - For "bad request" errors, ensure your selected model supports vision capabilities.
 - Alt text generation is processed through Craft's queue system for bulk operations, so check the queue if generation seems to be taking a long time.
 - Any errors should be logged, check your queue log files!
+
+## Disclaimer
+
+We take no responsibility for excessive API token usage that may result from code mistakes, bugs, or security vulnerabilities within this plugin.
+
+If you are concerned about unexpected charges we recommend:
+- Set up rate limits and spending caps at the API account level in your [OpenAI account settings](https://platform.openai.com/account/billing/limits)
+- Start with smaller batches when using bulk generation until you're comfortable with the costs
+- Consider using the default `low` detail setting, which significantly reduces token usage
+- Monitor your OpenAI API usage regularly
 
 ## Support
 
