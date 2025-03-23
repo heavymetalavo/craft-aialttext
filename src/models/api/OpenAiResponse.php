@@ -63,15 +63,16 @@ class OpenAiResponse extends Model
     }
 
     /**
-     * Converts the model to an array format.
-     * 
-     * @return array The formatted array representation
+     * @inheritdoc
      */
-    public function toArray(): array
+    public function toArray(array $fields = [], array $expand = [], $recursive = true): array
     {
-        return [
-            'output' => $this->output,
-            'error' => $this->error,
-        ];
+        $data = parent::toArray($fields, $expand, $recursive);
+
+        if ($this->error) {
+            $data['error'] = $this->error;
+        }
+
+        return $data;
     }
 } 

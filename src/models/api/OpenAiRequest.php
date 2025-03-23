@@ -69,19 +69,16 @@ class OpenAiRequest extends Model
     }
 
     /**
-     * Converts the model to an array format suitable for the OpenAI API.
-     * 
-     * @return array The formatted array representation
+     * @inheritdoc
      */
-    public function toArray(): array
+    public function toArray(array $fields = [], array $expand = [], $recursive = true): array
     {
-        $data = [
-            'model' => $this->model,
-            'messages' => array_map(fn($message) => $message->toArray(), $this->messages),
-        ];
+        $data = parent::toArray($fields, $expand, $recursive);
 
-        if ($this->max_tokens !== null) {
-            $data['max_tokens'] = $this->max_tokens;
+        if ($this->messages) {
+            $data['messages'] = array_map(function($message) {
+                return $message->toArray();
+            }, $this->messages);
         }
 
         return $data;
