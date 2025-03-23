@@ -33,7 +33,7 @@
   },
   "extra": {
     "handle": "ai-alt-text",
-    "name": "Ai Alt Text",
+    "name": "AI Alt Text",
     "developer": "heavymetalavo",
     "documentationUrl": "https://github.com/heavymetalavo/craft-aialttext",
     "class": "heavymetalavo\\craftaialttext\\AiAltText"
