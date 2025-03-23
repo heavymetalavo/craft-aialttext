@@ -45,25 +45,32 @@ class AiAltTextService extends Component
      * This method:
      * - Validates the asset
      * - Generates alt text using the OpenAI service
-     * - Updates the asset with the generated alt text
+     * - Returns the generated alt text
      * 
      * @param Asset $asset The asset to generate alt text for
-     * @return bool True if alt text was generated and saved successfully
-     * @throws Exception If the asset is invalid or the generation fails
+     * @return string The generated alt text
      */
-    public function generateAltText(Asset $asset): bool
+    public function generateAltText(Asset $asset): string
     {
-        if (!$this->validateAsset($asset)) {
-            throw new Exception('Invalid asset');
-        }
+        try {
+            if (!$this->validateAsset($asset)) {
+                Craft::warning('Invalid asset for alt text generation: ' . ($asset ? $asset->id : 'null'), __METHOD__);
+                return 'Image: ' . ($asset ? $asset->filename : 'unknown');
+            }
 
-        $altText = $this->openAiService->generateAltText($asset);
-        if (empty($altText)) {
-            throw new Exception('Failed to generate alt text');
-        }
+            $altText = $this->openAiService->generateAltText($asset);
+            
+            // If we got a valid alt text, set it on the asset and save
+            if (!empty($altText)) {
+                $asset->alt = $altText;
+                Craft::$app->elements->saveElement($asset);
+            }
 
-        $asset->alt = $altText;
-        return Craft::$app->elements->saveElement($asset);
+            return $altText;
+        } catch (Exception $e) {
+            Craft::error('Error generating alt text: ' . $e->getMessage(), __METHOD__);
+            return 'Image: ' . ($asset ? $asset->filename : 'unknown');
+        }
     }
 
     /**

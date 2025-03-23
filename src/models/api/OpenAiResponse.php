@@ -26,7 +26,6 @@ class OpenAiResponse extends Model
     public function defineRules(): array
     {
         return [
-            ['output_text', 'required'],
             ['output_text', 'string'],
             ['error', 'safe'],
         ];

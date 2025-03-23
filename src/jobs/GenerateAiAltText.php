@@ -24,25 +24,23 @@ class GenerateAiAltText extends BaseJob
      */
     function execute($queue): void
     {
-        // query for the asset
-        $asset = Asset::find()->id($this->elementId)->one();
+        try {
+            // query for the asset
+            $asset = Asset::find()->id($this->elementId)->one();
 
-        // check if the asset exists
-        if (!$asset) {
-            throw new ElementNotFoundException("Asset not found: {$this->elementId}");
+            // check if the asset exists
+            if (!$asset) {
+                throw new ElementNotFoundException("Asset not found: {$this->elementId}");
+            }
+
+            // Generate alt text - now returns a string and saves the asset
+            $altText = AiAltText::getInstance()->aiAltTextService->generateAltText($asset);
+
+            // Log the result
+            Craft::info("Generated alt text for asset {$this->elementId}: " . $altText, __METHOD__);
+        } catch (Exception $e) {
+            Craft::error("Error in GenerateAiAltText job: " . $e->getMessage(), __METHOD__);
         }
-
-        $altText = AiAltText::getInstance()->aiAltTextService->generateAltText($asset);
-
-        if (!$altText) {
-            throw new Exception("Failed to generate alt text for asset: {$this->elementId}");
-        }
-
-        // use the selected alt text field on the asset from plugin settings
-        $asset->alt = $altText;
-
-        // save element
-        Craft::$app->getElements()->saveElement($asset);
     }
 
     protected function defaultDescription(): ?string

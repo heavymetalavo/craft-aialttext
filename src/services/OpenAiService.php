@@ -55,6 +55,9 @@ class OpenAiService extends Component
         $client = Craft::createGuzzleClient();
 
         try {
+            // Log the request for debugging
+            Craft::info('OpenAI API request: ' . json_encode($requestData), __METHOD__);
+            
             $response = $client->post($this->baseUrl . '/responses', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->apiKey,
@@ -63,16 +66,47 @@ class OpenAiService extends Component
                 'json' => $requestData,
             ]);
 
-            $responseData = json_decode($response->getBody(), true);
-            $responseModel = new OpenAiResponse();
-            $responseModel->output_text = $responseData['output_text'] ?? '';
+            $responseBody = (string)$response->getBody();
+            // Log the raw response for debugging
+            Craft::info('OpenAI API raw response: ' . $responseBody, __METHOD__);
+            
+            $responseData = json_decode($responseBody, true);
+            
+            // If responseData is not an array, something went wrong
+            if (!is_array($responseData)) {
+                throw new Exception('Invalid response format: ' . $responseBody);
+            }
+            
+            // Log the parsed response for debugging
+            Craft::info('OpenAI API parsed response: ' . json_encode($responseData), __METHOD__);
 
-            if (!$responseModel->validate()) {
-                throw new Exception('Invalid response: ' . json_encode($responseModel->getErrors()));
+            $responseModel = new OpenAiResponse();
+            
+            // Check if output_text exists
+            if (isset($responseData['output_text'])) {
+                $responseModel->output_text = $responseData['output_text'];
+            } 
+            // Check for other response formats
+            elseif (isset($responseData['choices'][0]['message']['content'])) {
+                $responseModel->output_text = $responseData['choices'][0]['message']['content'];
+            }
+            // Check for error messages
+            elseif (isset($responseData['error'])) {
+                $errorMessage = is_array($responseData['error']) 
+                    ? ($responseData['error']['message'] ?? json_encode($responseData['error']))
+                    : $responseData['error'];
+                throw new Exception('API error: ' . $errorMessage);
+            } 
+            // If we can't find any output, log the entire response
+            else {
+                Craft::warning('Could not find output_text in response: ' . json_encode($responseData), __METHOD__);
+                $responseModel->output_text = 'Could not parse response from OpenAI API.';
             }
 
-            if ($responseModel->hasError()) {
-                throw new Exception($responseModel->getErrorMessage());
+            if (!$responseModel->validate()) {
+                Craft::warning('Response validation failed: ' . json_encode($responseModel->getErrors()), __METHOD__);
+                // Try to proceed anyway with what we got
+                $responseModel->output_text = 'Response validation failed. Raw response: ' . substr($responseBody, 0, 200);
             }
 
             return $responseModel;
@@ -80,7 +114,7 @@ class OpenAiService extends Component
         } catch (Exception $e) {
             Craft::error('OpenAI API request failed: ' . $e->getMessage(), __METHOD__);
             $errorResponse = new OpenAiResponse();
-            $errorResponse->output_text = '';
+            $errorResponse->output_text = 'Error: ' . $e->getMessage();
             $errorResponse->error = ['message' => $e->getMessage()];
             return $errorResponse;
         }
@@ -102,8 +136,22 @@ class OpenAiService extends Component
     {
         try {
             $imageUrl = $asset->getUrl();
+            
+            // Make sure we have a valid URL
+            if (empty($imageUrl)) {
+                throw new Exception('Asset URL is empty. Make sure the asset is accessible.');
+            }
+            
             $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
             $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
+            
+            // Make sure we have a valid prompt
+            if (empty($prompt)) {
+                $prompt = 'Generate a concise, descriptive alt text for this image.';
+            }
+
+            // Log asset info for debugging
+            Craft::info('Generating alt text for asset: ' . $asset->filename . ' (' . $imageUrl . ')', __METHOD__);
 
             // Build the request data directly as an array
             $requestData = [
@@ -128,19 +176,23 @@ class OpenAiService extends Component
 
             $response = $this->sendRequest($requestData);
 
+            // Check for errors from the API
             if ($response->hasError()) {
                 throw new Exception($response->getErrorMessage());
             }
 
+            // If output is empty, try to generate a fallback
             if (empty($response->output_text)) {
-                throw new Exception('No alt text was generated.');
+                Craft::warning('No alt text was generated for asset: ' . $asset->filename, __METHOD__);
+                return 'Image: ' . $asset->filename;
             }
 
             return $response->getText();
 
         } catch (Exception $e) {
             Craft::error('Failed to generate alt text: ' . $e->getMessage(), __METHOD__);
-            throw $e;
+            // Return a basic fallback
+            return 'Image: ' . $asset->filename;
         }
     }
 } 
