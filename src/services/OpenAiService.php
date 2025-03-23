@@ -8,12 +8,7 @@ use craft\elements\Asset;
 use craft\helpers\App;
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
-use heavymetalavo\craftaialttext\models\api\OpenAiRequest;
 use heavymetalavo\craftaialttext\models\api\OpenAiResponse;
-use heavymetalavo\craftaialttext\models\api\OpenAiMessage;
-use heavymetalavo\craftaialttext\models\api\OpenAiContent;
-use heavymetalavo\craftaialttext\models\api\TextContent;
-use heavymetalavo\craftaialttext\models\api\ImageContent;
 
 /**
  * OpenAI API Service
@@ -47,30 +42,25 @@ class OpenAiService extends Component
      * Sends a request to the OpenAI API
      * 
      * This method handles the communication with the OpenAI API, including:
-     * - Request validation
      * - API call execution
      * - Response parsing
      * - Error handling
      * 
-     * @param OpenAiRequest $request The request to send
+     * @param array $requestData The request data to send
      * @return OpenAiResponse The API response
-     * @throws Exception If the request is invalid or the API call fails
+     * @throws Exception If the API call fails
      */
-    public function sendRequest(OpenAiRequest $request): OpenAiResponse
+    public function sendRequest(array $requestData): OpenAiResponse
     {
         $client = Craft::createGuzzleClient();
 
         try {
-            if (!$request->validate()) {
-                throw new Exception('Invalid request: ' . json_encode($request->getErrors()));
-            }
-
             $response = $client->post($this->baseUrl . '/responses', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type' => 'application/json',
                 ],
-                'json' => $request->toArray(),
+                'json' => $requestData,
             ]);
 
             $responseData = json_decode($response->getBody(), true);
@@ -115,35 +105,28 @@ class OpenAiService extends Component
             $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
             $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
-            // Create a request with simple properties first
-            $request = new OpenAiRequest();
-            $request->model = $this->model;
-            
-            // Build the input array manually to avoid Yii trying to instantiate components
-            $userContent = [];
-            
-            // Add text content
-            $textContent = [];
-            $textContent['type'] = 'input_text';
-            $textContent['text'] = $prompt;
-            $userContent[] = $textContent;
-            
-            // Add image content
-            $imageContent = [];
-            $imageContent['type'] = 'input_image';
-            $imageContent['image_url'] = $imageUrl;
-            $imageContent['detail'] = $detail;
-            $userContent[] = $imageContent;
-            
-            // Create the full input structure
-            $userMessage = [];
-            $userMessage['role'] = 'user';
-            $userMessage['content'] = $userContent;
-            
-            // Set the input property
-            $request->input = [$userMessage];
+            // Build the request data directly as an array
+            $requestData = [
+                'model' => $this->model,
+                'input' => [
+                    [
+                        'role' => 'user',
+                        'content' => [
+                            [
+                                'type' => 'input_text',
+                                'text' => $prompt
+                            ],
+                            [
+                                'type' => 'input_image',
+                                'image_url' => $imageUrl,
+                                'detail' => $detail
+                            ]
+                        ]
+                    ]
+                ]
+            ];
 
-            $response = $this->sendRequest($request);
+            $response = $this->sendRequest($requestData);
 
             if ($response->hasError()) {
                 throw new Exception($response->getErrorMessage());
