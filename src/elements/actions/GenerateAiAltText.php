@@ -16,6 +16,11 @@ use yii\base\InvalidConfigException;
  */
 class GenerateAiAltText extends ElementAction
 {
+    /**
+     * @var string|null The action description
+     */
+    public ?string $description = null;
+
     public static function displayName(): string
     {
         return Craft::t('ai-alt-text', 'Generate AI Alt Text');
@@ -68,7 +73,7 @@ class GenerateAiAltText extends ElementAction
                 continue;
             }
 
-            $queue->push(new GenerateAiAltText([
+            $queue->push(new GenerateAiAltTextJob([
                 'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename}', [
                     'filename' => $asset->filename,
                 ]),
