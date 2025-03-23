@@ -40,23 +40,6 @@ class OpenAiService extends Component
     }
 
     /**
-     * Sets an error message to the session (if in web context)
-     * 
-     * @param string $message The error message to set
-     */
-    private function setSessionError(string $message): void
-    {
-        try {
-            // Only set session error if we're in a web request context
-            if (!Craft::$app->getRequest()->getIsConsoleRequest()) {
-                Craft::$app->getSession()->setError($message);
-            }
-        } catch (Exception $sessionException) {
-            Craft::error('Could not set session error: ' . $sessionException->getMessage(), __METHOD__);
-        }
-    }
-
-    /**
      * Sends a request to the OpenAI API
      *
      * This method handles the communication with the OpenAI API, including:
@@ -97,7 +80,6 @@ class OpenAiService extends Component
                 }
                 $errorMsg = 'Response parsing failed: ' . $responseModel->getErrorMessage();
                 Craft::warning($errorMsg, __METHOD__);
-                $this->setSessionError($errorMsg);
             }
 
             // Make sure the response model is valid
@@ -108,7 +90,6 @@ class OpenAiService extends Component
                 if (!$responseModel->hasError()) {
                     $responseModel->setError($errorMsg);
                 }
-                $this->setSessionError($errorMsg);
             }
 
             return $responseModel;
@@ -116,7 +97,6 @@ class OpenAiService extends Component
         } catch (Exception $e) {
             $errorMsg = 'OpenAI API request failed: ' . $e->getMessage();
             Craft::error($errorMsg, __METHOD__);
-            $this->setSessionError($errorMsg);
             
             $errorResponse = new OpenAiResponse();
             $errorResponse->setError($e->getMessage());
@@ -143,9 +123,7 @@ class OpenAiService extends Component
             
             // Make sure we have a valid URL
             if (empty($imageUrl)) {
-                $errorMsg = 'Asset URL is empty. Make sure the asset is accessible.';
-                $this->setSessionError($errorMsg);
-                throw new Exception($errorMsg);
+                throw new Exception('Asset URL is empty. Make sure the asset is accessible.');
             }
             
             $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
@@ -168,9 +146,7 @@ class OpenAiService extends Component
 
             // Validate the request
             if (!$request->validate()) {
-                $errorMsg = 'Invalid request: ' . json_encode($request->getErrors());
-                $this->setSessionError($errorMsg);
-                throw new Exception($errorMsg);
+                throw new Exception('Invalid request: ' . json_encode($request->getErrors()));
             }
 
             // Convert to array explicitly to avoid potential object-to-array conversion issues
@@ -181,16 +157,12 @@ class OpenAiService extends Component
 
             // Check for errors from the API
             if ($response->hasError()) {
-                $errorMsg = $response->getErrorMessage();
-                $this->setSessionError($errorMsg);
-                throw new Exception($errorMsg);
+                throw new Exception($response->getErrorMessage());
             }
 
             // If output is empty, log and return empty string
             if (empty($response->output_text)) {
-                $errorMsg = 'No alt text was generated for asset: ' . $asset->filename;
-                Craft::warning($errorMsg, __METHOD__);
-                $this->setSessionError($errorMsg);
+                Craft::warning('No alt text was generated for asset: ' . $asset->filename, __METHOD__);
                 return '';
             }
 
@@ -199,7 +171,6 @@ class OpenAiService extends Component
         } catch (Exception $e) {
             $errorMessage = 'Failed to generate alt text: ' . $e->getMessage();
             Craft::error($errorMessage, __METHOD__);
-            $this->setSessionError($errorMessage);
             
             // Return empty string on errors
             return '';

@@ -91,10 +91,8 @@ class OpenAiRequest extends Model
         if (!empty($this->imageUrl)) {
             $content[] = [
                 'type' => 'input_image',
-                'image_url' => [
-                    'url' => $this->imageUrl,
-                    'detail' => $this->detail
-                ]
+                'image_url' => $this->imageUrl,
+                'detail' => $this->detail
             ];
         }
         
