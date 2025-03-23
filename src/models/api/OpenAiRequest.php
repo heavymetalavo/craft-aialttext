@@ -118,13 +118,23 @@ class OpenAiRequest extends Model
             [['model', 'input'], 'required'],
             ['model', 'string'],
             ['input', 'safe'],
-            [function ($attribute, $params, $validator) {
-                // Custom validator for detail value
-                if (!in_array($this->detail, ['auto', 'low', 'high'])) {
-                    $this->addError('detail', 'Detail must be one of: auto, low, high');
-                }
-            }, 'skipOnEmpty' => false],
+            ['model', 'validateDetail'], 
         ];
+    }
+    
+    /**
+     * Validates the detail property
+     *
+     * @param string $attribute The attribute being validated (not used, but required by validator)
+     * @param mixed $params Validator parameters (not used, but required by validator)
+     * @return void
+     */
+    public function validateDetail($attribute, $params): void
+    {
+        // Custom validator for detail value
+        if (!in_array($this->detail, ['auto', 'low', 'high'])) {
+            $this->addError('detail', 'Detail must be one of: auto, low, high');
+        }
     }
 
     /**
