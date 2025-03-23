@@ -1,4 +1,4 @@
-# AI Alt Text
+# 🤖 💬 AI Alt Text
 
 Generate suitable alt text for CraftCMS Asset Images using OpenAI's API.
 
