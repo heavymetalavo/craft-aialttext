@@ -75,7 +75,7 @@ class OpenAiService extends Component
 
             $responseData = json_decode($response->getBody(), true);
             $responseModel = new OpenAiResponse();
-            $responseModel->output = $responseData['output'] ?? '';
+            $responseModel->output = $responseData['output_text'] ?? '';
 
             if (!$responseModel->validate()) {
                 throw new Exception('Invalid response: ' . json_encode($responseModel->getErrors()));
@@ -110,32 +110,42 @@ class OpenAiService extends Component
      */
     public function generateAltText(Asset $asset): string
     {
-        $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
-        $imageUrl = $asset->getUrl();
-        $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel);
+        try {
+            $imageUrl = $asset->getUrl();
+            $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
+            $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
-        $request = new OpenAiRequest();
-        $request->model = $this->model;
-        $request->input = [
-            'prompt' => $prompt,
-            'image' => [
-                'url' => $imageUrl,
-                'detail' => $detail
-            ]
-        ];
-        $request->max_tokens = 300;
+            $request = new OpenAiRequest();
+            $request->model = $this->model;
+            $request->input = [
+                [
+                    'role' => 'user',
+                    'content' => [
+                        ['type' => 'input_text', 'text' => $prompt],
+                        [
+                            'type' => 'input_image',
+                            'image_url' => $imageUrl,
+                            'detail' => $detail
+                        ]
+                    ]
+                ]
+            ];
 
-        $response = $this->sendRequest($request);
-        
-        if ($response->hasError()) {
-            throw new Exception($response->getErrorMessage());
+            $response = $this->sendRequest($request);
+
+            if ($response->hasError()) {
+                throw new Exception($response->getErrorMessage());
+            }
+
+            if (empty($response->output)) {
+                throw new Exception('No alt text was generated.');
+            }
+
+            return $response->output;
+
+        } catch (Exception $e) {
+            Craft::error('Failed to generate alt text: ' . $e->getMessage(), __METHOD__);
+            throw $e;
         }
-
-        $altText = $response->getText();
-        if (!$altText) {
-            throw new Exception('No text in response');
-        }
-
-        return $altText;
     }
 } 
