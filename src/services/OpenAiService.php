@@ -114,21 +114,23 @@ class OpenAiService extends Component
         $imageUrl = $asset->getUrl();
         $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel);
 
+        // Create text content
+        $textContent = new OpenAiContent();
+        $textContent->type = 'text';
+        $textContent->text = new TextContent();
+        $textContent->text->text = $prompt;
+
+        // Create image content
+        $imageContent = new OpenAiContent();
+        $imageContent->type = 'image_url';
+        $imageContent->image_url = new ImageContent();
+        $imageContent->image_url->url = $imageUrl;
+        $imageContent->image_url->detail = $detail;
+
+        // Create message with both contents
         $message = new OpenAiMessage();
         $message->role = 'user';
-        $message->content = [
-            [
-                'type' => 'text',
-                'text' => $prompt
-            ],
-            [
-                'type' => 'image_url',
-                'image_url' => [
-                    'url' => $imageUrl,
-                    'detail' => $detail
-                ]
-            ]
-        ];
+        $message->content = [$textContent, $imageContent];
 
         $request = new OpenAiRequest();
         $request->model = $this->model;
