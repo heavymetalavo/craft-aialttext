@@ -65,7 +65,7 @@ class OpenAiService extends Component
                 throw new Exception('Invalid request: ' . json_encode($request->getErrors()));
             }
 
-            $response = $client->post($this->baseUrl . '/chat/completions', [
+            $response = $client->post($this->baseUrl . '/responses', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type' => 'application/json',
@@ -75,7 +75,7 @@ class OpenAiService extends Component
 
             $responseData = json_decode($response->getBody(), true);
             $responseModel = new OpenAiResponse();
-            $responseModel->output = $responseData['choices'][0]['message']['content'] ?? '';
+            $responseModel->output = $responseData['output'] ?? '';
 
             if (!$responseModel->validate()) {
                 throw new Exception('Invalid response: ' . json_encode($responseModel->getErrors()));
@@ -117,8 +117,7 @@ class OpenAiService extends Component
         // Create text content
         $textContent = new OpenAiContent();
         $textContent->type = 'text';
-        $textContent->text = new TextContent();
-        $textContent->text->text = $prompt;
+        $textContent->text = $prompt;
 
         // Create image content
         $imageContent = new OpenAiContent();
