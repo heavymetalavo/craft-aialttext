@@ -37,23 +37,21 @@ class OpenAiContent extends Model
     }
 
     /**
-     * Converts the model to an array format suitable for the OpenAI API.
-     * 
-     * @return array The formatted array representation
+     * @inheritdoc
      */
-    public function toArray(): array
+    public function toArray(array $fields = [], array $expand = [], bool $recursive = true): array
     {
-        $data = ['type' => $this->type];
+        $data = parent::toArray($fields, $expand, $recursive);
 
-        if ($this->type === 'text') {
-            $data['text'] = $this->text->text;
-        } else {
+        if ($this->text) {
+            $data['text'] = $this->text;
+        }
+
+        if ($this->image_url) {
             $data['image_url'] = [
                 'url' => $this->image_url->url,
+                'detail' => $this->image_url->detail,
             ];
-            if ($this->image_url->detail) {
-                $data['image_url']['detail'] = $this->image_url->detail;
-            }
         }
 
         return $data;
