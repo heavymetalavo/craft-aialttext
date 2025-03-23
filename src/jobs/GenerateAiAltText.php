@@ -6,7 +6,7 @@ use Craft;
 use craft\elements\Asset;
 use craft\errors\ElementNotFoundException;
 use craft\queue\BaseJob;
-use heavymetalavo\craftaialttext\AiAltTextGenerator;
+use heavymetalavo\craftaialttext\AiAltText;
 use Throwable;
 use yii\base\Exception;
 
@@ -32,7 +32,7 @@ class GenerateAiAltText extends BaseJob
             throw new ElementNotFoundException("Asset not found: {$this->elementId}");
         }
 
-        $altText = AiAltTextGenerator::getInstance()->aiAltTextGeneratorService->generateAltText($asset);
+        $altText = AiAltText::getInstance()->aiAltTextGeneratorService->generateAltText($asset);
 
         if (!$altText) {
             throw new Exception("Failed to generate alt text for asset: {$this->elementId}");

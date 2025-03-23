@@ -7,7 +7,7 @@ use craft\base\Component;
 use craft\elements\Asset;
 use craft\helpers\App;
 use Exception;
-use heavymetalavo\craftaialttext\AiAltTextGenerator;
+use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\api\OpenAiRequest;
 use heavymetalavo\craftaialttext\models\api\OpenAiResponse;
 use heavymetalavo\craftaialttext\models\api\OpenAiMessage;
@@ -39,8 +39,8 @@ class OpenAiService extends Component
     public function __construct()
     {
         parent::__construct();
-        $this->apiKey = App::parseEnv(AiAltTextGenerator::getInstance()->getSettings()->openAiApiKey);
-        $this->model = App::parseEnv(AiAltTextGenerator::getInstance()->getSettings()->openAiModel);
+        $this->apiKey = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiApiKey);
+        $this->model = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiModel);
     }
 
     /**
@@ -114,13 +114,13 @@ class OpenAiService extends Component
         $textContent = new OpenAiContent();
         $textContent->type = 'text';
         $textContent->text = new TextContent();
-        $textContent->text->text = App::parseEnv(AiAltTextGenerator::getInstance()->getSettings()->prompt);
+        $textContent->text->text = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
         $imageContent = new OpenAiContent();
         $imageContent->type = 'image_url';
         $imageContent->image_url = new ImageContent();
         $imageContent->image_url->url = $asset->getUrl();
-        $imageContent->image_url->detail = App::parseEnv(AiAltTextGenerator::getInstance()->getSettings()->openAiImageInputDetailLevel);
+        $imageContent->image_url->detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel);
 
         $message = new OpenAiMessage();
         $message->role = 'user';

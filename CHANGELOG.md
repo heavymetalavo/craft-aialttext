@@ -1,4 +1,4 @@
-# Release Notes for AI Alt Text Generator
+# Release Notes for Ai Alt Text
 
 ## 1.0.0
 - Initial release

@@ -10,21 +10,21 @@ use craft\helpers\ElementHelper;
 use craft\helpers\Html;
 use craft\helpers\Template;
 use craft\web\View;
-use heavymetalavo\craftaialttext\AiAltTextGenerator;
+use heavymetalavo\craftaialttext\AiAltText;
 use craft\helpers\App;
 use Exception;
 use heavymetalavo\craftaialttext\models\api\OpenAiRequest;
 use heavymetalavo\craftaialttext\models\api\OpenAiResponse;
 
 /**
- * AI Alt Text Generator Service
+ * AI Alt Text Service
  * 
  * Main service class for generating alt text using AI.
  * This service coordinates between the OpenAI service and Craft CMS assets.
  * 
  * @property OpenAiService $openAiService The OpenAI service instance
  */
-class AiAltTextGeneratorService extends Component
+class AiAltTextService extends Component
 {
     private OpenAiService $openAiService;
 

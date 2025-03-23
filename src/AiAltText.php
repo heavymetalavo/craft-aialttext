@@ -17,23 +17,23 @@ use craft\helpers\Template;
 use craft\web\View;
 use craft\web\UrlManager;
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
-use heavymetalavo\craftaialttext\services\AiAltTextGeneratorService;
+use heavymetalavo\craftaialttext\services\AiAltTextService;
 use heavymetalavo\craftaialttext\models\Settings;
 use yii\base\Event;
 use heavymetalavo\craftaialttext\services\OpenAiService;
 use craft\events\RegisterUrlRulesEvent;
 
 /**
- * AI Alt Text Generator Plugin
+ * AI Alt Text Plugin
  * 
  * A Craft CMS plugin that generates alt text for images using OpenAI's vision models.
  * This plugin provides functionality to automatically generate descriptive alt text
  * for images in the Craft CMS asset library.
  * 
- * @property AiAltTextGeneratorService $aiAltTextGeneratorService The service for generating alt text
+ * @property AiAltTextService $aiAltTextService The service for generating alt text
  * @property Settings $settings The plugin settings
  */
-class AiAltTextGenerator extends Plugin
+class AiAltText extends Plugin
 {
     public string $schemaVersion = '1.0.0';
     public bool $hasCpSettings = true;
@@ -41,7 +41,7 @@ class AiAltTextGenerator extends Plugin
     public static function config(): array
     {
         return [
-            'components' => ['aiAltTextGeneratorService' => AiAltTextGeneratorService::class],
+            'components' => ['aiAltTextService' => AiAltTextService::class],
         ];
     }
 
@@ -52,10 +52,9 @@ class AiAltTextGenerator extends Plugin
     {
         parent::init();
 
-        // Register our services
+        // Register the service
         $this->setComponents([
-            'aiAltTextGenerator' => AiAltTextGeneratorService::class,
-            'openAi' => OpenAiService::class,
+            'aiAltTextService' => AiAltTextService::class,
         ]);
 
         $this->attachEventHandlers();
@@ -65,8 +64,8 @@ class AiAltTextGenerator extends Plugin
             UrlManager::class,
             UrlManager::EVENT_REGISTER_SITE_URL_RULES,
             function(RegisterUrlRulesEvent $event) {
-                $event->rules['ai-alt-text/generate'] = 'ai-alt-text/generate-ai-alt-text/generate';
-                $event->rules['ai-alt-text/generate-multiple'] = 'ai-alt-text/generate-ai-alt-text/generate-multiple';
+                $event->rules['ai-alt-text/generate'] = 'ai-alt-text/ai-alt-text/generate';
+                $event->rules['ai-alt-text/generate-multiple'] = 'ai-alt-text/ai-alt-text/generate-multiple';
             }
         );
 
@@ -93,9 +92,9 @@ class AiAltTextGenerator extends Plugin
     /**
      * @inheritdoc
      */
-    protected function createSettingsModel(): ?Model
+    protected function createSettingsModel(): Settings
     {
-        return Craft::createObject(Settings::class);
+        return new Settings();
     }
 
     /**
@@ -103,9 +102,12 @@ class AiAltTextGenerator extends Plugin
      */
     protected function settingsHtml(): ?string
     {
-        return Craft::$app->view->renderTemplate('ai-alt-text-generator/_settings.twig', [
-            'plugin' => $this,
-            'settings' => $this->getSettings(),
-        ]);
+        return Craft::$app->view->renderTemplate(
+            'ai-alt-text/settings',
+            [
+                'plugin' => $this,
+                'settings' => $this->getSettings(),
+            ]
+        );
     }
 }

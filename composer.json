@@ -32,11 +32,11 @@
     }
   },
   "extra": {
-    "handle": "ai-alt-text-generator",
-    "name": "AI Alt Text Generator",
+    "handle": "ai-alt-text",
+    "name": "Ai Alt Text",
     "developer": "heavymetalavo",
     "documentationUrl": "https://github.com/heavymetalavo/craft-aialttext",
-    "class": "heavymetalavo\\craftaialttext\\AiAltTextGenerator"
+    "class": "heavymetalavo\\craftaialttext\\AiAltText"
   },
   "config": {
     "sort-packages": true,

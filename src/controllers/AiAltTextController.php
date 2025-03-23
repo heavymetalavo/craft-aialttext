@@ -7,25 +7,25 @@ use craft\base\Controller;
 use craft\elements\Asset;
 use craft\web\Response;
 use Exception;
-use heavymetalavo\craftaialttext\AiAltTextGenerator;
+use heavymetalavo\craftaialttext\AiAltText;
 
 /**
- * Generate AI Alt Text Controller Action
- * 
+ * AI Alt Text Controller
+ *
  * Handles the generation of alt text for assets using AI.
  * This controller provides endpoints for generating alt text for single or multiple assets.
  */
-class GenerateAiAltText extends Controller
+class AiAltTextController extends Controller
 {
     /**
      * Generates alt text for a single asset.
-     * 
+     *
      * This action:
      * - Validates the asset ID
      * - Retrieves the asset
      * - Generates alt text using the AI service
      * - Returns the result as JSON
-     * 
+     *
      * @return Response The JSON response
      */
     public function actionGenerate(): Response
@@ -44,7 +44,7 @@ class GenerateAiAltText extends Controller
         }
 
         try {
-            $success = AiAltTextGenerator::getInstance()->aiAltTextGeneratorService->generateAltText($asset);
+            $success = AiAltText::getInstance()->aiAltTextService->generateAltText($asset);
             return $this->asJson([
                 'success' => $success,
                 'alt' => $asset->alt,
@@ -59,13 +59,13 @@ class GenerateAiAltText extends Controller
 
     /**
      * Generates alt text for multiple assets.
-     * 
+     *
      * This action:
      * - Validates the asset IDs
      * - Retrieves the assets
      * - Generates alt text for each asset using the AI service
      * - Returns the results as JSON
-     * 
+     *
      * @return Response The JSON response
      */
     public function actionGenerateMultiple(): Response
@@ -86,7 +86,7 @@ class GenerateAiAltText extends Controller
         $results = [];
         foreach ($assets as $asset) {
             try {
-                $success = AiAltTextGenerator::getInstance()->aiAltTextGeneratorService->generateAltText($asset);
+                $success = AiAltText::getInstance()->aiAltTextService->generateAltText($asset);
                 $results[] = [
                     'id' => $asset->id,
                     'success' => $success,
@@ -106,4 +106,4 @@ class GenerateAiAltText extends Controller
             'results' => $results,
         ]);
     }
-} 
+}

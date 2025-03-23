@@ -6,11 +6,11 @@ use craft\base\Model;
 
 /**
  * Plugin Settings Model
- * 
- * Defines the settings for the AI Alt Text Generator plugin.
+ *
+ * Defines the settings for the Ai Alt Text plugin.
  * This model handles the configuration options for OpenAI API integration
  * and alt text generation preferences.
- * 
+ *
  * @property string $openAiApiKey The OpenAI API key
  * @property string $openAiModel The OpenAI model to use (e.g., 'gpt-4', 'gpt-4-vision-preview', 'gpt-4-mini')
  * @property string $prompt The prompt template for generating alt text
@@ -24,14 +24,9 @@ class Settings extends Model
     public string $openAiApiKey = '';
 
     /**
-     * @var string The OpenAI model to use
-     * 
-     * Available options:
-     * - gpt-4: Standard GPT-4 model
-     * - gpt-4-vision-preview: GPT-4 with vision capabilities
-     * - gpt-4-mini: Lighter version of GPT-4
+     * @var string The OpenAI model to use, must have vision capabilities
      */
-    public string $openAiModel = 'gpt-4';
+    public string $openAiModel = 'gpt-4o-mini';
 
     /**
      * @var string The prompt template for generating alt text
@@ -40,13 +35,13 @@ class Settings extends Model
 
     /**
      * @var string The detail level for image analysis
-     * 
-     * Only used with vision-capable models (e.g., gpt-4-vision-preview)
+     *
      * Options:
-     * - low: Faster, less detailed analysis
-     * - high: More detailed analysis but slower
+     * - low: Faster, less detailed analysis on a 512x512 image, but cheaper
+     * - high: More detailed analysis on higher quality image, more expensive
+     * - auto: let the model decide
      */
-    public string $openAiImageInputDetailLevel = 'high';
+    public string $openAiImageInputDetailLevel = 'low';
 
     /**
      * @inheritdoc

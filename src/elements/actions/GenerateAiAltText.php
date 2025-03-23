@@ -23,7 +23,7 @@ class GenerateAiAltText extends ElementAction
 
     public function getTriggerLabel(): string
     {
-        return Craft::t('ai-alt-text-generator', 'Generate Alt Text');
+        return Craft::t('ai-alt-text-generator', 'Generate AI Alt Text');
     }
 
     public function getTriggerHtml(): ?string

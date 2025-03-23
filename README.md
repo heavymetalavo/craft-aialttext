@@ -1,4 +1,4 @@
-# AI Alt Text Generator
+# Ai Alt Text
 
 Generate suitable alt text for CraftCMS Asset Images
 
@@ -12,7 +12,7 @@ You can install this plugin from the Plugin Store or with Composer.
 
 #### From the Plugin Store
 
-Go to the Plugin Store in your project's Control Panel and search for "AI Alt Text Generator". Then press "Install".
+Go to the Plugin Store in your project's Control Panel and search for "Ai Alt Text". Then press "Install".
 
 #### With Composer
 
@@ -26,5 +26,5 @@ cd /path/to/my-project.test
 composer require heavymetalavo/craft-aialttext
 
 # tell Craft to install the plugin
-./craft plugin/install ai-alt-text-generator
+./craft plugin/install ai-alt-text
 ```

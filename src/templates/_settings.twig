@@ -1,11 +1,11 @@
-{# @var plugin \heavymetalavo\craftaialttext\AiAltTextGenerator #}
+{# @var plugin \heavymetalavo\craftaialttext\AiAltText #}
 {# @var settings \heavymetalavo\craftaialttext\models\Settings #}
 {% import '_includes/forms.twig' as forms %}
 
 {#        API Key#}
         {{ forms.autosuggestField({
-            label: "OpenAI API Key"|t("aialttextgenerator"),
-            instructions: "The API key from your Open AI account"|t("aialttextgenerator"),
+            label: "OpenAI API Key"|t("aialttext"),
+            instructions: "The API key from your Open AI account"|t("aialttext"),
             id: "openAiApiKey",
             name: "openAiApiKey",
             suggestEnvVars: true,
@@ -17,7 +17,7 @@
             label: 'Prompt'|t('app'),
             id: 'prompt',
             name: 'prompt',
-            instructions: "The prompt which will feed into the LLM with the image to generate the response"|t("aialttextgenerator"),
+            instructions: "The prompt which will feed into the LLM with the image to generate the response"|t("aialttext"),
             value: settings.prompt,
             placeholder: 'Generate a brief alt text description focusing on the main subject and overall composition.',
             errors: settings.getErrors('prompt'),
@@ -27,7 +27,7 @@
             label: 'Open AI Model'|t('app'),
             id: 'openAiModel',
             name: 'openAiModel',
-            instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models)"|t("aialttextgenerator"),
+            instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models)"|t("aialttext"),
             value: settings.openAiModel,
             placeholder: 'gpt-4o-mini',
             errors: settings.getErrors('openAiModel'),
@@ -37,7 +37,7 @@
             label: 'Open AI Image Input Detail Level'|t('app'),
             id: 'openAiImageInputDetailLevel',
             name: 'openAiImageInputDetailLevel',
-            instructions: "Specify the [Image input detail level](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#specify-image-input-detail-level), `low` costs the least at 85 tokens. Please read about [Image input requirements](https://platform.openai.com/docs/guides/images#image-input-requirements), [limitations](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#limitations) and [calculating costs & cost calculation examples](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#calculating-costs) in the OpenAI platform docs for more."|t("aialttextgenerator"),
+            instructions: "Specify the [Image input detail level](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#specify-image-input-detail-level), `low` costs the least at 85 tokens. Please read about [Image input requirements](https://platform.openai.com/docs/guides/images#image-input-requirements), [limitations](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#limitations) and [calculating costs & cost calculation examples](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#calculating-costs) in the OpenAI platform docs for more."|t("aialttext"),
             value: settings.openAiImageInputDetailLevel,
             placeholder: 'low',
             errors: settings.getErrors('openAiImageInputDetailLevel'),
