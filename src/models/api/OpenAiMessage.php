@@ -66,15 +66,18 @@ class OpenAiMessage extends Model
     }
 
     /**
-     * Converts the model to an array format suitable for the OpenAI API.
-     * 
-     * @return array The formatted array representation
+     * @inheritdoc
      */
-    public function toArray(): array
+    public function toArray(array $fields = [], array $expand = [], $recursive = true): array
     {
-        return [
-            'role' => $this->role,
-            'content' => array_map(fn($content) => $content->toArray(), $this->content),
-        ];
+        $data = parent::toArray($fields, $expand, $recursive);
+
+        if ($this->content) {
+            $data['content'] = array_map(function($content) {
+                return $content->toArray();
+            }, $this->content);
+        }
+
+        return $data;
     }
 } 
