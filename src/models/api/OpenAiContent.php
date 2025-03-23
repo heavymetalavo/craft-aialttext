@@ -39,7 +39,7 @@ class OpenAiContent extends Model
     /**
      * @inheritdoc
      */
-    public function toArray(array $fields = [], array $expand = [], bool $recursive = true): array
+    public function toArray(array $fields = [], array $expand = [], $recursive = true): array
     {
         $data = parent::toArray($fields, $expand, $recursive);
 
