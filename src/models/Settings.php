@@ -31,7 +31,7 @@ class Settings extends Model
     /**
      * @var string The prompt template for generating alt text
      */
-    public string $prompt = 'Please provide a detailed description of this image that would be suitable as alt text. Focus on the visual elements, context, and purpose of the image.';
+    public string $prompt = 'Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.';
 
     /**
      * @var string The detail level for image analysis
