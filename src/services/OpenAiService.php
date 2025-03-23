@@ -82,11 +82,26 @@ class OpenAiService extends Component
 
             $responseModel = new OpenAiResponse();
 
-            // Check if output_text exists
+            // Check if output_text exists directly
             if (isset($responseData['output_text'])) {
                 $responseModel->output_text = $responseData['output_text'];
             }
-            // Check for other response formats
+            // Check for the nested output structure from the /responses endpoint
+            elseif (isset($responseData['output']) && is_array($responseData['output'])) {
+                // Look for the message in the output array
+                foreach ($responseData['output'] as $outputItem) {
+                    if (isset($outputItem['content']) && is_array($outputItem['content'])) {
+                        // Look for the text content
+                        foreach ($outputItem['content'] as $contentItem) {
+                            if (isset($contentItem['type']) && $contentItem['type'] === 'output_text' && isset($contentItem['text'])) {
+                                $responseModel->output_text = $contentItem['text'];
+                                break 2; // Break out of both loops
+                            }
+                        }
+                    }
+                }
+            }
+            // Check for ChatGPT completion style responses
             elseif (isset($responseData['choices'][0]['message']['content'])) {
                 $responseModel->output_text = $responseData['choices'][0]['message']['content'];
             }
