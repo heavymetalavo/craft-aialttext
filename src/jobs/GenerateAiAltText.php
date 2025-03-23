@@ -33,13 +33,21 @@ class GenerateAiAltText extends BaseJob
                 throw new ElementNotFoundException("Asset not found: {$this->elementId}");
             }
 
-            // Generate alt text - now returns a string and saves the asset
+            // Generate alt text - now returns a string and saves the asset if successful
             $altText = AiAltText::getInstance()->aiAltTextService->generateAltText($asset);
 
             // Log the result
-            Craft::info("Generated alt text for asset {$this->elementId}: " . $altText, __METHOD__);
+            if (!empty($altText)) {
+                Craft::info("Successfully generated alt text for asset {$this->elementId}: " . $altText, __METHOD__);
+            } else {
+                Craft::warning("Failed to generate alt text for asset {$this->elementId}", __METHOD__);
+                // Set the description to indicate failure
+                $this->description = "Failed to generate alt text";
+            }
         } catch (Exception $e) {
             Craft::error("Error in GenerateAiAltText job: " . $e->getMessage(), __METHOD__);
+            // Set the description to indicate error
+            $this->description = "Error: " . $e->getMessage();
         }
     }
 

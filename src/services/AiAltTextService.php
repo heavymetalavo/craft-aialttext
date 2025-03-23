@@ -55,21 +55,27 @@ class AiAltTextService extends Component
         try {
             if (!$this->validateAsset($asset)) {
                 Craft::warning('Invalid asset for alt text generation: ' . ($asset ? $asset->id : 'null'), __METHOD__);
-                return 'Image: ' . ($asset ? $asset->filename : 'unknown');
+                return '';
             }
 
             $altText = $this->openAiService->generateAltText($asset);
             
-            // If we got a valid alt text, set it on the asset and save
+            // Only save valid, non-error alt text
             if (!empty($altText)) {
                 $asset->alt = $altText;
-                Craft::$app->elements->saveElement($asset);
+                if (Craft::$app->elements->saveElement($asset)) {
+                    Craft::info('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
+                } else {
+                    Craft::warning('Failed to save alt text for asset: ' . $asset->filename, __METHOD__);
+                }
+                return $altText;
+            } else {
+                Craft::warning('Empty alt text generated for asset: ' . $asset->filename, __METHOD__);
+                return '';
             }
-
-            return $altText;
         } catch (Exception $e) {
             Craft::error('Error generating alt text: ' . $e->getMessage(), __METHOD__);
-            return 'Image: ' . ($asset ? $asset->filename : 'unknown');
+            return '';
         }
     }
 

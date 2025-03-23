@@ -100,13 +100,16 @@ class OpenAiService extends Component
             // If we can't find any output, log the entire response
             else {
                 Craft::warning('Could not find output_text in response: ' . json_encode($responseData), __METHOD__);
-                $responseModel->output_text = 'Could not parse response from OpenAI API.';
+                // Set error instead of using a message as output_text
+                $responseModel->error = ['message' => 'Could not parse response from OpenAI API.'];
+                $responseModel->output_text = '';
             }
 
             if (!$responseModel->validate()) {
                 Craft::warning('Response validation failed: ' . json_encode($responseModel->getErrors()), __METHOD__);
-                // Try to proceed anyway with what we got
-                $responseModel->output_text = 'Response validation failed. Raw response: ' . substr($responseBody, 0, 200);
+                // Set error instead of using a message as output_text
+                $responseModel->error = ['message' => 'Response validation failed: ' . json_encode($responseModel->getErrors())];
+                $responseModel->output_text = '';
             }
 
             return $responseModel;
@@ -181,18 +184,18 @@ class OpenAiService extends Component
                 throw new Exception($response->getErrorMessage());
             }
 
-            // If output is empty, try to generate a fallback
+            // If output is empty, log and return empty string
             if (empty($response->output_text)) {
                 Craft::warning('No alt text was generated for asset: ' . $asset->filename, __METHOD__);
-                return 'Image: ' . $asset->filename;
+                return '';
             }
 
             return $response->getText();
 
         } catch (Exception $e) {
             Craft::error('Failed to generate alt text: ' . $e->getMessage(), __METHOD__);
-            // Return a basic fallback
-            return 'Image: ' . $asset->filename;
+            // Return empty string on errors
+            return '';
         }
     }
 } 
