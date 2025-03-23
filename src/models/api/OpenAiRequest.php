@@ -74,12 +74,6 @@ class OpenAiRequest extends Model
     {
         $data = parent::toArray($fields, $expand, $recursive);
 
-        if ($this->messages) {
-            $data['messages'] = array_map(function($message) {
-                return $message->toArray();
-            }, $this->messages);
-        }
-
         if ($this->max_tokens !== null) {
             $data['max_tokens'] = $this->max_tokens;
         }
