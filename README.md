@@ -42,6 +42,16 @@ To add this field:
 5. Save changes to the volume
 6. Update your templates to use the new `alt` field
 
+## How to Use
+
+1. Check the plugin settings are suitable for your project
+2. Go to the **Assets** section in the Control Panel to view the table of assets
+3. Select the checkboxes of all the assets you want to generate alt text for
+4. Click the **Actions** button and select **Generate AI Alt Text**
+5. The plugin will queue jobs to generate alt text for each selected asset
+
+![CraftCMS asset library table with two assets selected and the 'Generate AI Alt Text' option visible in the dropdown.](craft-aialttext-example.png)
+
 ## Plugin Settings
 
 After installation, configure the plugin at **Settings → AI Alt Text**:
@@ -75,14 +85,6 @@ Generate a brief (roughly 150 characters maximum) alt text description focusing 
 
 For more information about these settings, refer to the [OpenAI API documentation](https://platform.openai.com/docs/guides/images).
 
-## How to Use
-
-1. Check the plugin settings are suitable for your project
-2. Go to the **Assets** section in the Control Panel to view the table of assets
-3. Select the checkboxes of all the assets you want to generate alt text for
-4. Click the **Actions** button and select **Generate AI Alt Text**
-5. The plugin will queue jobs to generate alt text for each selected asset
-
 ## Troubleshooting
 
 - If the plugin returns errors about API authentication, verify your API key.
@@ -92,13 +94,23 @@ For more information about these settings, refer to the [OpenAI API documentatio
 
 ## Disclaimer
 
-We've take some steps to try prevent unexpected costs with default plugin settings (e.g. detail: `low` and model: `gpt-4o-mini`) though we take no responsibility for excessive API token usage that may result from code mistakes, bugs, or security vulnerabilities within this plugin.
+We've taken some steps to try prevent unexpected costs with default plugin settings (e.g. detail: `low` and model: `gpt-4o-mini`) though we take no responsibility for excessive API token usage that may result from mistakes, bugs, or security vulnerabilities within this plugin so use at your own risk.
 
 If you are concerned about unexpected charges we recommend:
 - Set up rate limits and spending caps at the API account level in your [OpenAI account settings](https://platform.openai.com/account/billing/limits)
 - Start with smaller batches when using bulk generation until you're comfortable with the costs
 - Consider using the default `low` setting, which significantly reduces token usage
 - Monitor your OpenAI API usage regularly
+
+### Example Usage Statistics
+
+When testing using the default settings (`gpt-4o-mini` model, `low` detail level):
+
+| Metric | Value |
+|--------|-------|
+| March budget | $0.03 / $120 |
+| Total tokens used | 163,713 |
+| Total requests | 29 |
 
 ## Support
 
