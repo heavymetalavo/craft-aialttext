@@ -12,6 +12,7 @@ use craft\base\Model;
  * 
  * @property string $model The OpenAI model to use (e.g., 'gpt-4o-mini')
  * @property array $input The input array containing the role and content
+ * @property-read string $detail The detail level for image analysis
  */
 class OpenAiRequest extends Model
 {
@@ -22,6 +23,16 @@ class OpenAiRequest extends Model
     private string $imageUrl = '';
     private string $detail = 'auto';
 
+    /**
+     * Gets the detail level for image analysis
+     * 
+     * @return string The detail level
+     */
+    public function getDetail(): string
+    {
+        return $this->detail;
+    }
+    
     /**
      * Sets the prompt text for the request
      * 
@@ -107,10 +118,28 @@ class OpenAiRequest extends Model
             [['model', 'input'], 'required'],
             ['model', 'string'],
             ['input', 'safe'],
-            ['detail', 'in', 'range' => ['auto', 'low', 'high']],
+            [function ($attribute, $params, $validator) {
+                // Custom validator for detail value
+                if (!in_array($this->detail, ['auto', 'low', 'high'])) {
+                    $this->addError('detail', 'Detail must be one of: auto, low, high');
+                }
+            }, 'skipOnEmpty' => false],
         ];
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function fields(): array
+    {
+        $fields = parent::fields();
+        // Add virtual fields
+        $fields['detail'] = function(self $model) {
+            return $model->getDetail();
+        };
+        return $fields;
+    }
+    
     /**
      * @inheritdoc
      */
