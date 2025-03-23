@@ -13,7 +13,7 @@
             errors: settings.getErrors("openAiApiKey"),
         }) }}
 
-        {{ forms.textField({
+        {{ forms.autosuggestField({
             label: 'Prompt'|t('app'),
             id: 'prompt',
             name: 'prompt',
@@ -21,9 +21,10 @@
             value: settings.prompt,
             placeholder: 'Generate a brief alt text description focusing on the main subject and overall composition.',
             errors: settings.getErrors('prompt'),
+            suggestEnvVars: true,
         }) }}
 
-        {{ forms.textField({
+        {{ forms.autosuggestField({
             label: 'Open AI Model'|t('app'),
             id: 'openAiModel',
             name: 'openAiModel',
@@ -31,9 +32,10 @@
             value: settings.openAiModel,
             placeholder: 'gpt-4o-mini',
             errors: settings.getErrors('openAiModel'),
+            suggestEnvVars: true,
         }) }}
 
-        {{ forms.textField({
+        {{ forms.autosuggestField({
             label: 'Open AI Image Input Detail Level'|t('app'),
             id: 'openAiImageInputDetailLevel',
             name: 'openAiImageInputDetailLevel',
@@ -41,4 +43,5 @@
             value: settings.openAiImageInputDetailLevel,
             placeholder: 'low',
             errors: settings.getErrors('openAiImageInputDetailLevel'),
+            suggestEnvVars: true,
         }) }}
