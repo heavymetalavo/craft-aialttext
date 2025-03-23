@@ -47,10 +47,10 @@ To add this field:
 1. Check the plugin settings are suitable for your project
 2. Go to the **Assets** section in the Control Panel to view the table of assets
 3. Select the checkboxes of all the assets you want to generate alt text for
-4. Click the **Actions** button and select **Generate AI Alt Text**
+4. Click the cog icon to reveal the Element actions and select **Generate AI Alt Text**
 5. The plugin will queue jobs to generate alt text for each selected asset
 
-![CraftCMS asset library table with two assets selected and the 'Generate AI Alt Text' option visible in the dropdown.](craft-aialttext-example.png)
+![CraftCMS asset library table with two assets selected and the 'Generate AI Alt Text' option visible in the dropdown.](src/generate-ai-alt-text-elements-action-example.png)
 
 ## ⚙️ Plugin Settings
 

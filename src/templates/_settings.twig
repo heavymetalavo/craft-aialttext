@@ -2,46 +2,59 @@
 {# @var settings \heavymetalavo\craftaialttext\models\Settings #}
 {% import '_includes/forms.twig' as forms %}
 
-{#        API Key#}
-        {{ forms.autosuggestField({
-            label: "OpenAI API Key"|t("aialttext"),
-            instructions: "The API key from your Open AI account"|t("aialttext"),
-            id: "openAiApiKey",
-            name: "openAiApiKey",
-            suggestEnvVars: true,
-            value: settings.openAiApiKey,
-            errors: settings.getErrors("openAiApiKey"),
-        }) }}
+<h2>Instructions</h2>
 
-        {{ forms.autosuggestField({
-            label: 'Prompt'|t('app'),
-            id: 'prompt',
-            name: 'prompt',
-            instructions: "The prompt which will feed into the LLM with the image to generate the response"|t("aialttext"),
-            value: settings.prompt,
-            placeholder: 'Generate a brief alt text description focusing on the main subject and overall composition.',
-            errors: settings.getErrors('prompt'),
-            suggestEnvVars: true,
-        }) }}
+<p>Lots of info in [the plugin docs](https://github.com/heavymetalavo/craft-aialttext), but in short; 
+<ol>
+    <li>Check the plugin settings are suitable for your project</li>
+    <li>Go to the **Assets** section in the Control Panel to view the table of assets</li>
+    <li>Select the checkboxes of all the assets you want to generate alt text for</li>
+    <li>Click the cog icon to reveal the Element actions and select **Generate AI Alt Text**</li>
+    <li>The plugin will queue jobs to generate alt text for each selected asset</li>
+</ol>
 
-        {{ forms.autosuggestField({
-            label: 'Open AI Model'|t('app'),
-            id: 'openAiModel',
-            name: 'openAiModel',
-            instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models)"|t("aialttext"),
-            value: settings.openAiModel,
-            placeholder: 'gpt-4o-mini',
-            errors: settings.getErrors('openAiModel'),
-            suggestEnvVars: true,
-        }) }}
 
-        {{ forms.autosuggestField({
-            label: 'Open AI Image Input Detail Level'|t('app'),
-            id: 'openAiImageInputDetailLevel',
-            name: 'openAiImageInputDetailLevel',
-            instructions: "Specify the [Image input detail level](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#specify-image-input-detail-level), `low` costs the least at 85 tokens. Please read about [Image input requirements](https://platform.openai.com/docs/guides/images#image-input-requirements), [limitations](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#limitations) and [calculating costs & cost calculation examples](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#calculating-costs) in the OpenAI platform docs for more."|t("aialttext"),
-            value: settings.openAiImageInputDetailLevel,
-            placeholder: 'low',
-            errors: settings.getErrors('openAiImageInputDetailLevel'),
-            suggestEnvVars: true,
-        }) }}
+<h2>Settings</h2>
+
+{{ forms.autosuggestField({
+    label: "OpenAI API Key"|t("aialttext"),
+    instructions: "The API key from your Open AI account"|t("aialttext"),
+    id: "openAiApiKey",
+    name: "openAiApiKey",
+    suggestEnvVars: true,
+    value: settings.openAiApiKey,
+    errors: settings.getErrors("openAiApiKey"),
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'Prompt'|t('app'),
+    id: 'prompt',
+    name: 'prompt',
+    instructions: "The prompt which will feed into the LLM with the image to generate the response"|t("aialttext"),
+    value: settings.prompt,
+    placeholder: 'Generate a brief alt text description focusing on the main subject and overall composition.',
+    errors: settings.getErrors('prompt'),
+    suggestEnvVars: true,
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'Open AI Model'|t('app'),
+    id: 'openAiModel',
+    name: 'openAiModel',
+    instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models)"|t("aialttext"),
+    value: settings.openAiModel,
+    placeholder: 'gpt-4o-mini',
+    errors: settings.getErrors('openAiModel'),
+    suggestEnvVars: true,
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'Open AI Image Input Detail Level'|t('app'),
+    id: 'openAiImageInputDetailLevel',
+    name: 'openAiImageInputDetailLevel',
+    instructions: "Specify the [Image input detail level](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#specify-image-input-detail-level), `low` costs the least at 85 tokens. Please read about [Image input requirements](https://platform.openai.com/docs/guides/images#image-input-requirements), [limitations](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#limitations) and [calculating costs & cost calculation examples](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#calculating-costs) in the OpenAI platform docs for more."|t("aialttext"),
+    value: settings.openAiImageInputDetailLevel,
+    placeholder: 'low',
+    errors: settings.getErrors('openAiImageInputDetailLevel'),
+    suggestEnvVars: true,
+}) }}
