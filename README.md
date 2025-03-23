@@ -32,7 +32,7 @@ ddev craft plugin/install ai-alt-text
 
 ## Field Requirements
 
-This plugin requires a native Craft field for alt text with the handle `alt` to be added to all asset volumes where you want to generate alt text. The plugin will use this field to store the generated alt text.
+This plugin requires a native CraftCMS field for alt text with the handle `alt` to be added to all asset volumes where you want to generate alt text. The plugin will use this field to store the generated alt text.
 
 To add this field:
 1. Go to **Settings → Assets → Volume name → + Add → search for the `alt` field and click → save**
@@ -40,27 +40,38 @@ To add this field:
 3. Click the `+ Add` button
 4. Search for the `alt` field and click 
 5. Save changes to the volume
-6. Update your templates to reference the alt field
+6. Update your templates to use the new `alt` field
 
 ## Plugin Settings
 
 After installation, configure the plugin at **Settings → AI Alt Text**:
-- **API Key** - Your OpenAI API key. You can get one from [OpenAI's API Platform](https://platform.openai.com/api-keys).
 
-- **Model** - The OpenAI model to use for generating alt text. Some models that support vision:
-  - Default: `gpt-4o-mini` - Fast, affordable small model for focused tasks
-  - `gpt-4o` - Fast, intelligent, flexible GPT model
-  - `o1` - High-intelligence reasoning model
-  - One could find out which models are capable of vision [on the models page](https://platform.openai.com/docs/models), clicking into a model's detail page e.g. [GPT-4o mini](https://platform.openai.com/docs/models/gpt-4o-mini) and look for "**Input**: Text, image" in the features columns at the top.
+### Settings overview
 
-- **Prompt** - The text prompt sent to the AI to generate alt text. Default:
-  ```
-  Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.
-  ```
-- **Image Detail Level** - How detailed the image analysis should be:
-  - `low` - Less detailed, faster and cheaper (default to protect against unexpected costs)
-  - `high` - More detailed, slower and more expensive (higher resolution analysis)
-  - `auto` - Let OpenAI decide
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **API Key** | Your OpenAI API key. You can get one from [OpenAI's API Platform](https://platform.openai.com/api-keys). | None (required) |
+| **Model** | The OpenAI model to use for generating alt text. | `gpt-4o-mini` |
+| **Prompt** | The text prompt sent to the AI to generate alt text. | See below |
+| **Image Detail Level** | How detailed the image analysis should be. | `low` |
+
+#### Model Options
+Models that support vision capabilities:
+- `gpt-4o-mini` - Fast, affordable small model for focused tasks (default)
+- `gpt-4o` - Fast, intelligent, flexible GPT model
+- `o1` - High-intelligence reasoning model
+
+To find out which models are capable of vision, check [the models page](https://platform.openai.com/docs/models), click into a model's detail page (e.g., [GPT-4o mini](https://platform.openai.com/docs/models/gpt-4o-mini)) and look for "**Input**: Text, image" in the features columns at the top.
+
+#### Default Prompt
+```
+Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.
+```
+
+#### Image Detail Options
+- `low` - Less detailed, faster and cheaper (default to protect against unexpected costs)
+- `high` - More detailed, slower and more expensive (higher resolution analysis)
+- `auto` - Let OpenAI decide
 
 For more information about these settings, refer to the [OpenAI API documentation](https://platform.openai.com/docs/guides/images).
 
