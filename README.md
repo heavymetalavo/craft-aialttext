@@ -71,23 +71,18 @@ For more information about these settings, refer to the [OpenAI API documentatio
 
 ## How to Use
 
-Once configured, there are several ways to generate alt text for your assets:
-
-### Bulk Generation
-
-Generate alt text for single multiple assets:
-
-1. Go to the **Assets** section in the Control Panel to view the table of assets
-2. Select the checkboxes of the assets you want to generate alt text for
-3. Click the **Actions** button and select **Generate AI Alt Text**
-4. The plugin will queue jobs to generate alt text for each selected asset
+1. Check the plugin settings are suitable for your project
+2. Go to the **Assets** section in the Control Panel to view the table of assets
+3. Select the checkboxes of all the assets you want to generate alt text for
+4. Click the **Actions** button and select **Generate AI Alt Text**
+5. The plugin will queue jobs to generate alt text for each selected asset
 
 ## Troubleshooting
 
 - If the plugin returns errors about API authentication, verify your API key.
 - For "bad request" errors, ensure your selected model supports vision capabilities.
 - Alt text generation is processed through Craft's queue system for bulk operations, so check the queue if generation seems to be taking a long time.
-- Any errors should be logged, check your queue log files!
+- Any errors _should_ be logged, check your queue.log files!
 
 ## Disclaimer
 
@@ -96,7 +91,7 @@ We take no responsibility for excessive API token usage that may result from cod
 If you are concerned about unexpected charges we recommend:
 - Set up rate limits and spending caps at the API account level in your [OpenAI account settings](https://platform.openai.com/account/billing/limits)
 - Start with smaller batches when using bulk generation until you're comfortable with the costs
-- Consider using the default `low` detail setting, which significantly reduces token usage
+- Consider using the default `low` setting, which significantly reduces token usage
 - Monitor your OpenAI API usage regularly
 
 ## Support
