@@ -7,15 +7,15 @@ use craft\base\Model;
 /**
  * OpenAI Response Model
  * 
- * Represents a response from the OpenAI chat completion API.
+ * Represents a response from the OpenAI API.
  * This model handles the structure and validation of API responses, including the generated content and any errors.
  * 
- * @property string $output The generated content from the API
+ * @property string $output_text The generated content from the API
  * @property array|null $error Error information if the request failed
  */
 class OpenAiResponse extends Model
 {
-    public string $output = '';
+    public string $output_text = '';
     public ?array $error = null;
 
     /**
@@ -26,8 +26,8 @@ class OpenAiResponse extends Model
     public function defineRules(): array
     {
         return [
-            ['output', 'required'],
-            ['output', 'string'],
+            ['output_text', 'required'],
+            ['output_text', 'string'],
             ['error', 'safe'],
         ];
     }
@@ -59,7 +59,7 @@ class OpenAiResponse extends Model
      */
     public function getText(): string
     {
-        return $this->output;
+        return $this->output_text;
     }
 
     /**

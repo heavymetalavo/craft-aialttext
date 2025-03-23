@@ -37,8 +37,9 @@ class OpenAiRequest extends Model
     /**
      * @inheritdoc
      */
-    public function toArray(): array
+    public function toArray(array $fields = [], array $expand = [], $recursive = true): array
     {
+        // Override the parent toArray to ensure our specific structure
         return [
             'model' => $this->model,
             'input' => $this->input,

@@ -75,7 +75,7 @@ class OpenAiService extends Component
 
             $responseData = json_decode($response->getBody(), true);
             $responseModel = new OpenAiResponse();
-            $responseModel->output = $responseData['output_text'] ?? '';
+            $responseModel->output_text = $responseData['output_text'] ?? '';
 
             if (!$responseModel->validate()) {
                 throw new Exception('Invalid response: ' . json_encode($responseModel->getErrors()));
@@ -90,7 +90,7 @@ class OpenAiService extends Component
         } catch (Exception $e) {
             Craft::error('OpenAI API request failed: ' . $e->getMessage(), __METHOD__);
             $errorResponse = new OpenAiResponse();
-            $errorResponse->output = '';
+            $errorResponse->output_text = '';
             $errorResponse->error = ['message' => $e->getMessage()];
             return $errorResponse;
         }
@@ -137,11 +137,11 @@ class OpenAiService extends Component
                 throw new Exception($response->getErrorMessage());
             }
 
-            if (empty($response->output)) {
+            if (empty($response->output_text)) {
                 throw new Exception('No alt text was generated.');
             }
 
-            return $response->output;
+            return $response->getText();
 
         } catch (Exception $e) {
             Craft::error('Failed to generate alt text: ' . $e->getMessage(), __METHOD__);
