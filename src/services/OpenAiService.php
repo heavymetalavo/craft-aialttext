@@ -117,7 +117,8 @@ class OpenAiService extends Component
         // Create text content
         $textContent = new OpenAiContent();
         $textContent->type = 'text';
-        $textContent->text = $prompt;
+        $textContent->text = new TextContent();
+        $textContent->text->text = $prompt;
 
         // Create image content
         $imageContent = new OpenAiContent();
