@@ -59,7 +59,7 @@ class OpenAiService extends Component
             // Log the request for debugging
             Craft::info('OpenAI API request: ' . json_encode($requestData), __METHOD__);
 
-            $response = $client->post($this->baseUrl . '/images/generations', [
+            $response = $client->post($this->baseUrl . '/responses', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type' => 'application/json',
@@ -145,7 +145,11 @@ class OpenAiService extends Component
                 throw new Exception('Invalid request: ' . json_encode($request->getErrors()));
             }
 
-            $response = $this->sendRequest($request->toArray());
+            // Convert to array explicitly to avoid potential object-to-array conversion issues
+            $requestArray = $request->toArray();
+            
+            // Send the request
+            $response = $this->sendRequest($requestArray);
 
             // Check for errors from the API
             if ($response->hasError()) {
@@ -163,8 +167,17 @@ class OpenAiService extends Component
         } catch (Exception $e) {
             $errorMessage = 'Failed to generate alt text: ' . $e->getMessage();
             Craft::error($errorMessage, __METHOD__);
-            // set error message to the currentUser
-            Craft::$app->getSession()->setError($errorMessage);
+            
+            // Try-catch for session errors in queue/console context
+            try {
+                // Only set session error if we're in a web request context
+                if (!Craft::$app->getRequest()->getIsConsoleRequest()) {
+                    Craft::$app->getSession()->setError($errorMessage);
+                }
+            } catch (Exception $sessionException) {
+                Craft::error('Could not set session error: ' . $sessionException->getMessage(), __METHOD__);
+            }
+            
             // Return empty string on errors
             return '';
         }
