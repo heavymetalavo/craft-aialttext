@@ -115,21 +115,33 @@ class OpenAiService extends Component
             $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
             $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
+            // Create a request with simple properties first
             $request = new OpenAiRequest();
             $request->model = $this->model;
-            $request->input = [
-                [
-                    'role' => 'user',
-                    'content' => [
-                        ['type' => 'input_text', 'text' => $prompt],
-                        [
-                            'type' => 'input_image',
-                            'image_url' => $imageUrl,
-                            'detail' => $detail
-                        ]
-                    ]
-                ]
-            ];
+            
+            // Build the input array manually to avoid Yii trying to instantiate components
+            $userContent = [];
+            
+            // Add text content
+            $textContent = [];
+            $textContent['type'] = 'input_text';
+            $textContent['text'] = $prompt;
+            $userContent[] = $textContent;
+            
+            // Add image content
+            $imageContent = [];
+            $imageContent['type'] = 'input_image';
+            $imageContent['image_url'] = $imageUrl;
+            $imageContent['detail'] = $detail;
+            $userContent[] = $imageContent;
+            
+            // Create the full input structure
+            $userMessage = [];
+            $userMessage['role'] = 'user';
+            $userMessage['content'] = $userContent;
+            
+            // Set the input property
+            $request->input = [$userMessage];
 
             $response = $this->sendRequest($request);
 
