@@ -115,3 +115,7 @@ When testing using the default settings (`gpt-4o-mini` model, `low` detail level
 ## 🙋 Support
 
 If you encounter any issues or have questions, please submit them on [GitHub](https://github.com/heavymetalavo/craft-aialttext/issues).
+
+## Credits
+
+The eye icon used in this project is from [SVG Repo](https://www.svgrepo.com/svg/193488/eye) and is available under the CC0 1.0 Universal (Public Domain) license.
