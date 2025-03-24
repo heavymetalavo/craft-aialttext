@@ -1,54 +1,48 @@
-# 🤖 💬 AI Alt Text
-
-Generate suitable alt text for CraftCMS Asset Images using OpenAI's API.
+<div align="center">
+  <img src="./src/icon.svg" alt="AI Alt Text Plugin Icon" width="200" height="200">
+  
+  # 🤖 💬 AI Alt Text
+  
+  Generate suitable alt text for CraftCMS Asset Images using OpenAI's API.
+</div>
 
 ## 📋 Requirements
 
-This plugin requires Craft CMS 5.6.0 or later, and PHP 8.2 or later.
+This plugin requires Craft CMS 5.6.0 or later, and PHP 8.3 or later.
 
 ## 📥 Installation
 
-You can install this plugin from the Plugin Store or with Composer.
-
-### 🛒 From the Plugin Store
-
-Go to the Plugin Store in your project's Control Panel and search for "Ai Alt Text". Then press "Install".
+You can install this plugin from [the Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft5) or with Composer.
 
 ### 📦 With Composer
 
 Open your terminal and run the following commands:
 
-```bash
+```sh
 # tell Composer to load the plugin
 composer require heavymetalavo/craft-aialttext
 # or
 ddev composer require heavymetalavo/craft-aialttext
+```
 
+Then:
+
+```sh
 # tell Craft to install the plugin
 ./craft plugin/install ai-alt-text
 # or
 ddev craft plugin/install ai-alt-text
 ```
 
-## 🏷️ Field Requirements
-
-This plugin requires a native CraftCMS field for alt text with the handle `alt` to be added to all asset volumes where you want to generate alt text. The plugin will use this field to store the generated alt text.
-
-To add this field:
-1. Go to **Settings → Assets → Volume name → + Add → search for the `alt` field and click → save**
-2. Scroll to Field Layout section
-3. Click the `+ Add` button
-4. Search for the `alt` field and click 
-5. Save changes to the volume
-6. Update your templates to use the new `alt` field
-
 ## 🚀 How to Use
 
 1. Check the plugin settings are suitable for your project
-2. Go to the **Assets** section in the Control Panel to view the table of assets
-3. Select the checkboxes of all the assets you want to generate alt text for
-4. Click the cog icon to reveal the Element actions and select **Generate AI Alt Text**
-5. The plugin will queue jobs to generate alt text for each selected asset
+2. Ensure your volumes have the native `alt` field assigned to the field layout
+3. Ensure your templates are updated to use the `alt` field, you could consider a fallback `asset.alt ?: asset.title` if that what was used before
+4. Go to the **Assets** section in the Control Panel to view the table of assets
+5. Select the checkboxes of all the assets you want to generate alt text for
+6. Click the cog icon to reveal the Element actions and select **Generate AI Alt Text**
+7. The plugin will queue jobs to generate alt text for each selected asset
 
 ![CraftCMS asset library table with two assets selected and the 'Generate AI Alt Text' option visible in the dropdown.](src/generate-ai-alt-text-elements-action-example.png)
 
@@ -84,6 +78,18 @@ Generate a brief (roughly 150 characters maximum) alt text description focusing 
 - `auto` - Let OpenAI decide
 
 For more information about these settings, refer to the [OpenAI API documentation](https://platform.openai.com/docs/guides/images).
+
+## 🏷️ Field Requirements
+
+This plugin requires a native CraftCMS field for alt text with the handle `alt` to be added to all asset volumes where you want to generate alt text. The plugin will use this field to store the generated alt text.
+
+To add this field:
+1. Go to **Settings → Assets → Volume name → + Add → search for the `alt` field and click → save**
+2. Scroll to Field Layout section
+3. Click the `+ Add` button
+4. Search for the `alt` field and click 
+5. Save changes to the volume
+6. Update your templates to use the new `alt` field
 
 ## 🛠️ Troubleshooting
 
