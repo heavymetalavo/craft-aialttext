@@ -127,6 +127,53 @@ class OpenAiService extends Component
     }
 
     /**
+     * Validates if the asset is an accepted image format and converts if needed
+     *
+     * @param Asset $asset The asset to validate
+     * @return bool Whether the asset is an accepted format or was successfully converted
+     */
+    private function isValidImageFormat(Asset $asset): bool
+    {
+        $extension = strtolower($asset->getExtension());
+        $mimeType = strtolower($asset->getMimeType());
+        
+        // Check for accepted extensions
+        $acceptedExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
+        if (!in_array($extension, $acceptedExtensions)) {
+            Craft::warning('Asset has unsupported extension: ' . $extension . '. Will attempt to convert to JPEG.', __METHOD__);
+            return true; // We'll handle conversion in generateAltText
+        }
+        
+        // Check for accepted MIME types
+        $acceptedMimeTypes = [
+            'image/png',
+            'image/jpeg',
+            'image/webp',
+            'image/gif'
+        ];
+        
+        if (!in_array($mimeType, $acceptedMimeTypes)) {
+            Craft::warning('Asset has unsupported MIME type: ' . $mimeType . '. Will attempt to convert to JPEG.', __METHOD__);
+            return true; // We'll handle conversion in generateAltText
+        }
+        
+        // For GIFs, check if they're animated
+        if ($extension === 'gif' && $mimeType === 'image/gif') {
+            $filePath = $asset->getPath();
+            if (file_exists($filePath)) {
+                $fileContents = file_get_contents($filePath);
+                // Check for multiple image frames in GIF
+                if (substr_count($fileContents, "\x21\xF9\x04") > 1) {
+                    Craft::warning('Animated GIF detected. Will attempt to convert first frame to JPEG.', __METHOD__);
+                    return true; // We'll handle conversion in generateAltText
+                }
+            }
+        }
+        
+        return true;
+    }
+
+    /**
      * Generates alt text for an asset using OpenAI's vision model
      *
      * This method:
@@ -141,7 +188,37 @@ class OpenAiService extends Component
     public function generateAltText(Asset $asset): string
     {
         try {
-            $imageUrl = $asset->getUrl();
+            // Validate image format first
+            if (!$this->isValidImageFormat($asset)) {
+                throw new Exception('Asset is not in a supported image format. Supported formats are: PNG, JPEG, WEBP, and non-animated GIF.');
+            }
+            
+            // Get original image dimensions
+            $width = $asset->getWidth();
+            $height = $asset->getHeight();
+            
+            // Check if format needs to be converted
+            $extension = strtolower($asset->getExtension());
+            $acceptedExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
+            $needsFormatConversion = !in_array($extension, $acceptedExtensions);
+            
+            // Set up transform parameters
+            $transformParams = [];
+            
+            // Always convert format if needed, regardless of dimensions
+            if ($needsFormatConversion) {
+                $transformParams['format'] = 'jpg';
+            }
+            
+            // Add dimension constraints if needed
+            if ($width > 2048 || $height > 2048) {
+                $transformParams['width'] = 2048;
+                $transformParams['height'] = 2048;
+                $transformParams['mode'] = 'fit';
+            }
+            
+            // Get the image URL with transformation if needed
+            $imageUrl = $asset->getUrl($transformParams);
             
             // If we have a URL, check if it's accessible remotely
             if (!empty($imageUrl)) {
