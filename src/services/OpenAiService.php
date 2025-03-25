@@ -59,7 +59,7 @@ class OpenAiService extends Component
             // Log the request for debugging
             Craft::info('OpenAI API request: ' . json_encode($requestData), __METHOD__);
 
-            $response = $client->post($this->baseUrl . '/responses', [
+            $response = $client->post($this->baseUrl . '/chat/completions', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type' => 'application/json',
