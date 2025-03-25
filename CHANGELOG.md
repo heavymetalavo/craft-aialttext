@@ -5,24 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Added
-- Support for base64 image encoding when public URLs aren't available
-- Support for local file system access for assets without public URLs
-- Better error handling for file system operations
-- More detailed error messages for various failure scenarios
-
-### Changed
-- Updated validation to check for either public URL or file system access
-- Improved error handling in `generateAltText` method
-- Updated documentation to reflect new URL and file system access requirements
-- Changed error logging to throw exceptions for better user feedback
+## [1.0.4] - 2024-03-25
 
 ### Fixed
-- Fixed validation logic for asset kind checking
-- Fixed error handling to properly surface issues to end users
-- Fixed documentation to accurately reflect URL requirements
+- Fixed issue with image format conversion not being applied correctly
+- Fixed image dimension handling to only resize when exceeding OpenAI's limits
+- Fixed base64 encoding for local file system access
+- Fixed error handling for file system operations
+
+## [1.0.3] - 2024-03-24
+
+### Fixed
+- Fixed issue with base64 encoding for local file system access
+- Fixed error handling for file system operations
+- Fixed validation for asset file system access
+
+## [1.0.2] - 2024-03-24
+
+### Fixed
+- Fixed issue with URL accessibility checking
+- Fixed error handling for remote URL access
+- Fixed validation for public URL access
+
+## [1.0.1] - 2024-03-24
+
+### Fixed
+- Fixed issue with image format validation
+- Fixed error handling for unsupported image formats
+- Fixed validation for asset kind checking
 
 ## [1.0.0] - 2024-03-24
 
