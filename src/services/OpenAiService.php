@@ -59,7 +59,7 @@ class OpenAiService extends Component
             // Log the request for debugging
             Craft::info('OpenAI API request: ' . json_encode($requestData), __METHOD__);
 
-            $response = $client->post($this->baseUrl . '/chat/completions', [
+            $response = $client->post($this->baseUrl . '/responses', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type' => 'application/json',
@@ -121,9 +121,22 @@ class OpenAiService extends Component
         try {
             $imageUrl = $asset->getUrl();
             
-            // Make sure we have a valid URL
+            // If no public URL is available, try to get the file contents and encode as base64
             if (empty($imageUrl)) {
-                throw new Exception('Asset URL is empty. Make sure the asset is accessible.');
+                $fileContents = file_get_contents($asset->getPath());
+                if ($fileContents === false) {
+                    throw new Exception('Failed to read asset file contents');
+                }
+                
+                // Get the MIME type
+                $mimeType = $asset->getMimeType();
+                if (empty($mimeType)) {
+                    $mimeType = 'image/jpeg'; // Default to JPEG if MIME type is unknown
+                }
+                
+                // Encode as base64 and create data URI
+                $base64Image = base64_encode($fileContents);
+                $imageUrl = "data:{$mimeType};base64,{$base64Image}";
             }
             
             $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
