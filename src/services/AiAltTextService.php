@@ -49,33 +49,39 @@ class AiAltTextService extends Component
      * 
      * @param Asset $asset The asset to generate alt text for
      * @return string The generated alt text
+     * @throws Exception If the asset is invalid or alt text generation fails
      */
     public function generateAltText(Asset $asset): string
     {
         try {
-            if (!$this->validateAsset($asset)) {
-                Craft::warning('Invalid asset for alt text generation: ' . ($asset ? $asset->id : 'null'), __METHOD__);
-                return '';
+            if (!$asset) {
+                throw new Exception('Asset cannot be null');
+            }
+
+            if ($asset->kind !== Asset::KIND_IMAGE) {
+                throw new Exception('Asset must be an image');
+            }
+
+            if (!$asset->getUrl()) {
+                throw new Exception('Asset must have a URL');
             }
 
             $altText = $this->openAiService->generateAltText($asset);
             
-            // Only save valid, non-error alt text
-            if (!empty($altText)) {
-                $asset->alt = $altText;
-                if (Craft::$app->elements->saveElement($asset)) {
-                    Craft::info('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
-                } else {
-                    Craft::warning('Failed to save alt text for asset: ' . $asset->filename, __METHOD__);
-                }
-                return $altText;
-            } else {
-                Craft::warning('Empty alt text generated for asset: ' . $asset->filename, __METHOD__);
-                return '';
+            if (empty($altText)) {
+                throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
             }
+
+            $asset->alt = $altText;
+            if (!Craft::$app->elements->saveElement($asset)) {
+                throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
+            }
+
+            Craft::info('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
+            return $altText;
+
         } catch (Exception $e) {
-            Craft::error('Error generating alt text: ' . $e->getMessage(), __METHOD__);
-            return '';
+            throw $e;
         }
     }
 
@@ -89,19 +95,20 @@ class AiAltTextService extends Component
      * 
      * @param Asset $asset The asset to validate
      * @return bool True if the asset is valid, false otherwise
+     * @throws Exception If the asset is invalid
      */
     private function validateAsset(Asset $asset): bool
     {
         if (!$asset) {
-            return false;
+            throw new Exception('Asset cannot be null');
         }
 
-        if (!$asset->kind === Asset::KIND_IMAGE) {
-            return false;
+        if ($asset->kind !== Asset::KIND_IMAGE) {
+            throw new Exception('Asset must be an image');
         }
 
         if (!$asset->getUrl()) {
-            return false;
+            throw new Exception('Asset must have a URL');
         }
 
         return true;
