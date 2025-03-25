@@ -46,6 +46,13 @@ ddev craft plugin/install ai-alt-text
 
 ![CraftCMS asset library table with two assets selected and the 'Generate AI Alt Text' option visible in the dropdown.](src/generate-ai-alt-text-elements-action-example.png)
 
+Example twig:
+
+```twig
+{% set asset = craft.assets.one() %}
+<img src="{{ asset.url }}" alt="{{ asset.alt ?: asset.title }}">
+```
+
 ## ⚙️ Plugin Settings
 
 After installation, configure the plugin at **Settings → AI Alt Text**:
