@@ -105,6 +105,28 @@ class OpenAiService extends Component
     }
 
     /**
+     * Checks if a URL is accessible remotely
+     *
+     * @param string $url The URL to check
+     * @return bool Whether the URL is accessible
+     */
+    private function isUrlAccessible(string $url): bool
+    {
+        try {
+            $client = Craft::createGuzzleClient();
+            $response = $client->head($url, [
+                'timeout' => 5,
+                'connect_timeout' => 5,
+                'allow_redirects' => true,
+            ]);
+            return $response->getStatusCode() === 200;
+        } catch (Exception $e) {
+            Craft::warning('URL accessibility check failed: ' . $e->getMessage(), __METHOD__);
+            return false;
+        }
+    }
+
+    /**
      * Generates alt text for an asset using OpenAI's vision model
      *
      * This method:
@@ -121,8 +143,16 @@ class OpenAiService extends Component
         try {
             $imageUrl = $asset->getUrl();
             
-            // If no public URL is available, try to get the file contents and encode as base64
-            if (empty($imageUrl)) {
+            // If we have a URL, check if it's accessible remotely
+            if (!empty($imageUrl)) {
+                if (!$this->isUrlAccessible($imageUrl)) {
+                    Craft::warning('Asset URL is not accessible remotely: ' . $imageUrl, __METHOD__);
+                    $imageUrl = null; // Reset to null to trigger base64 encoding
+                }
+            }
+            
+            // If no public URL is available or URL is not accessible, try to get the file contents and encode as base64
+            if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
                 $fileContents = file_get_contents($asset->getPath());
                 if ($fileContents === false) {
                     throw new Exception('Failed to read asset file contents');
