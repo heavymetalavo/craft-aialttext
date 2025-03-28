@@ -1,10 +1,8 @@
-<div align="center">
-  <img src="./src/icon.svg" alt="AI Alt Text Plugin Icon" width="200" height="200">
-</div>
-
 # 🤖 💬 AI Alt Text
   
 Generate suitable alt text for CraftCMS Asset Images using OpenAI's API.
+
+https://github.com/user-attachments/assets/0f7eb3e5-bf33-4f49-a8b8-6579a4c05f8b
 
 ## 📋 Requirements
 
