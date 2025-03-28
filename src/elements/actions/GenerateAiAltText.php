@@ -80,7 +80,7 @@ class GenerateAiAltText extends ElementAction
             }
 
             if ($hasExistingJob) {
-                Craft::$app->getSession()->setFlash('error', Craft::t('ai-alt-text', 'This image is already being processed. Please wait for it to finish before processing another image.'));
+                Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "{$element->filename} (ID: {$element->id}) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."));
                 continue;
             }
 
