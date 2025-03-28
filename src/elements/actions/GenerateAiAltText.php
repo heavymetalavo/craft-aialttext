@@ -73,7 +73,8 @@ class GenerateAiAltText extends ElementAction
             $existingJobs = $queue->getJobInfo();
             $hasExistingJob = false;
             foreach ($existingJobs as $job) {
-                if ($job['type'] === GenerateAiAltTextJob::class && 
+                if (isset($job['class']) && 
+                    $job['class'] === GenerateAiAltTextJob::class && 
                     isset($job['data']['elementId']) && 
                     $job['data']['elementId'] === $element->id) {
                     $hasExistingJob = true;
