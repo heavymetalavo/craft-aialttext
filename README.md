@@ -6,7 +6,7 @@ https://github.com/user-attachments/assets/0f7eb3e5-bf33-4f49-a8b8-6579a4c05f8b
 
 ## 📋 Requirements
 
-This plugin requires Craft CMS 5.6.0 or later, and PHP 8.3 or later.
+This plugin requires Craft CMS 5.0.0 or later, and PHP 8.2 or later.
 
 ## 📥 Installation
 
