@@ -73,10 +73,7 @@ class GenerateAiAltText extends ElementAction
             $existingJobs = $queue->getJobInfo();
             $hasExistingJob = false;
             foreach ($existingJobs as $job) {
-                if (isset($job['class']) && 
-                    $job['class'] === GenerateAiAltTextJob::class && 
-                    isset($job['data']['elementId']) && 
-                    $job['data']['elementId'] === $element->id) {
+                if (isset($job['description']) && strpos($job['description'], "Element ID: {$element->id}") !== false) {
                     $hasExistingJob = true;
                     break;
                 }
@@ -92,8 +89,9 @@ class GenerateAiAltText extends ElementAction
             }
 
             $queue->push(new GenerateAiAltTextJob([
-                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename}', [
+                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename}, Element ID: {id}', [
                     'filename' => $element->filename,
+                    'id' => $element->id,
                 ]),
                 'elementId' => $element->id,
             ]));
