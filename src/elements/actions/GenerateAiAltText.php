@@ -69,10 +69,19 @@ class GenerateAiAltText extends ElementAction
                 continue;
             }
 
-            // If there is a job in the queue already with a matching element id is already being processed with the same job type, with skip it and set a message to the user saying that
-            $job = $queue->getJobByType(GenerateAiAltTextJob::class);
-            if ($job && $job->elementId === $element->id) {
-                // set message
+            // Check if there's already a job for this element
+            $existingJobs = $queue->getJobInfo();
+            $hasExistingJob = false;
+            foreach ($existingJobs as $job) {
+                if ($job['type'] === GenerateAiAltTextJob::class && 
+                    isset($job['data']['elementId']) && 
+                    $job['data']['elementId'] === $element->id) {
+                    $hasExistingJob = true;
+                    break;
+                }
+            }
+
+            if ($hasExistingJob) {
                 Craft::$app->getSession()->setFlash('error', Craft::t('ai-alt-text', 'This image is already being processed. Please wait for it to finish before processing another image.'));
                 continue;
             }
