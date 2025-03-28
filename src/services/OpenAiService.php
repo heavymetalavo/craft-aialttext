@@ -97,7 +97,7 @@ class OpenAiService extends Component
         } catch (Exception $e) {
             $errorMsg = 'OpenAI API request failed: ' . $e->getMessage();
             Craft::error($errorMsg, __METHOD__);
-            
+
             $errorResponse = new OpenAiResponse();
             $errorResponse->setError($e->getMessage());
             return $errorResponse;
@@ -136,14 +136,14 @@ class OpenAiService extends Component
     {
         $extension = strtolower($asset->getExtension());
         $mimeType = strtolower($asset->getMimeType());
-        
+
         // Check for accepted extensions
         $acceptedExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
         if (!in_array($extension, $acceptedExtensions)) {
             Craft::warning('Asset has unsupported extension: ' . $extension . '. Will attempt to convert to JPEG.', __METHOD__);
             return true; // We'll handle conversion in generateAltText
         }
-        
+
         // Check for accepted MIME types
         $acceptedMimeTypes = [
             'image/png',
@@ -151,12 +151,12 @@ class OpenAiService extends Component
             'image/webp',
             'image/gif'
         ];
-        
+
         if (!in_array($mimeType, $acceptedMimeTypes)) {
             Craft::warning('Asset has unsupported MIME type: ' . $mimeType . '. Will attempt to convert to JPEG.', __METHOD__);
             return true; // We'll handle conversion in generateAltText
         }
-        
+
         // For GIFs, check if they're animated
         if ($extension === 'gif' && $mimeType === 'image/gif') {
             $filePath = $asset->getPath();
@@ -169,7 +169,7 @@ class OpenAiService extends Component
                 }
             }
         }
-        
+
         return true;
     }
 
@@ -192,34 +192,35 @@ class OpenAiService extends Component
             if (!$this->isValidImageFormat($asset)) {
                 throw new Exception('Asset is not in a supported image format. Supported formats are: PNG, JPEG, WEBP, and non-animated GIF.');
             }
-            
+
             // Get original image dimensions
             $width = $asset->getWidth();
             $height = $asset->getHeight();
-            
+
             // Check if format needs to be converted
             $extension = strtolower($asset->getExtension());
             $acceptedExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
             $needsFormatConversion = !in_array($extension, $acceptedExtensions);
-            
+
             // Set up transform parameters
             $transformParams = [];
-            
+
             // Always convert format if needed, regardless of dimensions
             if ($needsFormatConversion) {
                 $transformParams['format'] = 'jpg';
             }
-            
+
             // Add dimension constraints if needed
             if ($width > 2048 || $height > 2048) {
                 $transformParams['width'] = 2048;
                 $transformParams['height'] = 2048;
                 $transformParams['mode'] = 'fit';
             }
-            
+
             // Get the image URL with transformation if needed
-            $imageUrl = $asset->getUrl($transformParams);
-            
+            // Make sure that we do not get a "generate transform" url, but a real url with true
+            $imageUrl = $asset->getUrl($transformParams, true);
+
             // If we have a URL, check if it's accessible remotely
             if (!empty($imageUrl)) {
                 if (!$this->isUrlAccessible($imageUrl)) {
@@ -227,28 +228,30 @@ class OpenAiService extends Component
                     $imageUrl = null; // Reset to null to trigger base64 encoding
                 }
             }
-            
+
             // If no public URL is available or URL is not accessible, try to get the file contents and encode as base64
             if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-                $fileContents = file_get_contents($asset->getPath());
+                $fsPath = Craft::getAlias($asset->getVolume()->getFs()->path);
+                $assetPath = $fsPath . DIRECTORY_SEPARATOR . $asset->getPath();
+                $fileContents = file_get_contents($assetPath);
                 if ($fileContents === false) {
                     throw new Exception('Failed to read asset file contents');
                 }
-                
+
                 // Get the MIME type
                 $mimeType = $asset->getMimeType();
                 if (empty($mimeType)) {
                     $mimeType = 'image/jpeg'; // Default to JPEG if MIME type is unknown
                 }
-                
+
                 // Encode as base64 and create data URI
                 $base64Image = base64_encode($fileContents);
                 $imageUrl = "data:{$mimeType};base64,{$base64Image}";
             }
-            
+
             $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
             $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
-            
+
             // Make sure we have a valid prompt
             if (empty($prompt)) {
                 $prompt = 'Generate a concise, descriptive alt text for this image.';
@@ -271,7 +274,7 @@ class OpenAiService extends Component
 
             // Convert to array explicitly to avoid potential object-to-array conversion issues
             $requestArray = $request->toArray();
-            
+
             // Send the request
             $response = $this->sendRequest($requestArray);
 
@@ -291,7 +294,7 @@ class OpenAiService extends Component
         } catch (Exception $e) {
             $errorMessage = 'Failed to generate alt text: ' . $e->getMessage();
             Craft::error($errorMessage, __METHOD__);
-            
+
             // Return empty string on errors
             return '';
         }
