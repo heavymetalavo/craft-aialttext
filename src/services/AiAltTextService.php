@@ -85,7 +85,7 @@ class AiAltTextService extends Component
                 $imageUrl = 'data:' . $asset->mimeType . ';base64,' . base64_encode($imageData);
             }
 
-            $altText = $this->openAiService->generateAltText($asset, $imageUrl, $siteId);
+            $altText = $this->openAiService->generateAltText($asset, $siteId);
             
             if (empty($altText)) {
                 throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
