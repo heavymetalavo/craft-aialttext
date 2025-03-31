@@ -89,8 +89,7 @@ class GenerateAiAltText extends ElementAction
                 continue;
             }
 
-            $saveResultsToEachSite = AiAltText::getInstance()->settings->saveResultsToEachSite;
-            $saveTranslatedResultsForEachSite = AiAltText::getInstance()->settings->saveTranslatedResultsForEachSite;
+            $saveTranslatedResultsToEachSite = AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
 
             // Queue a job for the current site
             $queue->push(new GenerateAiAltTextJob([
@@ -101,11 +100,10 @@ class GenerateAiAltText extends ElementAction
                 ]),
                 'elementId' => $element->id,
                 'siteId' => $element->siteId,
-                'propagate' => $saveResultsToEachSite && !$saveTranslatedResultsForEachSite,
             ]));
 
             // If we're saving results to each site and translated results for each site, we need to queue a job for each site
-            if ($saveResultsToEachSite && $saveTranslatedResultsForEachSite) {
+            if ($saveTranslatedResultsToEachSite) {
                 foreach (Craft::$app->getSites()->getAllSites() as $site) {
                     // Skip the current site
                     if ($site->id === $element->siteId) {
@@ -120,7 +118,6 @@ class GenerateAiAltText extends ElementAction
                         ]),
                         'elementId' => $element->id,
                         'siteId' => $site->id,
-                        'propagate' => false,
                     ]));
                 }
             }

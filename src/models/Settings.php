@@ -15,8 +15,8 @@ use craft\base\Model;
  * @property string $openAiModel The OpenAI model to use (e.g., 'gpt-4', 'gpt-4-vision-preview', 'gpt-4-mini')
  * @property string $prompt The prompt template for generating alt text
  * @property string $openAiImageInputDetailLevel The detail level for image analysis
- * @property bool $saveResultsToEachSite Whether to save the result to each Site's Asset's translatable alt text field
- * @property bool $saveTranslatedResultsForEachSite Whether to save the translated result to each Site's Asset's translatable alt text field
+ * @property bool $preSaveAsset Whether to pre-save the asset if alt field is empty before saving a value to it, prevents same value being saved to each Site
+ * @property bool $saveTranslatedResultsToEachSite Whether to save the translated result to each Site's Asset's translatable alt text field
  * @property string $translationPromptAppendage The prompt suffix for translated results
  */
 class Settings extends Model
@@ -34,7 +34,7 @@ class Settings extends Model
     /**
      * @var string The prompt template for generating alt text
      */
-    public string $prompt = 'Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.';
+    public string $prompt = 'Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}';
 
     /**
      * @var string The detail level for image analysis
@@ -47,19 +47,14 @@ class Settings extends Model
     public string $openAiImageInputDetailLevel = 'low';
 
     /**
-     * @var bool Whether to save the result to each Site's Asset's translatable alt text field
+     * @var bool Whether to pre-save the asset if alt field is empty before saving a value to it, prevents same value being saved to each Site
      */
-    public bool $saveResultsToEachSite = false;
+    public bool $preSaveAsset = true;
 
     /**
      * @var bool Whether to save the translated result to each Site's Asset's translatable alt text field
      */
-    public bool $saveTranslatedResultsForEachSite = false;
-
-    /**
-     * @var string The prompt suffix for translated results
-     */
-    public string $translationPromptAppendage = 'Output in {site.language}';
+    public bool $saveTranslatedResultsToEachSite = false;
 
     /**
      * @inheritdoc
@@ -73,9 +68,8 @@ class Settings extends Model
             ['prompt', 'string'],
             ['openAiImageInputDetailLevel', 'string'],
             ['openAiImageInputDetailLevel', 'in', 'range' => ['low', 'high']],
-            ['saveResultsToEachSite', 'boolean'],
-            ['saveTranslatedResultsForEachSite', 'boolean'],
-            ['translationPromptAppendage', 'string'],
+            ['preSaveAsset', 'boolean'],
+            ['saveTranslatedResultsToEachSite', 'boolean'],
         ];
     }
 }

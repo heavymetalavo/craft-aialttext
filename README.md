@@ -74,7 +74,7 @@ To find out which models are capable of vision, check [the models page](https://
 
 #### 💬 Default Prompt
 ```
-Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.
+Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}
 ```
 
 #### 🔍 Image Detail Options

@@ -25,15 +25,14 @@
     errors: settings.getErrors("openAiApiKey"),
 }) }}
 
-{{ forms.autosuggestField({
+{{ forms.textareaField({
     label: 'Prompt'|t('app'),
     id: 'prompt',
     name: 'prompt',
-    instructions: "The text prompt which will be sent to OpenAI with the image to generate the response, supports text-based asset fields using {asset.property}"|t("aialttext"),
+    instructions: "The text prompt which will be sent to OpenAI with the image to generate the response, supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`"|t("aialttext"),
     value: settings.prompt,
-    placeholder: 'Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.',
+    placeholder: 'Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}',
     errors: settings.getErrors('prompt'),
-    suggestEnvVars: true,
 }) }}
 
 {{ forms.autosuggestField({
@@ -59,29 +58,19 @@
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Save results to each Site'|t('aialttext'),
-    id: 'saveResultsToEachSite',
-    name: 'saveResultsToEachSite',
-    instructions: "If enabled, the plugin will save the result to each Craft Site's Asset's translatable alt text field"|t("aialttext"),
-    on: settings.saveResultsToEachSite,
-    errors: settings.getErrors('saveResultsToEachSite'),
+    label: 'Pre-save Asset'|t('aialttext'),
+    id: 'preSaveAsset',
+    name: 'preSaveAsset',
+    instructions: "If enabled, the plugin will pre-save the asset if alt field is empty before saving a value to it, prevents same initial value being saved to each Site"|t("aialttext"),
+    on: settings.preSaveAsset,
+    errors: settings.getErrors('preSaveAsset'),
 }) }}
 
 {{ forms.lightswitchField({
     label: 'Save translated results for each Site'|t('aialttext'),
-    id: 'saveTranslatedResultsForEachSite',
-    name: 'saveTranslatedResultsForEachSite',
-    instructions: "If enabled, the plugin will make an extra request to the OpenAI API for each Craft Site to generate translated alt text on the Asset for each Craft Site"|t("aialttext"),
-    on: settings.saveTranslatedResultsForEachSite,
-    errors: settings.getErrors('saveTranslatedResultsForEachSite'),
-}) }}
-
-{{ forms.autosuggestField({
-    label: 'Translation Prompt Appendage'|t('app'),
-    id: 'translationPromptAppendage',
-    name: 'translationPromptAppendage',
-    instructions: "Text that will be appended to the end of the prompt, supports `{site.property}`. Outputs the full prompt in the format `{prompt} {translationPromptAppendage}`. (Only used when `Save translated results for each Site` is on)"|t("aialttext"),
-    placeholder: "Output in {site.language}",
-    value: settings.translationPromptAppendage,
-    errors: settings.getErrors("translationPromptAppendage"),
+    id: 'saveTranslatedResultsToEachSite',
+    name: 'saveTranslatedResultsToEachSite',
+    instructions: "If enabled, the plugin will queue an extra job for each Craft Site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the Craft Site (`en-GB` for British english, `en-US` for American english, `de` for German etc). When disabled, the related Site content within the prompt will work for the \"Current Site\" only."|t("aialttext"),
+    on: settings.saveTranslatedResultsToEachSite,
+    errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}

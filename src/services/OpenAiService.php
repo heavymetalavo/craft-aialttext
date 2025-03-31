@@ -185,7 +185,7 @@ class OpenAiService extends Component
      * @param Asset $asset The asset to generate alt text for
      * @return string The generated alt text, or an empty string if generation fails
      */
-    public function generateAltText(Asset $asset, bool $propagate = false, int $siteId = null): string
+    public function generateAltText(Asset $asset, int $siteId = null): string
     {
         try {
             // Validate image format first
@@ -258,24 +258,14 @@ class OpenAiService extends Component
                 return $asset->{$matches[1]};
             }, $prompt);
 
-            $saveResultsToEachSite = AiAltText::getInstance()->settings->saveResultsToEachSite;
-            $saveTranslatedResultsForEachSite = AiAltText::getInstance()->settings->saveTranslatedResultsForEachSite;
-            if ($saveResultsToEachSite && $saveTranslatedResultsForEachSite) {
-                // Get the $site
-                $site = Craft::$app->getSites()->getSiteById($siteId);
+            // Get the $site
+            $site = Craft::$app->getSites()->getSiteById($siteId);
 
-                // Update $prompt to include the translation prompt appendage if it exists
-                $translationPromptAppendage = App::parseEnv(AiAltText::getInstance()->getSettings()->translationPromptAppendage);
-                if (!empty($translationPromptAppendage)) {
-                    $prompt .= ' ' . $translationPromptAppendage;
-                }
-
-                // parse $prompt for {site.param} and replace with $site->param
-                // make sure that if the string may contain "{site.title}{site.caption}" we only replace each occurrence, and do not capture "{site.title}{site.caption}"
-                $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
-                    return $site->{$matches[1]};
-                }, $prompt);
-            }
+            // parse $prompt for {site.param} and replace with $site->param
+            // make sure that if the string may contain "{site.title}{site.caption}" we only replace each occurrence, and do not capture "{site.title}{site.caption}"
+            $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
+                return $site->{$matches[1]};
+            }, $prompt);
 
             // Make sure we have a valid prompt
             if (empty($prompt)) {
