@@ -63,6 +63,7 @@ class AiAltTextService extends Component
             }
 
             if (AiAltText::getInstance()->getSettings()->preSaveAsset && empty($asset->alt)) {
+                $asset->alt = '';
                 if (!Craft::$app->elements->saveElement($asset)) {
                     throw new Exception('Failed to pre-save asset: ' . $asset->filename);
                 }
