@@ -58,10 +58,10 @@
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Save same results to every Site'|t('aialttext'),
+    label: 'Pre-save Asset'|t('aialttext'),
     id: 'preSaveAsset',
     name: 'preSaveAsset',
-    instructions: "If enabled, Asset will be pre-saved once if alt field is empty before saving a value to it, prevents same initial value being saved to each Site"|t("aialttext"),
+    instructions: "If enabled, the plugin will pre-save the asset if alt field is empty before saving a value to it, prevents same initial value being saved to each Site"|t("aialttext"),
     on: settings.preSaveAsset,
     errors: settings.getErrors('preSaveAsset'),
 }) }}

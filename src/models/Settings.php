@@ -15,7 +15,7 @@ use craft\base\Model;
  * @property string $openAiModel The OpenAI model to use (e.g., 'gpt-4', 'gpt-4-vision-preview', 'gpt-4-mini')
  * @property string $prompt The prompt template for generating alt text
  * @property string $openAiImageInputDetailLevel The detail level for image analysis
- * @property bool $saveSingleResultToEachSite Whether to save the result to each Site's Asset's translatable alt text field
+ * @property bool $preSaveAsset Whether to pre-save the asset if alt field is empty before saving a value to it, prevents same value being saved to each Site
  * @property bool $saveTranslatedResultsToEachSite Whether to save the translated result to each Site's Asset's translatable alt text field
  * @property string $translationPromptAppendage The prompt suffix for translated results
  */

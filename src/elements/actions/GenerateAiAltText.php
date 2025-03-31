@@ -89,7 +89,6 @@ class GenerateAiAltText extends ElementAction
                 continue;
             }
 
-            $saveSingleResultToEachSite = AiAltText::getInstance()->settings->saveSingleResultToEachSite;
             $saveTranslatedResultsToEachSite = AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
 
             // Queue a job for the current site
@@ -104,7 +103,7 @@ class GenerateAiAltText extends ElementAction
             ]));
 
             // If we're saving results to each site and translated results for each site, we need to queue a job for each site
-            if (!$saveSingleResultToEachSite && $saveTranslatedResultsToEachSite) {
+            if ($saveTranslatedResultsToEachSite) {
                 foreach (Craft::$app->getSites()->getAllSites() as $site) {
                     // Skip the current site
                     if ($site->id === $element->siteId) {
