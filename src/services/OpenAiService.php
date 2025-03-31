@@ -273,7 +273,7 @@ class OpenAiService extends Component
                 // parse $prompt for {site.param} and replace with $site->param
                 // make sure that if the string may contain "{site.title}{site.caption}" we only replace each occurrence, and do not capture "{site.title}{site.caption}"
                 $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
-                    return $asset->{$matches[1]};
+                    return $site->{$matches[1]};
                 }, $prompt);
             }
 
