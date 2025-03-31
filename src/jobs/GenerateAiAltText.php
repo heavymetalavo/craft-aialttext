@@ -17,6 +17,7 @@ class GenerateAiAltText extends BaseJob
 {
     public ?int $elementId = null;
     public ?int $siteId = null;
+    public bool $propagate = false;
 
     /**
      * @throws ElementNotFoundException
@@ -35,7 +36,7 @@ class GenerateAiAltText extends BaseJob
             }
 
             // Generate alt text - now returns a string and saves the asset if successful
-            $altText = AiAltText::getInstance()->aiAltTextService->generateAltText($asset);
+            $altText = AiAltText::getInstance()->aiAltTextService->generateAltText($asset, $this->propagate);
 
             // Log the result
             if (!empty($altText)) {

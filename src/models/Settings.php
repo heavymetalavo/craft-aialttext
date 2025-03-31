@@ -44,6 +44,21 @@ class Settings extends Model
     public string $openAiImageInputDetailLevel = 'low';
 
     /**
+     * @var bool Whether to save the result to each Site's Asset's translatable alt text field
+     */
+    public bool $saveResultsToEachSite = false;
+
+    /**
+     * @var bool Whether to save the translated result to each Site's Asset's translatable alt text field
+     */
+    public bool $saveTranslatedResultsForEachSite = false;
+
+    /**
+     * @var string The prompt suffix for translated results
+     */
+    public string $translationPromptAppendage = 'Output in {site.language}';
+
+    /**
      * @inheritdoc
      */
     public function defineRules(): array
@@ -55,6 +70,9 @@ class Settings extends Model
             ['prompt', 'string'],
             ['openAiImageInputDetailLevel', 'string'],
             ['openAiImageInputDetailLevel', 'in', 'range' => ['low', 'high']],
+            ['saveResultsToEachSite', 'boolean'],
+            ['saveTranslatedResultsForEachSite', 'boolean'],
+            ['translationPromptAppendage', 'string'],
         ];
     }
 }
