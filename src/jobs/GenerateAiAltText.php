@@ -16,6 +16,7 @@ use yii\base\Exception;
 class GenerateAiAltText extends BaseJob
 {
     public ?int $elementId = null;
+    public ?int $siteId = null;
 
     /**
      * @throws ElementNotFoundException
