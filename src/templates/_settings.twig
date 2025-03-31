@@ -29,7 +29,7 @@
     label: 'Prompt'|t('app'),
     id: 'prompt',
     name: 'prompt',
-    instructions: "The prompt which will feed into the LLM with the image to generate the response, supports asset fields using {asset.handle}"|t("aialttext"),
+    instructions: "The prompt which will feed into the LLM with the image to generate the response, supports asset fields using `{asset.property}`"|t("aialttext"),
     value: settings.prompt,
     placeholder: 'Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.',
     errors: settings.getErrors('prompt'),

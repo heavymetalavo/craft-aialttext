@@ -36,7 +36,7 @@ class GenerateAiAltText extends BaseJob
             }
 
             // Generate alt text - now returns a string and saves the asset if successful
-            $altText = AiAltText::getInstance()->aiAltTextService->generateAltText($asset, $this->propagate);
+            $altText = AiAltText::getInstance()->aiAltTextService->generateAltText($asset, $this->propagate, $this->siteId);
 
             // Log the result
             if (!empty($altText)) {
