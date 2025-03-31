@@ -58,19 +58,19 @@
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Save results to each Site'|t('aialttext'),
-    id: 'saveResultsToEachSite',
-    name: 'saveResultsToEachSite',
-    instructions: "If enabled, the plugin will save the result to each Craft Site's Asset's translatable alt text field"|t("aialttext"),
-    on: settings.saveResultsToEachSite,
-    errors: settings.getErrors('saveResultsToEachSite'),
+    label: 'Save same results to every Site'|t('aialttext'),
+    id: 'saveSingleResultToEachSite',
+    name: 'saveSingleResultToEachSite',
+    instructions: "If enabled, the plugin will save the same single result from the current Craft Site's language to each Craft Site's Asset's translatable alt text field"|t("aialttext"),
+    on: settings.saveSingleResultToEachSite,
+    errors: settings.getErrors('saveSingleResultToEachSite'),
 }) }}
 
 {{ forms.lightswitchField({
     label: 'Save translated results for each Site'|t('aialttext'),
-    id: 'saveTranslatedResultsForEachSite',
-    name: 'saveTranslatedResultsForEachSite',
-    instructions: "If enabled, the plugin will make an extra request to the OpenAI API for each Craft Site to generate translated alt text on the Asset for each Craft Site"|t("aialttext"),
-    on: settings.saveTranslatedResultsForEachSite,
-    errors: settings.getErrors('saveTranslatedResultsForEachSite'),
+    id: 'saveTranslatedResultsToEachSite',
+    name: 'saveTranslatedResultsToEachSite',
+    instructions: "If enabled, the plugin will make an extra request to the OpenAI API for each Craft Site to generate translated alt text on the Asset in the assigned language for each Craft Site"|t("aialttext"),
+    on: settings.saveTranslatedResultsToEachSite,
+    errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}

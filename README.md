@@ -1,14 +1,12 @@
-<div align="center">
-  <img src="./src/icon.svg" alt="AI Alt Text Plugin Icon" width="200" height="200">
-</div>
-
 # 🤖 💬 AI Alt Text
   
 Generate suitable alt text for CraftCMS Asset Images using OpenAI's API.
 
+https://github.com/user-attachments/assets/0f7eb3e5-bf33-4f49-a8b8-6579a4c05f8b
+
 ## 📋 Requirements
 
-This plugin requires Craft CMS 5.6.0 or later, and PHP 8.3 or later.
+This plugin requires Craft CMS 5.0.0 or later, and PHP 8.2 or later.
 
 ## 📥 Installation
 
@@ -76,7 +74,7 @@ To find out which models are capable of vision, check [the models page](https://
 
 #### 💬 Default Prompt
 ```
-Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.
+Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}
 ```
 
 #### 🔍 Image Detail Options
