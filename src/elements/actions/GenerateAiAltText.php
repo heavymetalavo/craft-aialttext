@@ -93,7 +93,7 @@ class GenerateAiAltText extends ElementAction
             $saveTranslatedResultsForEachSite = AiAltText::getInstance()->settings->saveTranslatedResultsForEachSite;
 
             // Queue a job for the current site
-            $jobs[] = new GenerateAiAltTextJob([
+            $queue->push(new GenerateAiAltTextJob([
                 'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename}, Element ID: {id}, Site: {siteId}', [
                     'filename' => $element->filename,
                     'id' => $element->id,
@@ -102,7 +102,7 @@ class GenerateAiAltText extends ElementAction
                 'elementId' => $element->id,
                 'siteId' => $element->siteId,
                 'propagate' => $saveResultsToEachSite && !$saveTranslatedResultsForEachSite,
-            ]);
+            ]));
 
             // If we're saving results to each site and translated results for each site, we need to queue a job for each site
             if ($saveResultsToEachSite && $saveTranslatedResultsForEachSite) {
@@ -112,7 +112,7 @@ class GenerateAiAltText extends ElementAction
                         continue;
                     }
 
-                    $jobs[] = new GenerateAiAltTextJob([
+                    $queue->push(new GenerateAiAltTextJob([
                         'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename}, Element ID: {id}, Site: {siteId}', [
                             'filename' => $element->filename,
                             'id' => $element->id,
@@ -121,11 +121,10 @@ class GenerateAiAltText extends ElementAction
                         'elementId' => $element->id,
                         'siteId' => $site->id,
                         'propagate' => false,
-                    ]);
+                    ]));
                 }
             }
             
-            $queue->push($jobs);
 
         }
 
