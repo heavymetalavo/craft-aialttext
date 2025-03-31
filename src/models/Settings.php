@@ -57,11 +57,6 @@ class Settings extends Model
     public bool $saveTranslatedResultsForEachSite = false;
 
     /**
-     * @var string The prompt suffix for translated results
-     */
-    public string $translationPromptAppendage = 'Output in {site.language}';
-
-    /**
      * @inheritdoc
      */
     public function defineRules(): array
@@ -75,7 +70,6 @@ class Settings extends Model
             ['openAiImageInputDetailLevel', 'in', 'range' => ['low', 'high']],
             ['saveResultsToEachSite', 'boolean'],
             ['saveTranslatedResultsForEachSite', 'boolean'],
-            ['translationPromptAppendage', 'string'],
         ];
     }
 }
