@@ -29,9 +29,9 @@
     label: 'Prompt'|t('app'),
     id: 'prompt',
     name: 'prompt',
-    instructions: "The text prompt which will be sent to OpenAI with the image to generate the response, supports text-based asset fields using {asset.property}"|t("aialttext"),
+    instructions: "The text prompt which will be sent to OpenAI with the image to generate the response, supports simple Asset Model and Site Model fields using `{asset.property}` and `{site.property}`"|t("aialttext"),
     value: settings.prompt,
-    placeholder: 'Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.',
+    placeholder: 'Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}',
     errors: settings.getErrors('prompt'),
 }) }}
 
