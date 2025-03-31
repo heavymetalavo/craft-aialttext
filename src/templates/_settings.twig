@@ -81,6 +81,7 @@
     id: 'translationPromptAppendage',
     name: 'translationPromptAppendage',
     instructions: "Text that will be appended to the end of the prompt, e.g. `{prompt} {translationPromptAppendage}`, supports `{site.property}` to output in the current site's language. (Only used when `Save translated results for each Site` is on)"|t("aialttext"),
+    placeholder: "Output in {site.language}",
     value: settings.translationPromptAppendage,
     errors: settings.getErrors("translationPromptAppendage"),
 }) }}
