@@ -92,8 +92,10 @@ class GenerateAiAltText extends ElementAction
                 'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename}, Element ID: {id}', [
                     'filename' => $element->filename,
                     'id' => $element->id,
+                    'siteId' => $element->siteId,
                 ]),
                 'elementId' => $element->id,
+                'siteId' => $element->siteId,
             ]));
         }
 

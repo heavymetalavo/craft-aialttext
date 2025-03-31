@@ -26,7 +26,7 @@ class GenerateAiAltText extends BaseJob
     {
         try {
             // query for the asset
-            $asset = Asset::find()->id($this->elementId)->one();
+            $asset = Asset::find()->id($this->elementId)->siteId($this->siteId)->one();
 
             // check if the asset exists
             if (!$asset) {
