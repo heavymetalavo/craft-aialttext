@@ -185,7 +185,7 @@ class OpenAiService extends Component
      * @param Asset $asset The asset to generate alt text for
      * @return string The generated alt text, or an empty string if generation fails
      */
-    public function generateAltText(Asset $asset, bool $propagate = false, int $siteId = null): string
+    public function generateAltText(Asset $asset, int $siteId = null): string
     {
         try {
             // Validate image format first

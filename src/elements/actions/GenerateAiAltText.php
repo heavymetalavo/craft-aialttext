@@ -101,7 +101,6 @@ class GenerateAiAltText extends ElementAction
                 ]),
                 'elementId' => $element->id,
                 'siteId' => $element->siteId,
-                'propagate' => $saveSingleResultToEachSite,
             ]));
 
             // If we're saving results to each site and translated results for each site, we need to queue a job for each site
@@ -120,7 +119,6 @@ class GenerateAiAltText extends ElementAction
                         ]),
                         'elementId' => $element->id,
                         'siteId' => $site->id,
-                        'propagate' => false,
                     ]));
                 }
             }

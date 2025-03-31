@@ -51,7 +51,7 @@ class AiAltTextService extends Component
      * @return string The generated alt text
      * @throws Exception If the asset is invalid or alt text generation fails
      */
-    public function generateAltText(Asset $asset, bool $propagate = false, int $siteId = null): string
+    public function generateAltText(Asset $asset, int $siteId = null): string
     {
         try {
             if (!$asset) {
@@ -87,7 +87,7 @@ class AiAltTextService extends Component
 
             $asset->alt = $altText;
             $runValidation = true;
-            if (!Craft::$app->elements->saveElement($asset, $runValidation, $propagate)) {
+            if (!Craft::$app->elements->saveElement($asset, $runValidation)) {
                 throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
             }
 
