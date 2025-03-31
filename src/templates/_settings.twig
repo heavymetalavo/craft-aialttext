@@ -29,7 +29,7 @@
     label: 'Prompt'|t('app'),
     id: 'prompt',
     name: 'prompt',
-    instructions: "The text prompt which will be sent to OpenAI with the image to generate the response, supports simple Asset Model and Site Model fields using `{asset.property}` and `{site.property}`"|t("aialttext"),
+    instructions: "The text prompt which will be sent to OpenAI with the image to generate the response, supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`"|t("aialttext"),
     value: settings.prompt,
     placeholder: 'Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}',
     errors: settings.getErrors('prompt'),
@@ -69,8 +69,11 @@
 {{ forms.lightswitchField({
     label: 'Save translated results for each Site'|t('aialttext'),
     id: 'saveTranslatedResultsToEachSite',
-    name: 'saveTranslatedResultsToEachSite',
-    instructions: "If enabled, the plugin will make an extra request to the OpenAI API for each Craft Site to generate translated alt text on the Asset in the assigned language for each Craft Site"|t("aialttext"),
-    on: settings.saveTranslatedResultsToEachSite,
+      name: 'saveTranslatedResultsToEachSite',
+      instructions: "If enabled, the plugin will queue an extra job for each Craft Site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the Craft Site (`en-GB` for British english, `en-US` for American english, `de` for German etc.)"|t("aialttext"),
+      on: settings.saveTranslatedResultsToEachSite,
+      errors: settings.getErrors('saveTranslatedResultsToEachSite'),
+  }) }}
+
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}
