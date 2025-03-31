@@ -252,8 +252,8 @@ class OpenAiService extends Component
             $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
             $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
-            // parse $prompt for {{asset.param}} and replace with $asset->param
-            $prompt = preg_replace_callback('/{{asset\.([a-zA-Z0-9_]+)}}/', function ($matches) use ($asset) {
+            // parse $prompt for {asset.param} and replace with $asset->param
+            $prompt = preg_replace_callback('/{asset\.(.*)}/', function ($matches) use ($asset) {
                 return $asset->{$matches[1]};
             }, $prompt);
 
