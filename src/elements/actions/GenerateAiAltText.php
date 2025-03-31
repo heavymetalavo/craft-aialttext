@@ -94,7 +94,7 @@ class GenerateAiAltText extends ElementAction
 
             // Queue a job for the current site
             $queue->push(new GenerateAiAltTextJob([
-                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename}, Element ID: {id}, Site: {siteId}', [
+                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Element: {id}, Site: {siteId})', [
                     'filename' => $element->filename,
                     'id' => $element->id,
                     'siteId' => $element->siteId,
@@ -113,7 +113,7 @@ class GenerateAiAltText extends ElementAction
                     }
 
                     $queue->push(new GenerateAiAltTextJob([
-                        'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename}, Element ID: {id}, Site: {siteId}', [
+                        'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Element: {id}, Site: {siteId})', [
                             'filename' => $element->filename,
                             'id' => $element->id,
                             'siteId' => $site->id,
