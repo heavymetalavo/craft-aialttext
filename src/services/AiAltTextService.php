@@ -62,6 +62,12 @@ class AiAltTextService extends Component
                 throw new Exception('Asset must be an image');
             }
 
+            if (AiAltText::getInstance()->getSettings()->preSaveAsset && empty($asset->alt)) {
+                if (!Craft::$app->elements->saveElement($asset, $runValidation)) {
+                    throw new Exception('Failed to pre-save asset: ' . $asset->filename);
+                }
+            }
+
             // Try to get the URL first, if not available use base64
             $imageUrl = $asset->getUrl();
             if (!$imageUrl) {
