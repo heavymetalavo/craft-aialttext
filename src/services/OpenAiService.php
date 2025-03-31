@@ -252,6 +252,11 @@ class OpenAiService extends Component
             $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
             $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
+            // parse $prompt for {{asset.param}} and replace with $asset->param
+            $prompt = preg_replace_callback('/{{asset\.([a-zA-Z0-9_]+)}}/', function ($matches) use ($asset) {
+                return $asset->{$matches[1]};
+            }, $prompt);
+
             // Make sure we have a valid prompt
             if (empty($prompt)) {
                 $prompt = 'Generate a concise, descriptive alt text for this image.';
