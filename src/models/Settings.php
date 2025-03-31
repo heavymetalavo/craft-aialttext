@@ -15,6 +15,9 @@ use craft\base\Model;
  * @property string $openAiModel The OpenAI model to use (e.g., 'gpt-4', 'gpt-4-vision-preview', 'gpt-4-mini')
  * @property string $prompt The prompt template for generating alt text
  * @property string $openAiImageInputDetailLevel The detail level for image analysis
+ * @property bool $saveResultsToEachSite Whether to save the result to each Site's Asset's translatable alt text field
+ * @property bool $saveTranslatedResultsForEachSite Whether to save the translated result to each Site's Asset's translatable alt text field
+ * @property string $translationPromptAppendage The prompt suffix for translated results
  */
 class Settings extends Model
 {
@@ -44,6 +47,21 @@ class Settings extends Model
     public string $openAiImageInputDetailLevel = 'low';
 
     /**
+     * @var bool Whether to save the result to each Site's Asset's translatable alt text field
+     */
+    public bool $saveResultsToEachSite = false;
+
+    /**
+     * @var bool Whether to save the translated result to each Site's Asset's translatable alt text field
+     */
+    public bool $saveTranslatedResultsForEachSite = false;
+
+    /**
+     * @var string The prompt suffix for translated results
+     */
+    public string $translationPromptAppendage = 'Output in {site.language}';
+
+    /**
      * @inheritdoc
      */
     public function defineRules(): array
@@ -55,6 +73,9 @@ class Settings extends Model
             ['prompt', 'string'],
             ['openAiImageInputDetailLevel', 'string'],
             ['openAiImageInputDetailLevel', 'in', 'range' => ['low', 'high']],
+            ['saveResultsToEachSite', 'boolean'],
+            ['saveTranslatedResultsForEachSite', 'boolean'],
+            ['translationPromptAppendage', 'string'],
         ];
     }
 }

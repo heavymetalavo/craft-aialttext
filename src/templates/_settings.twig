@@ -4,7 +4,7 @@
 
 <h2>Instructions</h2>
 
-<p>Lots of info in <a target="_blank" href="https://github.com/heavymetalavo/craft-aialttext">the plugin docs</a>, but in short; 
+<p>Lots of info in <a target="_blank" href="https://github.com/heavymetalavo/craft-aialttext">the plugin docs</a>, but in short;
 <ol>
     <li>Check the plugin settings are suitable for your project</li>
     <li>Go to the <strong>Assets</strong> section in the Control Panel to view the table of assets</li>
@@ -29,7 +29,7 @@
     label: 'Prompt'|t('app'),
     id: 'prompt',
     name: 'prompt',
-    instructions: "The text prompt which will sent to OpenAI with the image to generate the response, supports text-based asset fields using {asset.handle}"|t("aialttext"),
+    instructions: "The text prompt which will be sent to OpenAI with the image to generate the response, supports text-based asset fields using {asset.property}"|t("aialttext"),
     value: settings.prompt,
     placeholder: 'Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.',
     errors: settings.getErrors('prompt'),
@@ -56,4 +56,32 @@
     placeholder: 'low',
     errors: settings.getErrors('openAiImageInputDetailLevel'),
     suggestEnvVars: true,
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Save results to each Site'|t('aialttext'),
+    id: 'saveResultsToEachSite',
+    name: 'saveResultsToEachSite',
+    instructions: "If enabled, the plugin will save the result to each Craft Site's Asset's translatable alt text field"|t("aialttext"),
+    on: settings.saveResultsToEachSite,
+    errors: settings.getErrors('saveResultsToEachSite'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Save translated results for each Site'|t('aialttext'),
+    id: 'saveTranslatedResultsForEachSite',
+    name: 'saveTranslatedResultsForEachSite',
+    instructions: "If enabled, the plugin will make an extra request to the OpenAI API for each Craft Site to generate translated alt text on the Asset for each Craft Site"|t("aialttext"),
+    on: settings.saveTranslatedResultsForEachSite,
+    errors: settings.getErrors('saveTranslatedResultsForEachSite'),
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'Translation Prompt Appendage'|t('app'),
+    id: 'translationPromptAppendage',
+    name: 'translationPromptAppendage',
+    instructions: "Text that will be appended to the end of the prompt, supports `{site.property}`. Outputs the full prompt in the format `{prompt} {translationPromptAppendage}`. (Only used when `Save translated results for each Site` is on)"|t("aialttext"),
+    placeholder: "Output in {site.language}",
+    value: settings.translationPromptAppendage,
+    errors: settings.getErrors("translationPromptAppendage"),
 }) }}

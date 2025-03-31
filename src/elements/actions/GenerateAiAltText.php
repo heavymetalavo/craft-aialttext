@@ -8,6 +8,7 @@ use craft\elements\Asset;
 use craft\elements\db\ElementQueryInterface;
 use craft\helpers\ElementHelper;
 use craft\helpers\Queue;
+use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
 use yii\base\InvalidConfigException;
 
@@ -88,15 +89,43 @@ class GenerateAiAltText extends ElementAction
                 continue;
             }
 
+            $saveResultsToEachSite = AiAltText::getInstance()->settings->saveResultsToEachSite;
+            $saveTranslatedResultsForEachSite = AiAltText::getInstance()->settings->saveTranslatedResultsForEachSite;
+
+            // Queue a job for the current site
             $queue->push(new GenerateAiAltTextJob([
-                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename}, Element ID: {id}, Site ID: {siteId}', [
+                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Element: {id}, Site: {siteId})', [
                     'filename' => $element->filename,
                     'id' => $element->id,
                     'siteId' => $element->siteId,
                 ]),
                 'elementId' => $element->id,
                 'siteId' => $element->siteId,
+                'propagate' => $saveResultsToEachSite && !$saveTranslatedResultsForEachSite,
             ]));
+
+            // If we're saving results to each site and translated results for each site, we need to queue a job for each site
+            if ($saveResultsToEachSite && $saveTranslatedResultsForEachSite) {
+                foreach (Craft::$app->getSites()->getAllSites() as $site) {
+                    // Skip the current site
+                    if ($site->id === $element->siteId) {
+                        continue;
+                    }
+
+                    $queue->push(new GenerateAiAltTextJob([
+                        'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Element: {id}, Site: {siteId})', [
+                            'filename' => $element->filename,
+                            'id' => $element->id,
+                            'siteId' => $site->id,
+                        ]),
+                        'elementId' => $element->id,
+                        'siteId' => $site->id,
+                        'propagate' => false,
+                    ]));
+                }
+            }
+            
+
         }
 
         return true;
