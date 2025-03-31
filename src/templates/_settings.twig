@@ -25,7 +25,7 @@
     errors: settings.getErrors("openAiApiKey"),
 }) }}
 
-{{ forms.textField({
+{{ forms.textareaField({
     label: 'Prompt'|t('app'),
     id: 'prompt',
     name: 'prompt',
@@ -33,7 +33,6 @@
     value: settings.prompt,
     placeholder: 'Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.',
     errors: settings.getErrors('prompt'),
-    size: 3,
 }) }}
 
 {{ forms.autosuggestField({
