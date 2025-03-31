@@ -86,7 +86,7 @@ class AiAltTextService extends Component
             }
 
             $asset->alt = $altText;
-            if (!Craft::$app->elements->saveElement($asset)) {
+            if (!Craft::$app->elements->saveElement($asset, true, false)) {
                 throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
             }
 
