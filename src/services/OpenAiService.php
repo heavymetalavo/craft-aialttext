@@ -253,7 +253,8 @@ class OpenAiService extends Component
             $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
             // parse $prompt for {asset.param} and replace with $asset->param
-            $prompt = preg_replace_callback('/{asset\.(.*)}/', function ($matches) use ($asset) {
+            // make sure that if the string may contain "{asset.title}{asset.caption}" we only replace each occurrence, and do not capture "{asset.title}{asset.caption}"
+            $prompt = preg_replace_callback('/{asset\.(.*?)}/', function ($matches) use ($asset) {
                 return $asset->{$matches[1]};
             }, $prompt);
 
