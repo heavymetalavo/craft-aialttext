@@ -231,12 +231,7 @@ class OpenAiService extends Component
 
             // If no public URL is available or URL is not accessible, try to get the file contents and encode as base64
             if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-                $fsPath = Craft::getAlias($asset->getVolume()->getFs()->path);
-                $assetPath = $fsPath . DIRECTORY_SEPARATOR . $asset->getPath();
-                $fileContents = file_get_contents($assetPath);
-                if ($fileContents === false) {
-                    throw new Exception('Failed to read asset file contents');
-                }
+                $assetContents = $asset->getContents();
 
                 // Get the MIME type
                 $mimeType = $asset->getMimeType();
@@ -245,7 +240,7 @@ class OpenAiService extends Component
                 }
 
                 // Encode as base64 and create data URI
-                $base64Image = base64_encode($fileContents);
+                $base64Image = base64_encode($assetContents);
                 $imageUrl = "data:{$mimeType};base64,{$base64Image}";
             }
 
