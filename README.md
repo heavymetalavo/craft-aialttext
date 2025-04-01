@@ -77,9 +77,8 @@ Models that support vision capabilities:
 To find out which models are capable of vision, check [the models page](https://platform.openai.com/docs/models), click into a model's detail page (e.g., [GPT-4o mini](https://platform.openai.com/docs/models/gpt-4o-mini)) and look for "**Input**: Text, image" in the features columns at the top.
 
 #### 💬 Default prompt
-```
-Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}
-```
+
+> Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}
 
 #### 🔍 Image detail options
 - `low` - Less detailed, faster and cheaper (default to protect against unexpected costs)
