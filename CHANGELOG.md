@@ -6,10 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.2.1] - 2025-04-02
+
+### Fixed
+- Fixed issue where private remote assets contents could not be retrieved to generate base64 payload
+
+### Changed
+- Updated documentation with clearer model capabilities, prompt structure, and image detail options
+
 ## [1.2.0] - 2025-04-01
 
 ### Added
 - Adding feature for supporting generating alts for multi sites.
+- Enhanced README.md with improved clarity on plugin usage and configuration
 
 ## [1.1.0] - 2025-03-31
 
