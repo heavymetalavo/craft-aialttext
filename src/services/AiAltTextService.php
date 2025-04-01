@@ -68,24 +68,7 @@ class AiAltTextService extends Component
                     throw new Exception('Failed to pre-save asset: ' . $asset->filename);
                 }
             }
-
-            // Try to get the URL first, if not available use base64
-            $imageUrl = $asset->getUrl();
-            if (!$imageUrl) {
-                // Get the file path and convert to base64
-                $path = $asset->getPath();
-                if (!$path) {
-                    throw new Exception('Asset must have either a public URL or be accessible via file system');
-                }
-                
-                $imageData = file_get_contents($path);
-                if ($imageData === false) {
-                    throw new Exception('Failed to read image file');
-                }
-                
-                $imageUrl = 'data:' . $asset->mimeType . ';base64,' . base64_encode($imageData);
-            }
-
+            
             $altText = $this->openAiService->generateAltText($asset, $siteId);
             
             if (empty($altText)) {
