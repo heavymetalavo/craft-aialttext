@@ -47,14 +47,13 @@ class GenerateController extends Controller
         try {
             $plugin = AiAltText::getInstance();
             $queue = Craft::$app->getQueue();
-            
+
             // Check if there's already a job for this element and site
             $existingJobs = $queue->getJobInfo();
             $hasExistingJob = false;
             foreach ($existingJobs as $job) {
-                if (isset($job['description']) && 
-                    strpos($job['description'], "Element ID: {$asset->id}") !== false && 
-                    strpos($job['description'], "Site: {$siteId}") !== false) {
+                if (isset($job['description']) &&
+                    strpos($job['description'], "Element: {$assetId}") !== false) {
                     $hasExistingJob = true;
                     break;
                 }
@@ -63,7 +62,7 @@ class GenerateController extends Controller
             if ($hasExistingJob) {
                 return $this->asJson([
                     'success' => false,
-                    'message' => Craft::t('ai-alt-text', "Asset {$asset->filename} (ID: {$asset->id}) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."),
+                    'message' => Craft::t('ai-alt-text', "Asset {$asset->filename} (ID: {$assetId}) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."),
                 ]);
             }
 

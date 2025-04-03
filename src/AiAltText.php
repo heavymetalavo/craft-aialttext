@@ -133,34 +133,32 @@ $('#' + $id).on('activate', () => {
   })
   .then((response) => {
     if (response.data.success) {
-        console.log('Alt text generation queued successfully', response.data);
-      Craft.cp.displayNotice(Craft.t('ai-alt-text', 'Alt text generation has been queued'));
+        Craft.cp.displayNotice(Craft.t('ai-alt-text', response.data.message));
       
       // Refresh the element editor if it's open
       if (Craft.elementEditor && Craft.elementEditor.assetId == $assetId) {
-        console.log('Refreshing element editor');
         Craft.elementEditor.reloadForm();
       }
       
       // Refresh the elements in the current view if possible
       if (Craft.cp.elementIndex) {
-        console.log('Refreshing element index');
         Craft.cp.elementIndex.updateElements();
       } else {
         // Fallback - reload the page if we can't update the UI with JavaScript
         // Only do this if we're on an edit page for this specific asset
         const currentUrl = window.location.href;
         if (currentUrl.includes('/assets/edit/' + $assetId)) {
-          console.log('Reloading page');
-          window.location.reload();
+          // window.location.reload();
         }
       }
+      return;
     }
+    throw new Error(response.data.message);
   })
   .catch((error) => {
-    console.error(error);
+    console.log('catch', JSON.stringify(error));
     Craft.cp.displayError(Craft.t('ai-alt-text', 'Failed to queue alt text generation: ') + 
-      (error.response?.data?.message || 'Unknown error'));
+      (error?.message || 'Unknown error'));
   });
 });
 JS, [
