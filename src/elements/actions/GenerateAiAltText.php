@@ -74,7 +74,7 @@ class GenerateAiAltText extends ElementAction
             $existingJobs = $queue->getJobInfo();
             $hasExistingJob = false;
             foreach ($existingJobs as $job) {
-                if (isset($job['description']) && strpos($job['description'], "Element ID: {$element->id}") !== false) {
+                if (isset($job['description']) && strpos($job['description'], "Element: {$element->id}") !== false) {
                     $hasExistingJob = true;
                     break;
                 }
