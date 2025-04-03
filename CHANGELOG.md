@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.3.0] - 2025-04-03
+
+### Added
+- Added ability to generate alt text directly from the asset dropdown menu in the Control Panel
+
+### Changed
+- Improved error handling and user feedback during alt text generation
+- Enhanced queuing process with clearer messages for existing jobs
+
+### Fixed
+- Fixed typo in AiAltText.php for proper UI updates after queuing actions
+- Fixed variable references in GenerateAiAltText.php for existing job detection
+- Fixed event handling for asset actions in the Control Panel
+
 ## [1.2.1] - 2025-04-02
 
 ### Fixed

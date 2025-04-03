@@ -44,6 +44,11 @@ ddev craft plugin/install ai-alt-text
 6. Click the cog icon to reveal the Element actions and select **Generate AI Alt Text**
 7. The plugin will queue jobs to generate alt text for each selected asset
 
+You can also generate alt text for a single asset by:
+1. Opening the asset in the Control Panel
+2. Clicking the action menu `...` icon in the top-right corner
+3. Selecting **Generate AI Alt Text** from the dropdown menu
+
 ![CraftCMS asset library table with two assets selected and the 'Generate AI Alt Text' option visible in the dropdown.](src/generate-ai-alt-text-elements-action-example.png)
 
 Example twig:
