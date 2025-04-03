@@ -143,14 +143,7 @@ $('#' + $id).on('activate', () => {
       // Refresh the elements in the current view if possible
       if (Craft.cp.elementIndex) {
         Craft.cp.elementIndex.updateElements();
-      } else {
-        // Fallback - reload the page if we can't update the UI with JavaScript
-        // Only do this if we're on an edit page for this specific asset
-        const currentUrl = window.location.href;
-        if (currentUrl.includes('/assets/edit/' + $assetId)) {
-          // window.location.reload();
-        }
-      }
+      } 
       return;
     }
     throw new Error(response.data.message);
