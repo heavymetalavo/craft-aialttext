@@ -383,8 +383,7 @@ class OpenAiService extends Component
             $request->model = $this->model;
             $request->setPrompt($prompt)
                     ->setImageUrl($imageUrl)
-                    ->setDetail($detail)
-                    ->setMaxTokens(50); // Shorter response for filenames
+                    ->setDetail($detail);
 
             // Validate the request
             if (!$request->validate()) {
