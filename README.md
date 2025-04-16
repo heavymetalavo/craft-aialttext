@@ -67,7 +67,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | Setting | Description | Default |
 |---------|-------------|---------|
 | **API Key** | Your OpenAI API key. You can get one from [OpenAI's API Platform](https://platform.openai.com/api-keys). | None (required) |
-| **Model** | The OpenAI model to use for generating alt text. | `gpt-4o-mini` |
+| **Model** | The OpenAI model to use for generating alt text. | `gpt-4.1-nano` |
 | **Prompt** | The text prompt sent to the AI to generate alt text. Supports `{asset.property}` and `{site.property}` | See below |
 | **Image Detail Level** | How detailed the image analysis should be. | `low` |
 | **Pre-save Asset** | Whether to pre-save the asset if alt field is empty before saving a value to it. This prevents the same initial value being saved to each Site. | `true` |
@@ -75,11 +75,11 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 #### 🧠 Model Options
 Models that support vision capabilities:
-- `gpt-4o-mini` - Fast, affordable small model for focused tasks (default)
+- `gpt-4.1-nano` - Fast, affordable small model for focused tasks (default)
 - `gpt-4o` - Fast, intelligent, flexible GPT model
 - `o1` - High-intelligence reasoning model
 
-To find out which models are capable of vision, check [the models page](https://platform.openai.com/docs/models), click into a model's detail page (e.g., [GPT-4o mini](https://platform.openai.com/docs/models/gpt-4o-mini)) and look for "**Input**: Text, image" in the features columns at the top.
+To find out which models are capable of vision, check [the models page](https://platform.openai.com/docs/models), click into a model's detail page (e.g., [GPT-4.1-nano](https://platform.openai.com/docs/models/gpt-4.1-nano)) and look for "**Input**: Text, image" in the features columns at the top.
 
 #### 💬 Default prompt
 
@@ -113,7 +113,7 @@ To add this field:
 
 ## ⚠️ Disclaimer
 
-We've taken some steps to try prevent unexpected costs with default plugin settings (e.g. detail: `low` and model: `gpt-4o-mini`) though we take no responsibility for excessive API token usage that may result from mistakes, bugs, or security vulnerabilities within this plugin so use at your own risk.
+We've taken some steps to try prevent unexpected costs with default plugin settings (e.g. detail: `low` and model: `gpt-4.1-nano`) though we take no responsibility for excessive API token usage that may result from mistakes, bugs, or security vulnerabilities within this plugin so use at your own risk.
 
 If you are concerned about unexpected charges we recommend:
 - Set up rate limits and spending caps at the API account level in your [OpenAI account settings](https://platform.openai.com/account/billing/limits)
@@ -123,7 +123,7 @@ If you are concerned about unexpected charges we recommend:
 
 ### 📈 Example usage statistics
 
-When testing using the default settings (`gpt-4o-mini` model, `low` detail level):
+When testing using the default settings (`gpt-4.1-nano` model, `low` detail level):
 
 | Metric | Value |
 |--------|-------|
