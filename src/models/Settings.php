@@ -19,6 +19,7 @@ use craft\base\Model;
  * @property bool $saveTranslatedResultsToEachSite Whether to save the translated result to each Site's Asset's translatable alt text field
  * @property string $translationPromptAppendage The prompt suffix for translated results
  * @property string $filenamePrompt The prompt template for generating filenames
+ * @property string $titlePrompt The prompt template for generating titles
  */
 class Settings extends Model
 {
@@ -41,6 +42,11 @@ class Settings extends Model
      * @var string The prompt template for generating filenames
      */
     public string $filenamePrompt = 'Generate a SEO-friendly filename for this image. The filename should be 2 words maximum, use kebab-case (lowercase with hyphens), and be under 50 characters. Do not include the file extension. Focus on the main subject and key elements in the image. Output in {site.language}';
+
+    /**
+     * @var string The prompt template for generating titles
+     */
+    public string $titlePrompt = 'Generate a descriptive title for this image. The title should be 2-5 words, use title case, and be under 100 characters. Focus on the main subject and key elements in the image. Output in {site.language}';
 
     /**
      * @var string The detail level for image analysis

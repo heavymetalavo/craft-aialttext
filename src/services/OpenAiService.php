@@ -311,14 +311,15 @@ class OpenAiService extends Component
     }
 
     /**
-     * Generates a filename for an asset using OpenAI.
+     * Generates a title and filename for an asset using OpenAI.
      * 
-     * @param Asset $asset The asset to generate a filename for
-     * @param string $prompt The prompt to use for generating the filename
-     * @return string The generated filename
-     * @throws Exception If filename generation fails
+     * @param Asset $asset The asset to generate a title and filename for
+     * @param string $titlePrompt The prompt to use for generating the title
+     * @param string $filenamePrompt The prompt to use for generating the filename
+     * @return array An array containing 'title' and 'filename' keys
+     * @throws Exception If generation fails
      */
-    public function generateFilename(Asset $asset, string $prompt): string
+    public function generateTitleAndFilename(Asset $asset, string $titlePrompt, string $filenamePrompt): array
     {
         try {
             // Validate image format first
@@ -378,41 +379,79 @@ class OpenAiService extends Component
 
             $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
 
-            // Create and populate the request model
-            $request = new OpenAiRequest();
-            $request->model = $this->model;
-            $request->setPrompt($prompt)
-                    ->setImageUrl($imageUrl)
-                    ->setDetail($detail);
+            // Generate title
+            $titleRequest = new OpenAiRequest();
+            $titleRequest->model = $this->model;
+            $titleRequest->setPrompt($titlePrompt)
+                        ->setImageUrl($imageUrl)
+                        ->setDetail($detail);
+            $titleRequest->input[0]['max_tokens'] = 100;
 
-            // Validate the request
-            if (!$request->validate()) {
-                throw new Exception('Invalid request: ' . json_encode($request->getErrors()));
+            if (!$titleRequest->validate()) {
+                throw new Exception('Invalid title request: ' . json_encode($titleRequest->getErrors()));
             }
 
-            // Convert to array explicitly to avoid potential object-to-array conversion issues
-            $requestArray = $request->toArray();
-
-            // Send the request
-            $response = $this->sendRequest($requestArray);
-
-            // Check for errors from the API
-            if ($response->hasError()) {
-                throw new Exception($response->getErrorMessage());
+            $titleResponse = $this->sendRequest($titleRequest->toArray());
+            if ($titleResponse->hasError()) {
+                throw new Exception($titleResponse->getErrorMessage());
             }
 
-            // If output is empty, log and return empty string
-            if (empty($response->output_text)) {
-                Craft::warning('No filename was generated for asset: ' . $asset->filename, __METHOD__);
-                return '';
+            $title = trim($titleResponse->getText());
+
+            // Generate filename
+            $filenameRequest = new OpenAiRequest();
+            $filenameRequest->model = $this->model;
+            $filenameRequest->setPrompt($filenamePrompt)
+                          ->setImageUrl($imageUrl)
+                          ->setDetail($detail);
+            $filenameRequest->input[0]['max_tokens'] = 50;
+
+            if (!$filenameRequest->validate()) {
+                throw new Exception('Invalid filename request: ' . json_encode($filenameRequest->getErrors()));
             }
 
-            return $response->getText();
+            $filenameResponse = $this->sendRequest($filenameRequest->toArray());
+            if ($filenameResponse->hasError()) {
+                throw new Exception($filenameResponse->getErrorMessage());
+            }
+
+            $filename = $this->cleanFilename($filenameResponse->getText());
+
+            return [
+                'title' => $title,
+                'filename' => $filename
+            ];
 
         } catch (Exception $e) {
-            $errorMessage = 'Failed to generate filename: ' . $e->getMessage();
+            $errorMessage = 'Failed to generate title and filename: ' . $e->getMessage();
             Craft::error($errorMessage, __METHOD__);
             throw $e;
         }
+    }
+
+    /**
+     * Cleans a generated filename to ensure it's valid
+     * 
+     * @param string $filename The filename to clean
+     * @return string The cleaned filename
+     */
+    private function cleanFilename(string $filename): string
+    {
+        // Remove file extension if present
+        $filename = pathinfo($filename, PATHINFO_FILENAME);
+        
+        // Convert to lowercase
+        $filename = strtolower($filename);
+        
+        // Replace spaces and underscores with hyphens
+        $filename = preg_replace('/[\s_]+/', '-', $filename);
+        
+        // Remove any characters that aren't alphanumeric or hyphens
+        $filename = preg_replace('/[^a-z0-9-]/', '', $filename);
+        
+        // Trim hyphens from beginning and end
+        $filename = trim($filename, '-');
+        
+        return $filename;
     }
 }
