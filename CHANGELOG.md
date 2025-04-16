@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.3.1] - 2025-04-16
+
+### Added
+- Added immediate processing of alt text generation for single assets in the asset editor view
+- Added automatic window refresh after successful alt text generation in the asset editor
+
+### Changed
+- Updated default model from `gpt-4o-mini` to `gpt-4.1-nano` for improved performance
+- Refactored asset action menu items logic into service method for better code organization
+
 ## [1.3.0] - 2025-04-03
 
 ### Added
