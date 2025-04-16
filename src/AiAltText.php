@@ -22,7 +22,6 @@ use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
 use heavymetalavo\craftaialttext\services\AiAltTextService;
 use heavymetalavo\craftaialttext\models\Settings;
 use yii\base\Event;
-use heavymetalavo\craftaialttext\services\OpenAiService;
 use craft\events\RegisterUrlRulesEvent;
 
 /**

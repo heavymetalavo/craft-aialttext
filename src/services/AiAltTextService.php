@@ -13,18 +13,15 @@ use craft\web\View;
 use heavymetalavo\craftaialttext\AiAltText;
 use craft\helpers\App;
 use Exception;
-use heavymetalavo\craftaialttext\models\api\OpenAiRequest;
-use heavymetalavo\craftaialttext\models\api\OpenAiResponse;
 use craft\events\DefineMenuItemsEvent;
-use craft\web\twig\variables\Menu;
-use craft\web\twig\variables\MenuItemType;
+use craft\enums\MenuItemType;
 
 /**
  * AI Alt Text Service
- * 
+ *
  * Main service class for generating alt text using AI.
  * This service coordinates between the OpenAI service and Craft CMS assets.
- * 
+ *
  * @property OpenAiService $openAiService The OpenAI service instance
  */
 class AiAltTextService extends Component
@@ -33,7 +30,7 @@ class AiAltTextService extends Component
 
     /**
      * Constructor
-     * 
+     *
      * Initializes the service with the OpenAI service instance.
      */
     public function __construct()
@@ -44,12 +41,12 @@ class AiAltTextService extends Component
 
     /**
      * Generates alt text for an asset using AI.
-     * 
+     *
      * This method:
      * - Validates the asset
      * - Generates alt text using the OpenAI service
      * - Returns the generated alt text
-     * 
+     *
      * @param Asset $asset The asset to generate alt text for
      * @return string The generated alt text
      * @throws Exception If the asset is invalid or alt text generation fails
@@ -71,9 +68,9 @@ class AiAltTextService extends Component
                     throw new Exception('Failed to pre-save asset: ' . $asset->filename);
                 }
             }
-            
+
             $altText = $this->openAiService->generateAltText($asset, $siteId);
-            
+
             if (empty($altText)) {
                 throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
             }
@@ -94,12 +91,12 @@ class AiAltTextService extends Component
 
     /**
      * Validates an asset for alt text generation.
-     * 
+     *
      * This method checks that:
      * - The asset is not null
      * - The asset is an image
      * - The asset has either a public URL or is accessible via file system
-     * 
+     *
      * @param Asset $asset The asset to validate
      * @return bool True if the asset is valid, false otherwise
      * @throws Exception If the asset is invalid
@@ -124,10 +121,10 @@ class AiAltTextService extends Component
 
     /**
      * Handles the definition of action menu items for assets.
-     * 
+     *
      * This method adds a "Generate AI Alt Text" action to the dropdown menu
      * for image assets.
-     * 
+     *
      * @param DefineMenuItemsEvent $event The event containing the menu items
      */
     public function handleAssetActionMenuItems(DefineMenuItemsEvent $event): void
