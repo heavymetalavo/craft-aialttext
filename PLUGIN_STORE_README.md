@@ -4,7 +4,7 @@ Generate suitable alt text for CraftCMS Asset Images using OpenAI's API.
 
 ## Video demo
 
-https://github.com/user-attachments/assets/0f7eb3e5-bf33-4f49-a8b8-6579a4c05f8b
+[Watch on GitHub](https://github.com/heavymetalavo/craft-aialttext?tab=readme-ov-file#video-demo)
 
 ## 📋 Requirements
 
