@@ -19,6 +19,7 @@ use craft\web\View;
 use craft\web\UrlManager;
 use craft\enums\MenuItemType;
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
+use heavymetalavo\craftaialttext\elements\actions\GenerateAiFilename;
 use heavymetalavo\craftaialttext\services\AiAltTextService;
 use heavymetalavo\craftaialttext\models\Settings;
 use yii\base\Event;
