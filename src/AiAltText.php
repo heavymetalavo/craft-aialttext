@@ -94,6 +94,7 @@ class AiAltText extends Plugin
             Asset::EVENT_REGISTER_ACTIONS,
             function(RegisterElementActionsEvent $event) {
                 $event->actions[] = GenerateAiAltText::class;
+                $event->actions[] = GenerateAiFilename::class;
             }
         );
 
