@@ -66,16 +66,8 @@ class GenerateController extends Controller
                 ]);
             }
 
-            // Queue a job for the current site
-            $queue->push(new GenerateAiAltTextJob([
-                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Element: {id}, Site: {siteId})', [
-                    'filename' => $asset->filename,
-                    'id' => $asset->id,
-                    'siteId' => $siteId,
-                ]),
-                'elementId' => $asset->id,
-                'siteId' => $siteId,
-            ]));
+            // Process the asset for the current site here instead of queuing a job
+            $plugin->aiAltTextService->generateAltText($asset, $siteId);
 
             // If we're saving results to each site, queue a job for each site
             $saveTranslatedResultsToEachSite = $plugin->settings->saveTranslatedResultsToEachSite;

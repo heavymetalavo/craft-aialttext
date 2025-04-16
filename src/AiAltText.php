@@ -22,7 +22,6 @@ use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
 use heavymetalavo\craftaialttext\services\AiAltTextService;
 use heavymetalavo\craftaialttext\models\Settings;
 use yii\base\Event;
-use heavymetalavo\craftaialttext\services\OpenAiService;
 use craft\events\RegisterUrlRulesEvent;
 
 /**
@@ -103,63 +102,7 @@ class AiAltText extends Plugin
             Asset::class,
             Element::EVENT_DEFINE_ACTION_MENU_ITEMS,
             function(DefineMenuItemsEvent $event) {
-                /** @var Asset $asset */
-                $asset = $event->sender;
-                $view = Craft::$app->getView();
-
-                // Check if this is an image asset
-                if ($asset->kind === 'image') {
-                    // Add the "Generate AI Alt Text" action to the dropdown
-                    $customActionId = sprintf('action-generate-ai-alt-%s', mt_rand());
-                    $event->items[] = [
-                        'type' => MenuItemType::Button,
-                        'id' => $customActionId,
-                        'icon' => 'language', // Use a relevant icon
-                        'label' => Craft::t('ai-alt-text', 'Generate AI Alt Text'),
-                    ];
-
-                    // Register the JavaScript for the action
-                    $view->registerJsWithVars(fn($id, $assetId, $siteId) => <<<JS
-$('#' + $id).on('activate', () => {
-  // Show a loading spinner in the UI
-  Craft.cp.displayNotice(Craft.t('ai-alt-text', 'Queueing AI alt text generation...'));
-  
-  // Make an AJAX request to your controller action
-  Craft.sendActionRequest('POST', 'ai-alt-text/generate/single-asset', {
-    data: {
-      assetId: $assetId,
-      siteId: $siteId,
-    }
-  })
-  .then((response) => {
-    if (response.data.success) {
-        Craft.cp.displayNotice(Craft.t('ai-alt-text', response.data.message));
-      
-      // Refresh the element editor if it's open
-      if (Craft.elementEditor && Craft.elementEditor.assetId == $assetId) {
-        Craft.elementEditor.reloadForm();
-      }
-      
-      // Refresh the elements in the current view if possible
-      if (Craft.cp.elementIndex) {
-        Craft.cp.elementIndex.updateElements();
-      } 
-      return;
-    }
-    throw new Error(response.data.message);
-  })
-  .catch((error) => {
-    console.log('catch', JSON.stringify(error));
-    Craft.cp.displayError(Craft.t('ai-alt-text', 'Failed to queue alt text generation: ') + 
-      (error?.message || 'Unknown error'));
-  });
-});
-JS, [
-                        $view->namespaceInputId($customActionId),
-                        $asset->id,
-                        $asset->siteId,
-                    ]);
-                }
+                $this->aiAltTextService->handleAssetActionMenuItems($event);
             }
         );
     }
