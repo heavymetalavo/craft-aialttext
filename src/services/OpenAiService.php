@@ -309,4 +309,32 @@ class OpenAiService extends Component
             return '';
         }
     }
+
+    /**
+     * Generates a filename for an asset using OpenAI.
+     * 
+     * @param Asset $asset The asset to generate a filename for
+     * @param string $prompt The prompt to use for generating the filename
+     * @return string The generated filename
+     * @throws Exception If filename generation fails
+     */
+    public function generateFilename(Asset $asset, string $prompt): string
+    {
+        try {
+            // Create the request
+            $request = new OpenAiRequest();
+            $request->model = AiAltText::getInstance()->getSettings()->openAiModel;
+            $request->prompt = $prompt;
+            $request->image = $this->getImageData($asset);
+            $request->maxTokens = 50; // Shorter response for filenames
+
+            // Make the API request
+            $response = $this->makeRequest($request);
+
+            // Clean and return the response
+            return trim($response->choices[0]->message->content);
+        } catch (Exception $e) {
+            throw new Exception('Failed to generate filename: ' . $e->getMessage());
+        }
+    }
 }

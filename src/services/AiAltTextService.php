@@ -190,4 +190,77 @@ JS, [
             ]);
         }
     }
+
+    /**
+     * Generates a filename for an asset using AI.
+     * 
+     * This method:
+     * - Validates the asset
+     * - Generates a filename using the OpenAI service
+     * - Returns the generated filename
+     * 
+     * @param Asset $asset The asset to generate a filename for
+     * @return string The generated filename (without extension)
+     * @throws Exception If the asset is invalid or filename generation fails
+     */
+    public function generateFilename(Asset $asset): string
+    {
+        try {
+            if (!$asset) {
+                throw new Exception('Asset cannot be null');
+            }
+
+            if ($asset->kind !== Asset::KIND_IMAGE) {
+                throw new Exception('Asset must be an image');
+            }
+
+            // Get the filename prompt from settings
+            $prompt = AiAltText::getInstance()->getSettings()->filenamePrompt;
+            
+            // Generate the filename using OpenAI
+            $filename = $this->openAiService->generateFilename($asset, $prompt);
+            
+            if (empty($filename)) {
+                throw new Exception('Empty filename generated for asset: ' . $asset->filename);
+            }
+
+            // Clean the filename to ensure it's valid
+            $filename = $this->cleanFilename($filename);
+
+            Craft::info('Successfully generated filename for asset: ' . $asset->filename, __METHOD__);
+            return $filename;
+
+        } catch (Exception $e) {
+            throw $e;
+        }
+    }
+
+    /**
+     * Cleans a filename to ensure it's valid and follows the desired format.
+     * 
+     * @param string $filename The filename to clean
+     * @return string The cleaned filename
+     */
+    private function cleanFilename(string $filename): string
+    {
+        // Remove any file extension if present
+        $filename = pathinfo($filename, PATHINFO_FILENAME);
+        
+        // Convert to lowercase
+        $filename = strtolower($filename);
+        
+        // Replace spaces and underscores with hyphens
+        $filename = preg_replace('/[\s_]+/', '-', $filename);
+        
+        // Remove any characters that aren't alphanumeric, hyphens, or dots
+        $filename = preg_replace('/[^a-z0-9-]/', '', $filename);
+        
+        // Remove multiple consecutive hyphens
+        $filename = preg_replace('/-+/', '-', $filename);
+        
+        // Trim hyphens from the beginning and end
+        $filename = trim($filename, '-');
+        
+        return $filename;
+    }
 }
