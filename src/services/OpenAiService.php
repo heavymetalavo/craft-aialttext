@@ -321,20 +321,99 @@ class OpenAiService extends Component
     public function generateFilename(Asset $asset, string $prompt): string
     {
         try {
-            // Create the request
+            // Validate image format first
+            if (!$this->isValidImageFormat($asset)) {
+                throw new Exception('Asset is not in a supported image format. Supported formats are: PNG, JPEG, WEBP, and non-animated GIF.');
+            }
+
+            // Get original image dimensions
+            $width = $asset->getWidth();
+            $height = $asset->getHeight();
+
+            // Check if format needs to be converted
+            $extension = strtolower($asset->getExtension());
+            $acceptedExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
+            $needsFormatConversion = !in_array($extension, $acceptedExtensions);
+
+            // Set up transform parameters
+            $transformParams = [];
+
+            // Always convert format if needed, regardless of dimensions
+            if ($needsFormatConversion) {
+                $transformParams['format'] = 'jpg';
+            }
+
+            // Add dimension constraints if needed
+            if ($width > 2048 || $height > 2048) {
+                $transformParams['width'] = 2048;
+                $transformParams['height'] = 2048;
+                $transformParams['mode'] = 'fit';
+            }
+
+            // Get the image URL with transformation if needed
+            $imageUrl = $asset->getUrl($transformParams, true);
+
+            // If we have a URL, check if it's accessible remotely
+            if (!empty($imageUrl)) {
+                if (!$this->isUrlAccessible($imageUrl)) {
+                    Craft::warning('Asset URL is not accessible remotely: ' . $imageUrl, __METHOD__);
+                    $imageUrl = null; // Reset to null to trigger base64 encoding
+                }
+            }
+
+            // If no public URL is available or URL is not accessible, try to get the file contents and encode as base64
+            if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
+                $assetContents = $asset->getContents();
+
+                // Get the MIME type
+                $mimeType = $asset->getMimeType();
+                if (empty($mimeType)) {
+                    $mimeType = 'image/jpeg'; // Default to JPEG if MIME type is unknown
+                }
+
+                // Encode as base64 and create data URI
+                $base64Image = base64_encode($assetContents);
+                $imageUrl = "data:{$mimeType};base64,{$base64Image}";
+            }
+
+            $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
+
+            // Create and populate the request model
             $request = new OpenAiRequest();
-            $request->model = AiAltText::getInstance()->getSettings()->openAiModel;
-            $request->prompt = $prompt;
-            $request->image = $this->getImageData($asset);
-            $request->maxTokens = 50; // Shorter response for filenames
+            $request->model = $this->model;
+            $request->setPrompt($prompt)
+                    ->setImageUrl($imageUrl)
+                    ->setDetail($detail)
+                    ->setMaxTokens(50); // Shorter response for filenames
 
-            // Make the API request
-            $response = $this->makeRequest($request);
+            // Validate the request
+            if (!$request->validate()) {
+                throw new Exception('Invalid request: ' . json_encode($request->getErrors()));
+            }
 
-            // Clean and return the response
-            return trim($response->choices[0]->message->content);
+            // Convert to array explicitly to avoid potential object-to-array conversion issues
+            $requestArray = $request->toArray();
+
+            // Send the request
+            $response = $this->sendRequest($requestArray);
+
+            // Check for errors from the API
+            if ($response->hasError()) {
+                throw new Exception($response->getErrorMessage());
+            }
+
+            // If output is empty, log and return empty string
+            if (empty($response->output_text)) {
+                Craft::warning('No filename was generated for asset: ' . $asset->filename, __METHOD__);
+                return '';
+            }
+
+            return $response->getText();
+
         } catch (Exception $e) {
-            throw new Exception('Failed to generate filename: ' . $e->getMessage());
+            $errorMessage = 'Failed to generate filename: ' . $e->getMessage();
+            Craft::error($errorMessage, __METHOD__);
+            throw $e;
         }
     }
 }
