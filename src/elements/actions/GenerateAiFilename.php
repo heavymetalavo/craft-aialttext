@@ -5,6 +5,7 @@ namespace heavymetalavo\craftaialttext\elements\actions;
 use Craft;
 use craft\base\ElementAction;
 use craft\elements\Asset;
+use craft\elements\db\ElementQueryInterface;
 use craft\helpers\Json;
 use yii\base\Exception;
 
@@ -44,19 +45,26 @@ class GenerateAiFilename extends ElementAction
     /**
      * @inheritdoc
      */
-    public function performAction(Asset $asset): bool
+    public function performAction(ElementQueryInterface $query): bool
     {
         try {
             // Get the service
             $service = Craft::$app->getPlugins()->getPlugin('ai-alt-text')->aiAltTextService;
 
-            // Generate the filename
-            $filename = $service->generateFilename($asset);
+            // Process each asset in the query
+            foreach ($query->all() as $asset) {
+                if (!$asset instanceof Asset) {
+                    continue;
+                }
 
-            // Update the asset's filename
-            $asset->newFilename = $filename . '.' . $asset->getExtension();
-            if (!Craft::$app->elements->saveElement($asset)) {
-                throw new Exception('Failed to save new filename for asset: ' . $asset->filename);
+                // Generate the filename
+                $filename = $service->generateFilename($asset);
+
+                // Update the asset's filename
+                $asset->newFilename = $filename . '.' . $asset->getExtension();
+                if (!Craft::$app->elements->saveElement($asset)) {
+                    throw new Exception('Failed to save new filename for asset: ' . $asset->filename);
+                }
             }
 
             return true;
