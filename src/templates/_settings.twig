@@ -35,16 +35,6 @@
     errors: settings.getErrors('prompt'),
 }) }}
 
-{{ forms.textareaField({
-    label: 'Filename Prompt'|t('app'),
-    id: 'filenamePrompt',
-    name: 'filenamePrompt',
-    instructions: "The text prompt which will be sent to OpenAI with the image to generate a filename, supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`"|t("aialttext"),
-    value: settings.filenamePrompt,
-    placeholder: 'Generate a SEO-friendly filename for this image. The filename should be descriptive, use kebab-case (lowercase with hyphens), and be under 50 characters. Do not include the file extension. Focus on the main subject and key elements in the image. Output in {site.language}',
-    errors: settings.getErrors('filenamePrompt'),
-}) }}
-
 {{ forms.autosuggestField({
     label: 'Open AI Model'|t('app'),
     id: 'openAiModel',
