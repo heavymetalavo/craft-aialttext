@@ -244,7 +244,7 @@ class OpenAiService extends Component
                 $imageUrl = "data:{$mimeType};base64,{$base64Image}";
             }
 
-            $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
+            $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel) ?? 'low';
             $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
             // parse $prompt for {asset.param} and replace with $asset->param
@@ -377,7 +377,7 @@ class OpenAiService extends Component
                 $imageUrl = "data:{$mimeType};base64,{$base64Image}";
             }
 
-            $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
+            $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel) ?? 'low';
 
             // Generate title
             $titleRequest = new OpenAiRequest();
