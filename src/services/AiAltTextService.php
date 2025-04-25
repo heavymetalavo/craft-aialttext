@@ -53,40 +53,37 @@ class AiAltTextService extends Component
      */
     public function generateAltText(Asset $asset, int $siteId = null): string
     {
-        try {
-            if (!$asset) {
-                throw new Exception('Asset cannot be null');
-            }
-
-            if ($asset->kind !== Asset::KIND_IMAGE) {
-                throw new Exception('Asset must be an image');
-            }
-
-            if (AiAltText::getInstance()->getSettings()->preSaveAsset && empty($asset->alt)) {
-                $asset->alt = '';
-                if (!Craft::$app->elements->saveElement($asset)) {
-                    throw new Exception('Failed to pre-save asset: ' . $asset->filename);
-                }
-            }
-
-            $altText = $this->openAiService->generateAltText($asset, $siteId);
-
-            if (empty($altText)) {
-                throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
-            }
-
-            $asset->alt = $altText;
-            $runValidation = true;
-            if (!Craft::$app->elements->saveElement($asset, $runValidation)) {
-                throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
-            }
-
-            Craft::info('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
-            return $altText;
-
-        } catch (Exception $e) {
-            throw $e;
+        if (!$asset) {
+            throw new Exception('Asset cannot be null');
         }
+
+        if ($asset->kind !== Asset::KIND_IMAGE) {
+            throw new Exception('Asset must be an image');
+        }
+
+        if (AiAltText::getInstance()->getSettings()->preSaveAsset && empty($asset->alt)) {
+            $asset->alt = '';
+            if (!Craft::$app->elements->saveElement($asset)) {
+                throw new Exception('Failed to pre-save asset: ' . $asset->filename);
+            }
+        }
+
+        $altText = $this->openAiService->generateAltText($asset, $siteId);
+
+        if (empty($altText)) {
+            throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
+        }
+
+        $asset->alt = $altText;
+        $runValidation = true;
+        if (!Craft::$app->elements->saveElement($asset, $runValidation)) {
+            throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
+        }
+
+        Craft::info('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
+        return $altText;
+
+    }
     }
 
     /**
