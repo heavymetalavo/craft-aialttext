@@ -50,7 +50,7 @@ ddev craft plugin/install ai-alt-text
 
 ## 🚀 How to use
 
-1. Check the plugin settings are suitable for your project
+1. Check the plugin settings are suitable for your project (and your API key is added)
 2. Ensure your volumes have the native `alt` field assigned to the field layout
 3. Ensure your templates are updated to use the `alt` field, you could consider a fallback `asset.alt ?: asset.title` if that what was used before
 4. Go to the **Assets** section in the Control Panel to view the table of assets
