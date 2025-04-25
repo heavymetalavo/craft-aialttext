@@ -21,7 +21,7 @@ class OpenAiRequest extends Model
     
     private string $prompt = '';
     private string $imageUrl = '';
-    private string $detail = 'auto';
+    private string $detail = 'low';
 
     /**
      * Gets the detail level for image analysis

@@ -95,10 +95,28 @@ class OpenAiService extends Component
             return $responseModel;
 
         } catch (Exception $e) {
+            $errorResponse = new OpenAiResponse();
+            
+            // Check if this is a Guzzle exception with a response
+            if ($e instanceof \GuzzleHttp\Exception\RequestException) {
+                // Get the response body and parse it
+                $responseBody = (string) $e->getResponse()->getBody();
+                $errorData = json_decode($responseBody, true);
+                
+                // Extract just the error message from the response
+                if (isset($errorData['error']['message'])) {
+                    $errorMsg = 'OpenAI API error: ' . $errorData['error']['message'];
+                    Craft::error('OpenAI API error: ' . $responseBody, __METHOD__);
+                    
+                    $errorResponse->setError($errorMsg);
+                    return $errorResponse;
+                }
+            }
+            
+            // Fall back to generic error handling
             $errorMsg = 'OpenAI API request failed: ' . $e->getMessage();
             Craft::error($errorMsg, __METHOD__);
-
-            $errorResponse = new OpenAiResponse();
+            
             $errorResponse->setError($e->getMessage());
             return $errorResponse;
         }
@@ -187,126 +205,117 @@ class OpenAiService extends Component
      */
     public function generateAltText(Asset $asset, int $siteId = null): string
     {
-        try {
-            // Validate image format first
-            if (!$this->isValidImageFormat($asset)) {
-                throw new Exception('Asset is not in a supported image format. Supported formats are: PNG, JPEG, WEBP, and non-animated GIF.');
+        // Validate image format first
+        if (!$this->isValidImageFormat($asset)) {
+            throw new Exception('Asset is not in a supported image format. Supported formats are: PNG, JPEG, WEBP, and non-animated GIF.');
+        }
+
+        // Get original image dimensions
+        $width = $asset->getWidth();
+        $height = $asset->getHeight();
+
+        // Check if format needs to be converted
+        $extension = strtolower($asset->getExtension());
+        $acceptedExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
+        $needsFormatConversion = !in_array($extension, $acceptedExtensions);
+
+        // Set up transform parameters
+        $transformParams = [];
+
+        // Always convert format if needed, regardless of dimensions
+        if ($needsFormatConversion) {
+            $transformParams['format'] = 'jpg';
+        }
+
+        // Add dimension constraints if needed
+        if ($width > 2048 || $height > 2048) {
+            $transformParams['width'] = 2048;
+            $transformParams['height'] = 2048;
+            $transformParams['mode'] = 'fit';
+        }
+
+        // Get the image URL with transformation if needed
+        // Make sure that we do not get a "generate transform" url, but a real url with true
+        $imageUrl = $asset->getUrl($transformParams, true);
+
+        // If we have a URL, check if it's accessible remotely
+        if (!empty($imageUrl)) {
+            if (!$this->isUrlAccessible($imageUrl)) {
+                Craft::warning('Asset URL is not accessible remotely: ' . $imageUrl, __METHOD__);
+                $imageUrl = null; // Reset to null to trigger base64 encoding
+            }
+        }
+
+        // If no public URL is available or URL is not accessible, try to get the file contents and encode as base64
+        if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
+            $assetContents = $asset->getContents();
+
+            // Get the MIME type
+            $mimeType = $asset->getMimeType();
+            if (empty($mimeType)) {
+                $mimeType = 'image/jpeg'; // Default to JPEG if MIME type is unknown
             }
 
-            // Get original image dimensions
-            $width = $asset->getWidth();
-            $height = $asset->getHeight();
+            // Encode as base64 and create data URI
+            $base64Image = base64_encode($assetContents);
+            $imageUrl = "data:{$mimeType};base64,{$base64Image}";
+        }
 
-            // Check if format needs to be converted
-            $extension = strtolower($asset->getExtension());
-            $acceptedExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
-            $needsFormatConversion = !in_array($extension, $acceptedExtensions);
+        $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel) ?? 'low';
+        $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
-            // Set up transform parameters
-            $transformParams = [];
+        // parse $prompt for {asset.param} and replace with $asset->param
+        // make sure that if the string may contain "{asset.title}{asset.caption}" we only replace each occurrence, and do not capture "{asset.title}{asset.caption}"
+        $prompt = preg_replace_callback('/{asset\.(.*?)}/', function ($matches) use ($asset) {
+            return $asset->{$matches[1]};
+        }, $prompt);
 
-            // Always convert format if needed, regardless of dimensions
-            if ($needsFormatConversion) {
-                $transformParams['format'] = 'jpg';
-            }
+        // Get the $site
+        $site = Craft::$app->getSites()->getSiteById($siteId);
 
-            // Add dimension constraints if needed
-            if ($width > 2048 || $height > 2048) {
-                $transformParams['width'] = 2048;
-                $transformParams['height'] = 2048;
-                $transformParams['mode'] = 'fit';
-            }
+        // parse $prompt for {site.param} and replace with $site->param
+        // make sure that if the string may contain "{site.title}{site.caption}" we only replace each occurrence, and do not capture "{site.title}{site.caption}"
+        $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
+            return $site->{$matches[1]};
+        }, $prompt);
 
-            // Get the image URL with transformation if needed
-            // Make sure that we do not get a "generate transform" url, but a real url with true
-            $imageUrl = $asset->getUrl($transformParams, true);
+        // Make sure we have a valid prompt
+        if (empty($prompt)) {
+            $prompt = 'Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.';
+        }
 
-            // If we have a URL, check if it's accessible remotely
-            if (!empty($imageUrl)) {
-                if (!$this->isUrlAccessible($imageUrl)) {
-                    Craft::warning('Asset URL is not accessible remotely: ' . $imageUrl, __METHOD__);
-                    $imageUrl = null; // Reset to null to trigger base64 encoding
-                }
-            }
+        // Log asset info for debugging
+        Craft::info('Generating alt text for asset: ' . $asset->filename . ' (' . $imageUrl . ')', __METHOD__);
 
-            // If no public URL is available or URL is not accessible, try to get the file contents and encode as base64
-            if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-                $assetContents = $asset->getContents();
+        // Create and populate the request model
+        $request = new OpenAiRequest();
+        $request->model = $this->model;
+        $request->setPrompt($prompt)
+                ->setImageUrl($imageUrl)
+                ->setDetail($detail);
 
-                // Get the MIME type
-                $mimeType = $asset->getMimeType();
-                if (empty($mimeType)) {
-                    $mimeType = 'image/jpeg'; // Default to JPEG if MIME type is unknown
-                }
+        // Validate the request
+        if (!$request->validate()) {
+            throw new Exception('Invalid request: ' . json_encode($request->getErrors()));
+        }
 
-                // Encode as base64 and create data URI
-                $base64Image = base64_encode($assetContents);
-                $imageUrl = "data:{$mimeType};base64,{$base64Image}";
-            }
+        // Convert to array explicitly to avoid potential object-to-array conversion issues
+        $requestArray = $request->toArray();
 
-            $detail = Craft::$app->getConfig()->getGeneral()->openAiImageDetail ?? 'auto';
-            $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
+        // Send the request
+        $response = $this->sendRequest($requestArray);
 
-            // parse $prompt for {asset.param} and replace with $asset->param
-            // make sure that if the string may contain "{asset.title}{asset.caption}" we only replace each occurrence, and do not capture "{asset.title}{asset.caption}"
-            $prompt = preg_replace_callback('/{asset\.(.*?)}/', function ($matches) use ($asset) {
-                return $asset->{$matches[1]};
-            }, $prompt);
+        // Check for errors from the API
+        if ($response->hasError()) {
+            throw new Exception($response->getErrorMessage());
+        }
 
-            // Get the $site
-            $site = Craft::$app->getSites()->getSiteById($siteId);
-
-            // parse $prompt for {site.param} and replace with $site->param
-            // make sure that if the string may contain "{site.title}{site.caption}" we only replace each occurrence, and do not capture "{site.title}{site.caption}"
-            $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
-                return $site->{$matches[1]};
-            }, $prompt);
-
-            // Make sure we have a valid prompt
-            if (empty($prompt)) {
-                $prompt = 'Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.';
-            }
-
-            // Log asset info for debugging
-            Craft::info('Generating alt text for asset: ' . $asset->filename . ' (' . $imageUrl . ')', __METHOD__);
-
-            // Create and populate the request model
-            $request = new OpenAiRequest();
-            $request->model = $this->model;
-            $request->setPrompt($prompt)
-                    ->setImageUrl($imageUrl)
-                    ->setDetail($detail);
-
-            // Validate the request
-            if (!$request->validate()) {
-                throw new Exception('Invalid request: ' . json_encode($request->getErrors()));
-            }
-
-            // Convert to array explicitly to avoid potential object-to-array conversion issues
-            $requestArray = $request->toArray();
-
-            // Send the request
-            $response = $this->sendRequest($requestArray);
-
-            // Check for errors from the API
-            if ($response->hasError()) {
-                throw new Exception($response->getErrorMessage());
-            }
-
-            // If output is empty, log and return empty string
-            if (empty($response->output_text)) {
-                Craft::warning('No alt text was generated for asset: ' . $asset->filename, __METHOD__);
-                return '';
-            }
-
-            return $response->getText();
-
-        } catch (Exception $e) {
-            $errorMessage = 'Failed to generate alt text: ' . $e->getMessage();
-            Craft::error($errorMessage, __METHOD__);
-
-            // Return empty string on errors
+        // If output is empty, log and return empty string
+        if (empty($response->output_text)) {
+            Craft::warning('No alt text was generated for asset: ' . $asset->filename, __METHOD__);
             return '';
         }
+
+        return $response->getText();
     }
 }
