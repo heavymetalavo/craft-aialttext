@@ -105,7 +105,7 @@ class OpenAiService extends Component
                 
                 // Extract just the error message from the response
                 if (isset($errorData['error']['message'])) {
-                    $errorMsg = $errorData['error']['message'];
+                    $errorMsg = 'OpenAI API error: ' . $errorData['error']['message'];
                     Craft::error('OpenAI API error: ' . $responseBody, __METHOD__);
                     
                     $errorResponse->setError($errorMsg);
