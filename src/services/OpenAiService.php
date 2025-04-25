@@ -95,10 +95,28 @@ class OpenAiService extends Component
             return $responseModel;
 
         } catch (Exception $e) {
+            $errorResponse = new OpenAiResponse();
+            
+            // Check if this is a Guzzle exception with a response
+            if ($e instanceof \GuzzleHttp\Exception\ResponseException) {
+                // Get the response body and parse it
+                $responseBody = (string) $e->getResponse()->getBody();
+                $errorData = json_decode($responseBody, true);
+                
+                // Extract just the error message from the response
+                if (isset($errorData['error']['message'])) {
+                    $errorMsg = $errorData['error']['message'];
+                    Craft::error('OpenAI API error: ' . $responseBody, __METHOD__);
+                    
+                    $errorResponse->setError($errorMsg);
+                    return $errorResponse;
+                }
+            }
+            
+            // Fall back to generic error handling
             $errorMsg = 'OpenAI API request failed: ' . $e->getMessage();
             Craft::error($errorMsg, __METHOD__);
-
-            $errorResponse = new OpenAiResponse();
+            
             $errorResponse->setError($e->getMessage());
             return $errorResponse;
         }
