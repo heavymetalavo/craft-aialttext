@@ -98,7 +98,7 @@ class OpenAiService extends Component
             $errorResponse = new OpenAiResponse();
             
             // Check if this is a Guzzle exception with a response
-            if ($e instanceof \GuzzleHttp\Exception\ResponseException) {
+            if ($e instanceof \GuzzleHttp\Exception\RequestException) {
                 // Get the response body and parse it
                 $responseBody = (string) $e->getResponse()->getBody();
                 $errorData = json_decode($responseBody, true);
