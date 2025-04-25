@@ -18,8 +18,6 @@ use craft\base\Model;
  * @property bool $preSaveAsset Whether to pre-save the asset if alt field is empty before saving a value to it, prevents same value being saved to each Site
  * @property bool $saveTranslatedResultsToEachSite Whether to save the translated result to each Site's Asset's translatable alt text field
  * @property string $translationPromptAppendage The prompt suffix for translated results
- * @property string $filenamePrompt The prompt template for generating filenames
- * @property string $titlePrompt The prompt template for generating titles
  */
 class Settings extends Model
 {
