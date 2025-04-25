@@ -8,7 +8,10 @@ https://github.com/user-attachments/assets/0f7eb3e5-bf33-4f49-a8b8-6579a4c05f8b
 
 ## 📋 Requirements
 
-This plugin requires Craft CMS 5.0.0 or later, and PHP 8.2 or later.
+This plugin requires: 
+- Craft CMS 5.0.0 or later
+- PHP 8.2 or later
+- An OpenAI API key
 
 ## 📥 Installation
 
@@ -33,6 +36,17 @@ Then:
 # or
 ddev craft plugin/install ai-alt-text
 ```
+
+## 🤖 Setup OpenAI API Key
+
+1. Visit [https://platform.openai.com/](https://platform.openai.com/) and [sign up](https://platform.openai.com/signup) in the top-right.
+2. Revisit [the API platform home page](https://platform.openai.com/) again
+3. Click the ⚙️ icon in the top-right
+4. Left menu > Organization > API keys > + Create new secret key (top-right)
+5. Create a name and assign to a suitable project
+6. Permissions > Restricted > set "Model capabilities" to "Write" and "Responses API" to "Write"
+7. Save API key to an env var, you wont get to see it again!
+8. Make sure you have a credit balance! Left menu > Organization > Billing, loading $5 is probably going to get you quite far, disabling auto recharge might be safer though that's up to you!
 
 ## 🚀 How to use
 
