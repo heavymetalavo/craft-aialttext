@@ -84,7 +84,6 @@ class AiAltTextService extends Component
         return $altText;
 
     }
-    }
 
     /**
      * Validates an asset for alt text generation.
