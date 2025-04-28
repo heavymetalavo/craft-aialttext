@@ -8,6 +8,7 @@ use craft\base\Model;
 use craft\base\Plugin;
 use craft\elements\Asset;
 use craft\events\ElementEvent;
+use craft\events\ModelEvent;
 use craft\events\RegisterElementActionsEvent;
 use craft\events\RegisterElementDefaultTableAttributesEvent;
 use craft\events\RegisterElementTableAttributesEvent;
@@ -112,9 +113,9 @@ class AiAltText extends Plugin
         Event::on(
             Asset::class,
             Element::EVENT_AFTER_SAVE,
-            function(ElementEvent $event) {
+            function(ModelEvent $event) {
                 /** @var Asset $asset */
-                $asset = $event->element;
+                $asset = $event->sender;
                 
                 // Only process new assets that are images and if the setting is enabled
                 if (
