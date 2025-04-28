@@ -7,6 +7,7 @@ use craft\base\Element;
 use craft\base\Model;
 use craft\base\Plugin;
 use craft\elements\Asset;
+use craft\events\ElementEvent;
 use craft\events\RegisterElementActionsEvent;
 use craft\events\RegisterElementDefaultTableAttributesEvent;
 use craft\events\RegisterElementTableAttributesEvent;
@@ -19,6 +20,7 @@ use craft\web\View;
 use craft\web\UrlManager;
 use craft\enums\MenuItemType;
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
+use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
 use heavymetalavo\craftaialttext\services\AiAltTextService;
 use heavymetalavo\craftaialttext\models\Settings;
 use yii\base\Event;
@@ -103,6 +105,39 @@ class AiAltText extends Plugin
             Element::EVENT_DEFINE_ACTION_MENU_ITEMS,
             function(DefineMenuItemsEvent $event) {
                 $this->aiAltTextService->handleAssetActionMenuItems($event);
+            }
+        );
+        
+        // Listen for asset creation/save events
+        Event::on(
+            Asset::class,
+            Element::EVENT_AFTER_SAVE,
+            function(ElementEvent $event) {
+                /** @var Asset $asset */
+                $asset = $event->element;
+                
+                // Only process new assets that are images and if the setting is enabled
+                if (
+                    $event->isNew 
+                    && $asset->kind === Asset::KIND_IMAGE
+                    && $this->getSettings()->generateForNewAssets
+                    && (empty($asset->alt) || $asset->alt === '')
+                ) {
+                    Craft::$app->getQueue()->push(new GenerateAiAltTextJob([
+                        'description' => Craft::t('ai-alt-text', 'Generating alt text for new asset {filename} (Element: {id}, Site: {siteId})', [
+                            'filename' => $asset->filename,
+                            'id' => $asset->id,
+                            'siteId' => $asset->siteId,
+                        ]),
+                        'elementId' => $asset->id,
+                        'siteId' => $asset->siteId,
+                    ]));
+                    
+                    Craft::info(
+                        "Queued AI alt text generation for new asset: {$asset->filename}",
+                        __METHOD__
+                    );
+                }
             }
         );
     }

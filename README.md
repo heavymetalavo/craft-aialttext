@@ -65,6 +65,8 @@ You can also generate alt text for a single asset by:
 2. Clicking the action menu `...` icon in the top-right corner
 3. Selecting **Generate AI Alt Text** from the dropdown menu
 
+Alternatively, you can enable the "Generate for new assets" option in the plugin settings to automatically generate alt text for newly uploaded assets.
+
 ![CraftCMS asset library table with two assets selected and the 'Generate AI Alt Text' option visible in the dropdown.](src/generate-ai-alt-text-elements-action-example.png)
 
 Example twig:
@@ -87,6 +89,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **Prompt** | The text prompt sent to the AI to generate alt text. Supports `{asset.property}` and `{site.property}` | See below |
 | **Image Detail Level** | How detailed the image analysis should be. | `low` |
 | **Pre-save Asset** | Whether to pre-save the asset if alt field is empty before saving a value to it. This prevents the same initial value being saved to each Site. | `true` |
+| **Generate for new assets** | Whether to automatically generate alt text when new assets are created. | `false` |
 | **Save Translated Results to Each Site** | Whether to save translated results to an Asset's translatable alt text field for each Site. | `false` |
 
 #### 🧠 Model Options

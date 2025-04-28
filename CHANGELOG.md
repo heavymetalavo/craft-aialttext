@@ -131,3 +131,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - None (initial release)
+
+## [Unreleased]
+
+### Added
+- Added "Generate for new assets" setting to automatically generate alt text when new assets are created

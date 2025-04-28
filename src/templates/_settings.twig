@@ -67,6 +67,15 @@
 }) }}
 
 {{ forms.lightswitchField({
+    label: 'Generate for new assets'|t('aialttext'),
+    id: 'generateForNewAssets',
+    name: 'generateForNewAssets',
+    instructions: "If enabled, the plugin will automatically generate alt text when new assets are created"|t("aialttext"),
+    on: settings.generateForNewAssets,
+    errors: settings.getErrors('generateForNewAssets'),
+}) }}
+
+{{ forms.lightswitchField({
     label: 'Save translated results for each Site'|t('aialttext'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',

@@ -18,6 +18,7 @@ use craft\base\Model;
  * @property bool $preSaveAsset Whether to pre-save the asset if alt field is empty before saving a value to it, prevents same value being saved to each Site
  * @property bool $saveTranslatedResultsToEachSite Whether to save the translated result to each Site's Asset's translatable alt text field
  * @property string $translationPromptAppendage The prompt suffix for translated results
+ * @property bool $generateForNewAssets Whether to generate alt text for new assets automatically
  */
 class Settings extends Model
 {
@@ -57,6 +58,11 @@ class Settings extends Model
     public bool $saveTranslatedResultsToEachSite = false;
 
     /**
+     * @var bool Whether to generate alt text for new assets automatically
+     */
+    public bool $generateForNewAssets = false;
+
+    /**
      * @inheritdoc
      */
     public function defineRules(): array
@@ -70,6 +76,7 @@ class Settings extends Model
             ['openAiImageInputDetailLevel', 'in', 'range' => ['low', 'high']],
             ['preSaveAsset', 'boolean'],
             ['saveTranslatedResultsToEachSite', 'boolean'],
+            ['generateForNewAssets', 'boolean'],
         ];
     }
 }
