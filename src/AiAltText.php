@@ -124,7 +124,9 @@ class AiAltText extends Plugin
                     && $this->getSettings()->generateForNewAssets
                     && (empty($asset->alt) || $asset->alt === '')
                 ) {
-                    Craft::$app->getQueue()->push(new GenerateAiAltTextJob([
+                    $queue = Craft::$app->getQueue();
+                    
+                    $queue->push(new GenerateAiAltTextJob([
                         'description' => Craft::t('ai-alt-text', 'Generating alt text for new asset {filename} (Element: {id}, Site: {siteId})', [
                             'filename' => $asset->filename,
                             'id' => $asset->id,
@@ -133,11 +135,12 @@ class AiAltText extends Plugin
                         'elementId' => $asset->id,
                         'siteId' => $asset->siteId,
                     ]));
-
+                    
                     $plugin = AiAltText::getInstance();
                     // If we're saving results to each site, queue a job for each site
                     $saveTranslatedResultsToEachSite = $plugin->settings->saveTranslatedResultsToEachSite;
                     if ($saveTranslatedResultsToEachSite) {
+                        $siteId = $asset->siteId;
                         foreach (Craft::$app->getSites()->getAllSites() as $site) {
                             // Skip the current site
                             if ($site->id === $siteId) {
@@ -155,7 +158,6 @@ class AiAltText extends Plugin
                             ]));
                         }
                     }
-
                     
                     Craft::info(
                         "Queued AI alt text generation for new asset: {$asset->filename}",
