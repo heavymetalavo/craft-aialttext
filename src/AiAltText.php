@@ -133,6 +133,29 @@ class AiAltText extends Plugin
                         'elementId' => $asset->id,
                         'siteId' => $asset->siteId,
                     ]));
+
+                    $plugin = AiAltText::getInstance();
+                    // If we're saving results to each site, queue a job for each site
+                    $saveTranslatedResultsToEachSite = $plugin->settings->saveTranslatedResultsToEachSite;
+                    if ($saveTranslatedResultsToEachSite) {
+                        foreach (Craft::$app->getSites()->getAllSites() as $site) {
+                            // Skip the current site
+                            if ($site->id === $siteId) {
+                                continue;
+                            }
+
+                            $queue->push(new GenerateAiAltTextJob([
+                                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Element: {id}, Site: {siteId})', [
+                                    'filename' => $asset->filename,
+                                    'id' => $asset->id,
+                                    'siteId' => $site->id,
+                                ]),
+                                'elementId' => $asset->id,
+                                'siteId' => $site->id,
+                            ]));
+                        }
+                    }
+
                     
                     Craft::info(
                         "Queued AI alt text generation for new asset: {$asset->filename}",
