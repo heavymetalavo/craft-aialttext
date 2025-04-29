@@ -114,15 +114,14 @@ class AiAltText extends Plugin
             Asset::class,
             Element::EVENT_AFTER_SAVE,
             function(ModelEvent $event) {
-                /** @var Asset $asset */
-                $asset = $event->sender;
+                /** @var Asset $element */
+                $element = $event->sender;
                 
                 // Only process new assets that are images and if the setting is enabled
                 if (
                     $event->isNew 
-                    && $asset->kind === Asset::KIND_IMAGE
+                    && $element->kind === Asset::KIND_IMAGE
                     && $this->getSettings()->generateForNewAssets
-                    && (empty($asset->alt) || $asset->alt === '')
                 ) {
                     $elementsService = Craft::$app->getElements();
                     $queue = Craft::$app->getQueue();
