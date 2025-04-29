@@ -124,45 +124,46 @@ class AiAltText extends Plugin
                     && $this->getSettings()->generateForNewAssets
                     && (empty($asset->alt) || $asset->alt === '')
                 ) {
+                    $elementsService = Craft::$app->getElements();
                     $queue = Craft::$app->getQueue();
-                    
-                    $queue->push(new GenerateAiAltTextJob([
-                        'description' => Craft::t('ai-alt-text', 'Generating alt text for new asset {filename} (Element: {id}, Site: {siteId})', [
-                            'filename' => $asset->filename,
-                            'id' => $asset->id,
-                            'siteId' => $asset->siteId,
-                        ]),
-                        'elementId' => $asset->id,
-                        'siteId' => $asset->siteId,
-                    ]));
-                    
-                    $plugin = AiAltText::getInstance();
-                    // If we're saving results to each site, queue a job for each site
-                    $saveTranslatedResultsToEachSite = $plugin->settings->saveTranslatedResultsToEachSite;
+                    // Check if there's already a job for this element
+                    $existingJobs = $queue->getJobInfo();
+                    $hasExistingJob = false;
+                    foreach ($existingJobs as $job) {
+                        if (isset($job['description']) && strpos($job['description'], "Element: {$element->id}") !== false) {
+                            $hasExistingJob = true;
+                            break;
+                        }
+                    }
+
+                    if ($hasExistingJob) {
+                        Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "{$element->filename} (ID: {$element->id}) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."));
+                        return;
+                    }
+
+                    if ($element->kind !== Asset::KIND_IMAGE) {
+                        Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "{$element->filename} (ID: {$element->id}) is not an image"));
+                        return;
+                    }
+
+                    $saveTranslatedResultsToEachSite = AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
+
+                    // If we're saving results to each site and translated results for each site, we need to queue a job for each site
                     if ($saveTranslatedResultsToEachSite) {
-                        $siteId = $asset->siteId;
                         foreach (Craft::$app->getSites()->getAllSites() as $site) {
-                            // Skip the current site
-                            if ($site->id === $siteId) {
-                                continue;
-                            }
 
                             $queue->push(new GenerateAiAltTextJob([
                                 'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Element: {id}, Site: {siteId})', [
-                                    'filename' => $asset->filename,
-                                    'id' => $asset->id,
+                                    'filename' => $element->filename,
+                                    'id' => $element->id,
                                     'siteId' => $site->id,
                                 ]),
-                                'elementId' => $asset->id,
+                                'elementId' => $element->id,
                                 'siteId' => $site->id,
                             ]));
                         }
                     }
                     
-                    Craft::info(
-                        "Queued AI alt text generation for new asset: {$asset->filename}",
-                        __METHOD__
-                    );
                 }
             }
         );
