@@ -40,6 +40,52 @@ class AiAltTextService extends Component
     }
 
     /**
+     * Creates a job for the given element
+     */
+    public function createJob(Asset $asset)
+    {
+        $assetsService = Craft::$app->getElements();
+        $queue = Craft::$app->getQueue();
+        // Check if there's already a job for this element
+        $existingJobs = $queue->getJobInfo();
+        $hasExistingJob = false;
+        foreach ($existingJobs as $job) {
+            if (isset($job['description']) && strpos($job['description'], "Asset: {$asset->id}") !== false) {
+                $hasExistingJob = true;
+                break;
+            }
+        }
+
+        if ($hasExistingJob) {
+            Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "{$asset->filename} (ID: {$asset->id}) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."));
+            return;
+        }
+
+        if ($asset->kind !== Asset::KIND_IMAGE) {
+            Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "{$asset->filename} (ID: {$asset->id}) is not an image"));
+            return;
+        }
+
+        $saveTranslatedResultsToEachSite = AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
+
+        // If we're saving results to each site and translated results for each site, we need to queue a job for each site
+        if ($saveTranslatedResultsToEachSite) {
+            foreach (Craft::$app->getSites()->getAllSites() as $site) {
+
+                $queue->push(new GenerateAiAltTextJob([
+                    'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Asset: {id}, Site: {siteId})', [
+                        'filename' => $asset->filename,
+                        'id' => $asset->id,
+                        'siteId' => $site->id,
+                    ]),
+                    'assetId' => $asset->id,
+                    'siteId' => $site->id,
+                ]));
+            }
+        }   
+    }
+
+    /**
      * Generates alt text for an asset using AI.
      *
      * This method:

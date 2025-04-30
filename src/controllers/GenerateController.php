@@ -45,50 +45,7 @@ class GenerateController extends Controller
         $this->requirePermission('saveAssets:' . $asset->getVolume()->uid);
 
         try {
-            $plugin = AiAltText::getInstance();
-            $queue = Craft::$app->getQueue();
-
-            // Check if there's already a job for this element and site
-            $existingJobs = $queue->getJobInfo();
-            $hasExistingJob = false;
-            foreach ($existingJobs as $job) {
-                if (isset($job['description']) &&
-                    strpos($job['description'], "Element: {$assetId}") !== false) {
-                    $hasExistingJob = true;
-                    break;
-                }
-            }
-
-            if ($hasExistingJob) {
-                return $this->asJson([
-                    'success' => false,
-                    'message' => Craft::t('ai-alt-text', "Asset {$asset->filename} (ID: {$assetId}) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."),
-                ]);
-            }
-
-            // Process the asset for the current site here instead of queuing a job
-            $plugin->aiAltTextService->generateAltText($asset, $siteId);
-
-            // If we're saving results to each site, queue a job for each site
-            $saveTranslatedResultsToEachSite = $plugin->settings->saveTranslatedResultsToEachSite;
-            if ($saveTranslatedResultsToEachSite) {
-                foreach (Craft::$app->getSites()->getAllSites() as $site) {
-                    // Skip the current site
-                    if ($site->id === $siteId) {
-                        continue;
-                    }
-
-                    $queue->push(new GenerateAiAltTextJob([
-                        'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Element: {id}, Site: {siteId})', [
-                            'filename' => $asset->filename,
-                            'id' => $asset->id,
-                            'siteId' => $site->id,
-                        ]),
-                        'elementId' => $asset->id,
-                        'siteId' => $site->id,
-                    ]));
-                }
-            }
+            AiAltText::getInstance()->aiAltTextService->createJob($element);
 
             // Return success
             return $this->asJson([

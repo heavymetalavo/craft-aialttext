@@ -15,7 +15,7 @@ use yii\base\Exception;
  */
 class GenerateAiAltText extends BaseJob
 {
-    public ?int $elementId = null;
+    public ?int $assetId = null;
     public ?int $siteId = null;
 
     /**
@@ -27,11 +27,11 @@ class GenerateAiAltText extends BaseJob
     {
         try {
             // query for the asset
-            $asset = Asset::find()->id($this->elementId)->siteId($this->siteId)->one();
+            $asset = Asset::find()->id($this->assetId)->siteId($this->siteId)->one();
 
             // check if the asset exists
             if (!$asset) {
-                throw new ElementNotFoundException("Asset not found: {$this->elementId}");
+                throw new ElementNotFoundException("Asset not found: {$this->assetId}");
             }
 
             // Generate alt text - now returns a string and saves the asset if successful
@@ -39,9 +39,9 @@ class GenerateAiAltText extends BaseJob
 
             // Log the result
             if (!empty($altText)) {
-                Craft::info("Successfully generated alt text for asset {$this->elementId}: " . $altText, __METHOD__);
+                Craft::info("Successfully generated alt text for asset {$this->assetId}: " . $altText, __METHOD__);
             } else {
-                Craft::warning("Failed to generate alt text for asset {$this->elementId}", __METHOD__);
+                Craft::warning("Failed to generate alt text for asset {$this->assetId}", __METHOD__);
                 // Set the description to indicate failure
                 $this->description = "Failed to generate alt text";
             }

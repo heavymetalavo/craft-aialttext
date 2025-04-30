@@ -123,46 +123,7 @@ class AiAltText extends Plugin
                     && $element->kind === Asset::KIND_IMAGE
                     && $this->getSettings()->generateForNewAssets
                 ) {
-                    $elementsService = Craft::$app->getElements();
-                    $queue = Craft::$app->getQueue();
-                    // Check if there's already a job for this element
-                    $existingJobs = $queue->getJobInfo();
-                    $hasExistingJob = false;
-                    foreach ($existingJobs as $job) {
-                        if (isset($job['description']) && strpos($job['description'], "Element: {$element->id}") !== false) {
-                            $hasExistingJob = true;
-                            break;
-                        }
-                    }
-
-                    if ($hasExistingJob) {
-                        Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "{$element->filename} (ID: {$element->id}) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."));
-                        return;
-                    }
-
-                    if ($element->kind !== Asset::KIND_IMAGE) {
-                        Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "{$element->filename} (ID: {$element->id}) is not an image"));
-                        return;
-                    }
-
-                    $saveTranslatedResultsToEachSite = AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
-
-                    // If we're saving results to each site and translated results for each site, we need to queue a job for each site
-                    if ($saveTranslatedResultsToEachSite) {
-                        foreach (Craft::$app->getSites()->getAllSites() as $site) {
-
-                            $queue->push(new GenerateAiAltTextJob([
-                                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Element: {id}, Site: {siteId})', [
-                                    'filename' => $element->filename,
-                                    'id' => $element->id,
-                                    'siteId' => $site->id,
-                                ]),
-                                'elementId' => $element->id,
-                                'siteId' => $site->id,
-                            ]));
-                        }
-                    }
-                    
+                    AiAltText::getInstance()->aiAltTextService->createJob($element);
                 }
             }
         );
