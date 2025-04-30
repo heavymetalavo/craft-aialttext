@@ -42,27 +42,26 @@ class AiAltTextService extends Component
     /**
      * Creates a job for the given element
      */
-    public function createJob(Asset $asset)
+    public function createJob(Asset $asset): void
     {
-        $assetsService = Craft::$app->getElements();
         $queue = Craft::$app->getQueue();
         // Check if there's already a job for this element
         $existingJobs = $queue->getJobInfo();
         $hasExistingJob = false;
         foreach ($existingJobs as $job) {
-            if (isset($job['description']) && strpos($job['description'], "Asset: {$asset->id}") !== false) {
+            if (isset($job['description']) && str_contains($job['description'], "Asset: $asset->id")) {
                 $hasExistingJob = true;
                 break;
             }
         }
 
         if ($hasExistingJob) {
-            Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "{$asset->filename} (ID: {$asset->id}) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."));
+            Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "$asset->filename (ID: $asset->id) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."));
             return;
         }
 
         if ($asset->kind !== Asset::KIND_IMAGE) {
-            Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "{$asset->filename} (ID: {$asset->id}) is not an image"));
+            Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "$asset->filename (ID: $asset->id) is not an image"));
             return;
         }
 
@@ -82,7 +81,7 @@ class AiAltTextService extends Component
                     'siteId' => $site->id,
                 ]));
             }
-        }   
+        }
     }
 
     /**
@@ -99,10 +98,6 @@ class AiAltTextService extends Component
      */
     public function generateAltText(Asset $asset, int $siteId = null): string
     {
-        if (!$asset) {
-            throw new Exception('Asset cannot be null');
-        }
-
         if ($asset->kind !== Asset::KIND_IMAGE) {
             throw new Exception('Asset must be an image');
         }
@@ -129,36 +124,6 @@ class AiAltTextService extends Component
         Craft::info('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
         return $altText;
 
-    }
-
-    /**
-     * Validates an asset for alt text generation.
-     *
-     * This method checks that:
-     * - The asset is not null
-     * - The asset is an image
-     * - The asset has either a public URL or is accessible via file system
-     *
-     * @param Asset $asset The asset to validate
-     * @return bool True if the asset is valid, false otherwise
-     * @throws Exception If the asset is invalid
-     */
-    private function validateAsset(Asset $asset): bool
-    {
-        if (!$asset) {
-            throw new Exception('Asset cannot be null');
-        }
-
-        if ($asset->kind !== Asset::KIND_IMAGE) {
-            throw new Exception('Asset must be an image');
-        }
-
-        // Check for either public URL or file system access
-        if (!$asset->getUrl() && !$asset->getPath()) {
-            throw new Exception('Asset must have either a public URL or be accessible via file system');
-        }
-
-        return true;
     }
 
     /**
