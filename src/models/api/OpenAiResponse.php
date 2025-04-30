@@ -9,10 +9,10 @@ use Craft;
 
 /**
  * OpenAI Response Model
- * 
+ *
  * Represents a response from the OpenAI API.
  * This model handles the structure and validation of API responses, including the generated content and any errors.
- * 
+ *
  * @property string $output_text The generated content from the API
  * @property array|null $output The full output structure from the API
  * @property array|null $content The content array from the API
@@ -29,7 +29,7 @@ class OpenAiResponse extends Model
 
     /**
      * Parse the API response and populate the model properties
-     * 
+     *
      * @param string $responseBody The raw response body from the API
      * @return bool True if parsing was successful, false otherwise
      */
@@ -50,19 +50,19 @@ class OpenAiResponse extends Model
                 $errorMessage = is_array($responseData['error'])
                     ? ($responseData['error']['message'] ?? Json::encode($responseData['error']))
                     : $responseData['error'];
-                $this->setError($errorMessage, $responseData['error'] ?? null);
+                $this->setError($errorMessage, $responseData['error']);
                 return false;
             }
 
             // Store the output if it exists
             if (isset($responseData['output']) && is_array($responseData['output'])) {
                 $this->output = $responseData['output'];
-                
+
                 // Look for the message in the output array
                 foreach ($responseData['output'] as $outputItem) {
                     if (isset($outputItem['content']) && is_array($outputItem['content'])) {
                         $this->content = $outputItem['content'];
-                        
+
                         // Look for the text content
                         foreach ($outputItem['content'] as $contentItem) {
                             if (isset($contentItem['type']) && $contentItem['type'] === 'output_text' && isset($contentItem['text'])) {
@@ -103,7 +103,7 @@ class OpenAiResponse extends Model
 
     /**
      * Set an error message on the response
-     * 
+     *
      * @param string $message The error message
      * @param array|null $details Additional error details
      */
@@ -117,7 +117,7 @@ class OpenAiResponse extends Model
 
     /**
      * Get the raw response data
-     * 
+     *
      * @return array|null The raw response data
      */
     public function getRawData(): ?array
@@ -127,7 +127,7 @@ class OpenAiResponse extends Model
 
     /**
      * Defines the validation rules for the response model.
-     * 
+     *
      * @return array The validation rules
      */
     public function defineRules(): array
@@ -142,7 +142,7 @@ class OpenAiResponse extends Model
 
     /**
      * Checks if the response contains an error.
-     * 
+     *
      * @return bool True if there is an error, false otherwise
      */
     public function hasError(): bool
@@ -152,7 +152,7 @@ class OpenAiResponse extends Model
 
     /**
      * Gets the error message from the response.
-     * 
+     *
      * @return string The error message, or an empty string if there is no error
      */
     public function getErrorMessage(): string
@@ -162,7 +162,7 @@ class OpenAiResponse extends Model
 
     /**
      * Gets the generated text from the response.
-     * 
+     *
      * @return string The generated text
      */
     public function getText(): string
@@ -183,4 +183,4 @@ class OpenAiResponse extends Model
 
         return $data;
     }
-} 
+}

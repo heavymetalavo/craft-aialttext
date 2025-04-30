@@ -23,7 +23,7 @@ class GenerateAiAltText extends BaseJob
      * @throws Exception
      * @throws Throwable
      */
-    function execute($queue): void
+    function execute(): void
     {
         try {
             // query for the asset
@@ -31,7 +31,7 @@ class GenerateAiAltText extends BaseJob
 
             // check if the asset exists
             if (!$asset) {
-                throw new ElementNotFoundException("Asset not found: {$this->assetId}");
+                throw new ElementNotFoundException("Asset not found: $this->assetId");
             }
 
             // Generate alt text - now returns a string and saves the asset if successful
@@ -39,9 +39,9 @@ class GenerateAiAltText extends BaseJob
 
             // Log the result
             if (!empty($altText)) {
-                Craft::info("Successfully generated alt text for asset {$this->assetId}: " . $altText, __METHOD__);
+                Craft::info("Successfully generated alt text for asset $this->assetId: " . $altText, __METHOD__);
             } else {
-                Craft::warning("Failed to generate alt text for asset {$this->assetId}", __METHOD__);
+                Craft::warning("Failed to generate alt text for asset $this->assetId", __METHOD__);
                 // Set the description to indicate failure
                 $this->description = "Failed to generate alt text";
             }

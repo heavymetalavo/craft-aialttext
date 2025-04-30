@@ -5,13 +5,8 @@ namespace heavymetalavo\craftaialttext\services;
 use Craft;
 use craft\base\Component;
 use craft\elements\Asset;
-use craft\helpers\Assets;
-use craft\helpers\ElementHelper;
-use craft\helpers\Html;
-use craft\helpers\Template;
-use craft\web\View;
 use heavymetalavo\craftaialttext\AiAltText;
-use craft\helpers\App;
+use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
 use Exception;
 use craft\events\DefineMenuItemsEvent;
 use craft\enums\MenuItemType;
@@ -116,8 +111,7 @@ class AiAltTextService extends Component
         }
 
         $asset->alt = $altText;
-        $runValidation = true;
-        if (!Craft::$app->elements->saveElement($asset, $runValidation)) {
+        if (!Craft::$app->elements->saveElement($asset, true)) {
             throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
         }
 

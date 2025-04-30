@@ -4,24 +4,14 @@ namespace heavymetalavo\craftaialttext;
 
 use Craft;
 use craft\base\Element;
-use craft\base\Model;
 use craft\base\Plugin;
 use craft\elements\Asset;
-use craft\events\ElementEvent;
 use craft\events\ModelEvent;
 use craft\events\RegisterElementActionsEvent;
-use craft\events\RegisterElementDefaultTableAttributesEvent;
-use craft\events\RegisterElementTableAttributesEvent;
 use craft\events\DefineMenuItemsEvent;
-use craft\helpers\Assets;
-use craft\helpers\ElementHelper;
-use craft\helpers\Html;
-use craft\helpers\Template;
 use craft\web\View;
 use craft\web\UrlManager;
-use craft\enums\MenuItemType;
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
-use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
 use heavymetalavo\craftaialttext\services\AiAltTextService;
 use heavymetalavo\craftaialttext\models\Settings;
 use yii\base\Event;
@@ -108,7 +98,7 @@ class AiAltText extends Plugin
                 $this->aiAltTextService->handleAssetActionMenuItems($event);
             }
         );
-        
+
         // Listen for asset creation/save events
         Event::on(
             Asset::class,
@@ -116,10 +106,10 @@ class AiAltText extends Plugin
             function(ModelEvent $event) {
                 /** @var Asset $element */
                 $element = $event->sender;
-                
+
                 // Only process new assets that are images and if the setting is enabled
                 if (
-                    $event->isNew 
+                    $event->isNew
                     && $element->kind === Asset::KIND_IMAGE
                     && $this->getSettings()->generateForNewAssets
                 ) {

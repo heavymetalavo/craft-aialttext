@@ -6,10 +6,7 @@ use Craft;
 use craft\base\ElementAction;
 use craft\elements\Asset;
 use craft\elements\db\ElementQueryInterface;
-use craft\helpers\ElementHelper;
-use craft\helpers\Queue;
 use heavymetalavo\craftaialttext\AiAltText;
-use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
 use yii\base\InvalidConfigException;
 
 /**
@@ -62,17 +59,12 @@ class GenerateAiAltText extends ElementAction
             throw new InvalidConfigException('User not logged in');
         }
 
-        $elementsService = Craft::$app->getElements();
-        $queue = Craft::$app->getQueue();
-
         foreach ($query->all() as $element) {
             if (!$element instanceof Asset) {
                 continue;
             }
 
             AiAltText::getInstance()->aiAltTextService->createJob($element, true);
-            
-
         }
 
         return true;
