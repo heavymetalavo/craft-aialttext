@@ -59,12 +59,16 @@ class GenerateAiAltText extends ElementAction
             throw new InvalidConfigException('User not logged in');
         }
 
-        foreach ($query->all() as $element) {
-            if (!$element instanceof Asset) {
+        foreach ($query->all() as $sset) {
+            if (!$asset instanceof Asset) {
                 continue;
             }
 
-            AiAltText::getInstance()->aiAltTextService->createJob($element, true);
+            // Set the current site id on asset
+            $asset = Asset::find()->id($asset->id)->siteId($query->siteId)->one();
+
+            // Create a job for the asset
+            AiAltText::getInstance()->aiAltTextService->createJob($asset, true);
         }
 
         return true;

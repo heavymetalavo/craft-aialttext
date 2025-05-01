@@ -45,7 +45,7 @@ class GenerateController extends Controller
         $this->requirePermission('saveAssets:' . $asset->getVolume()->uid);
 
         try {
-            AiAltText::getInstance()->aiAltTextService->createJob($element);
+            AiAltText::getInstance()->aiAltTextService->createJob($asset, true);
 
             // Return success
             return $this->asJson([
