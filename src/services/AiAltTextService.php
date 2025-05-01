@@ -87,6 +87,22 @@ class AiAltTextService extends Component
             }
         }
 
+        // Save the current site on queue
+        $queue->push(new GenerateAiAltTextJob([
+            'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Asset: {id}, Site: {siteId})', [
+                'filename' => $asset->filename,
+                'id' => $asset->id,
+                'siteId' => $site->id,
+            ]),
+            'assetId' => $asset->id,
+            'siteId' => $site->id,
+        ]));
+
+        // return early if we're not saving translated results to each site
+        if (!$saveTranslatedResultsToEachSite) {
+            return;
+        }
+
         // If we're saving results to each site and translated results for each site, we need to queue a job for each site
         foreach (Craft::$app->getSites()->getAllSites() as $site) {
             // Skip the current site
