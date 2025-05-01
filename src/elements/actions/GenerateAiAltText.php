@@ -59,7 +59,7 @@ class GenerateAiAltText extends ElementAction
             throw new InvalidConfigException('User not logged in');
         }
 
-        foreach ($query->all() as $sset) {
+        foreach ($query->all() as $asset) {
             if (!$asset instanceof Asset) {
                 continue;
             }
