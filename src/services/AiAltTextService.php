@@ -37,7 +37,7 @@ class AiAltTextService extends Component
     /**
      * Creates a job for the given element
      */
-    public function createJob(Asset $asset): void
+    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false): void
     {
         $queue = Craft::$app->getQueue();
         // Check if there's already a job for this element
@@ -62,20 +62,47 @@ class AiAltTextService extends Component
 
         $saveTranslatedResultsToEachSite = AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
 
-        // If we're saving results to each site and translated results for each site, we need to queue a job for each site
-        if ($saveTranslatedResultsToEachSite) {
-            foreach (Craft::$app->getSites()->getAllSites() as $site) {
-
-                $queue->push(new GenerateAiAltTextJob([
-                    'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Asset: {id}, Site: {siteId})', [
-                        'filename' => $asset->filename,
-                        'id' => $asset->id,
-                        'siteId' => $site->id,
-                    ]),
-                    'assetId' => $asset->id,
-                    'siteId' => $site->id,
-                ]));
+        // Check if we need to save the current site off queue
+        if ($saveCurrentSiteOffQueue) {
+            try {
+                // Generate alt text - now returns a string and saves the asset if successful
+                $altText = AiAltText::getInstance()->aiAltTextService->generateAltText($asset, $this->siteId);
+    
+                // Log the result
+                if (!empty($altText)) {
+                    Craft::info("Successfully generated alt text for asset $this->assetId: " . $altText, __METHOD__);
+                } else {
+                    Craft::warning("Failed to generate alt text for asset $this->assetId", __METHOD__);
+                    // Set the description to indicate failure
+                    $this->description = "Failed to generate alt text";
+                }
+            } catch (Exception $e) {
+                Craft::error("Error in GenerateAiAltText job: " . $e->getMessage(), __METHOD__);
+                // Set the description to indicate error
+                $this->description = "Error: " . $e->getMessage();
             }
+            
+            if (!$saveTranslatedResultsToEachSite) {
+                return;
+            }
+        }
+
+        // If we're saving results to each site and translated results for each site, we need to queue a job for each site
+        foreach (Craft::$app->getSites()->getAllSites() as $site) {
+            // Skip the current site
+            if ($saveCurrentSiteOffQueue && $site->id === $asset->siteId) {
+                continue;
+            }
+
+            $queue->push(new GenerateAiAltTextJob([
+                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Asset: {id}, Site: {siteId})', [
+                    'filename' => $asset->filename,
+                    'id' => $asset->id,
+                    'siteId' => $site->id,
+                ]),
+                'assetId' => $asset->id,
+                'siteId' => $site->id,
+            ]));
         }
     }
 
