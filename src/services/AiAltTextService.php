@@ -65,24 +65,8 @@ class AiAltTextService extends Component
 
         // Check if we need to save the current site off queue
         if ($saveCurrentSiteOffQueue) {
-            try {
-                // Generate alt text - now returns a string and saves the asset if successful
-                $altText = AiAltText::getInstance()->aiAltTextService->generateAltText($asset, $asset->siteId);
+            $this->generateAltText($asset, $asset->siteId);
     
-                // Log the result
-                if (!empty($altText)) {
-                    Craft::info("Successfully generated alt text for asset $this->assetId: " . $altText, __METHOD__);
-                } else {
-                    Craft::warning("Failed to generate alt text for asset $this->assetId", __METHOD__);
-                    // Set the description to indicate failure
-                    $this->description = "Failed to generate alt text";
-                }
-            } catch (Exception $e) {
-                Craft::error("Error in GenerateAiAltText job: " . $e->getMessage(), __METHOD__);
-                // Set the description to indicate error
-                $this->description = "Error: " . $e->getMessage();
-            }
-            
             if (!$saveTranslatedResultsToEachSite) {
                 return;
             }
