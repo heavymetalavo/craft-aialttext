@@ -60,13 +60,17 @@ class AiAltTextService extends Component
             return;
         }
 
+        // Get the $saveTranslatedResultsToEachSite setting value
         $saveTranslatedResultsToEachSite = AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
+
+        // Get the current site id
+        $currentSiteId = Craft::$app->sites->getCurrentSite()->id ?? $asset->siteId;
 
         // Check if we need to save the current site off queue
         if ($saveCurrentSiteOffQueue) {
             try {
                 // Generate alt text - now returns a string and saves the asset if successful
-                $altText = AiAltText::getInstance()->aiAltTextService->generateAltText($asset, $this->siteId);
+                $altText = AiAltText::getInstance()->aiAltTextService->generateAltText($asset, $currentSiteId);
     
                 // Log the result
                 if (!empty($altText)) {
@@ -92,10 +96,10 @@ class AiAltTextService extends Component
             'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Asset: {id}, Site: {siteId})', [
                 'filename' => $asset->filename,
                 'id' => $asset->id,
-                'siteId' => $asset->siteId,
+                'siteId' => $currentSiteId,
             ]),
             'assetId' => $asset->id,
-            'siteId' => $asset->siteId,
+            'siteId' => $currentSiteId,
         ]));
 
         // return early if we're not saving translated results to each site
@@ -106,7 +110,7 @@ class AiAltTextService extends Component
         // If we're saving results to each site and translated results for each site, we need to queue a job for each site
         foreach (Craft::$app->getSites()->getAllSites() as $site) {
             // Skip the current site
-            if ($saveCurrentSiteOffQueue && $site->id === $asset->siteId) {
+            if ($saveCurrentSiteOffQueue && $site->id === $currentSiteId) {
                 continue;
             }
 
