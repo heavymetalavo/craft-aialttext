@@ -66,14 +66,7 @@
     errors: settings.getErrors('preSaveAsset'),
 }) }}
 
-{{ forms.lightswitchField({
-    label: 'Generate for new assets'|t('aialttext'),
-    id: 'generateForNewAssets',
-    name: 'generateForNewAssets',
-    instructions: "If enabled, the plugin will automatically generate alt text when an image assets is created (on upload)"|t("aialttext"),
-    on: settings.generateForNewAssets,
-    errors: settings.getErrors('generateForNewAssets'),
-}) }}
+
 
 {{ forms.lightswitchField({
     label: 'Save translated results for each Site'|t('aialttext'),
