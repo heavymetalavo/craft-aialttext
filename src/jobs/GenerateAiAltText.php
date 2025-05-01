@@ -23,7 +23,7 @@ class GenerateAiAltText extends BaseJob
      * @throws Exception
      * @throws Throwable
      */
-    function execute(): void
+    function execute($queue): void
     {
         try {
             // query for the asset
