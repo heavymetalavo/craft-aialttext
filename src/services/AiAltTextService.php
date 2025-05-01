@@ -92,10 +92,10 @@ class AiAltTextService extends Component
             'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Asset: {id}, Site: {siteId})', [
                 'filename' => $asset->filename,
                 'id' => $asset->id,
-                'siteId' => $site->id,
+                'siteId' => $asset->siteId,
             ]),
             'assetId' => $asset->id,
-            'siteId' => $site->id,
+            'siteId' => $asset->siteId,
         ]));
 
         // return early if we're not saving translated results to each site
