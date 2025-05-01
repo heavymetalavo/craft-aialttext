@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] 2025-05-01
+
+### Added
+- Adding new feature to generate AI alt text on the `ELEMENT::EVENT_AFTER_SAVE` event
+- Adding new setting to allow users to generate alt text on upload
+
+### Changed
+- Updating setting descriptions to be more concise
+- Refactored logic within the plugin to re-use code, removing dupe code
+- Improved main logic within service method to generate alt text for current site off-queue so results can be visualised near immediately
+- Refactoring code to be suitable for php8.2
+- Removing unused imported classes
+- Improved logic so current siteId could be passed through and saved before others
+- Updating variables to be more consice, e.g. now $asset instead of $element
 
 ## [1.3.2] - 2025-04-25
 

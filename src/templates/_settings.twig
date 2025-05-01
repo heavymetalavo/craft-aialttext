@@ -67,10 +67,19 @@
 }) }}
 
 {{ forms.lightswitchField({
+    label: 'Generate for new image assets (on upload)'|t('aialttext'),
+    id: 'generateForNewAssets',
+    name: 'generateForNewAssets',
+    instructions: "If enabled, the plugin will automatically generate alt text when an image assets is created (on upload)"|t("aialttext"),
+    on: settings.generateForNewAssets,
+    errors: settings.getErrors('generateForNewAssets'),
+}) }}
+
+{{ forms.lightswitchField({
     label: 'Save translated results for each Site'|t('aialttext'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',
-    instructions: "If enabled, the plugin will queue an extra job for each Craft Site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the Craft Site (`en-GB` for British english, `en-US` for American english, `de` for German etc). When disabled, the related Site content within the prompt will work for the \"Current Site\" only."|t("aialttext"),
+    instructions: "If enabled, the plugin will queue an extra job for each Craft Site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the Craft Site (`en-GB` for British english, `en-US` for American english, `de` for German etc). When disabled, alt text will generate for the Current Site for existing assets, or the Default Site when uploading a new asset."|t("aialttext"),
     on: settings.saveTranslatedResultsToEachSite,
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}

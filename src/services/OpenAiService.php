@@ -5,11 +5,16 @@ namespace heavymetalavo\craftaialttext\services;
 use Craft;
 use craft\base\Component;
 use craft\elements\Asset;
+use craft\errors\AssetException;
+use craft\errors\ImageTransformException;
 use craft\helpers\App;
 use Exception;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\api\OpenAiRequest;
 use heavymetalavo\craftaialttext\models\api\OpenAiResponse;
+use yii\base\InvalidConfigException;
 
 /**
  * OpenAI API Service
@@ -49,7 +54,7 @@ class OpenAiService extends Component
      *
      * @param array $requestData The request data to send
      * @return OpenAiResponse The API response
-     * @throws Exception If the API call fails
+     * @throws Exception|GuzzleException If the API call fails
      */
     public function sendRequest(array $requestData): OpenAiResponse
     {
@@ -96,27 +101,27 @@ class OpenAiService extends Component
 
         } catch (Exception $e) {
             $errorResponse = new OpenAiResponse();
-            
+
             // Check if this is a Guzzle exception with a response
-            if ($e instanceof \GuzzleHttp\Exception\RequestException) {
+            if ($e instanceof RequestException) {
                 // Get the response body and parse it
                 $responseBody = (string) $e->getResponse()->getBody();
                 $errorData = json_decode($responseBody, true);
-                
+
                 // Extract just the error message from the response
                 if (isset($errorData['error']['message'])) {
                     $errorMsg = 'OpenAI API error: ' . $errorData['error']['message'];
                     Craft::error('OpenAI API error: ' . $responseBody, __METHOD__);
-                    
+
                     $errorResponse->setError($errorMsg);
                     return $errorResponse;
                 }
             }
-            
+
             // Fall back to generic error handling
             $errorMsg = 'OpenAI API request failed: ' . $e->getMessage();
             Craft::error($errorMsg, __METHOD__);
-            
+
             $errorResponse->setError($e->getMessage());
             return $errorResponse;
         }
@@ -127,6 +132,7 @@ class OpenAiService extends Component
      *
      * @param string $url The URL to check
      * @return bool Whether the URL is accessible
+     * @throws GuzzleException
      */
     private function isUrlAccessible(string $url): bool
     {
@@ -149,6 +155,7 @@ class OpenAiService extends Component
      *
      * @param Asset $asset The asset to validate
      * @return bool Whether the asset is an accepted format or was successfully converted
+     * @throws ImageTransformException
      */
     private function isValidImageFormat(Asset $asset): bool
     {
@@ -201,7 +208,13 @@ class OpenAiService extends Component
      * - Handles any errors that occur during the process
      *
      * @param Asset $asset The asset to generate alt text for
+     * @param int|null $siteId
      * @return string The generated alt text, or an empty string if generation fails
+     * @throws GuzzleException
+     * @throws ImageTransformException
+     * @throws AssetException
+     * @throws InvalidConfigException
+     * @throws Exception
      */
     public function generateAltText(Asset $asset, int $siteId = null): string
     {
@@ -258,7 +271,7 @@ class OpenAiService extends Component
 
             // Encode as base64 and create data URI
             $base64Image = base64_encode($assetContents);
-            $imageUrl = "data:{$mimeType};base64,{$base64Image}";
+            $imageUrl = "data:$mimeType;base64,$base64Image";
         }
 
         $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel) ?? 'low';
@@ -291,8 +304,8 @@ class OpenAiService extends Component
         $request = new OpenAiRequest();
         $request->model = $this->model;
         $request->setPrompt($prompt)
-                ->setImageUrl($imageUrl)
-                ->setDetail($detail);
+            ->setImageUrl($imageUrl)
+            ->setDetail($detail);
 
         // Validate the request
         if (!$request->validate()) {

@@ -6,10 +6,10 @@ use craft\base\Model;
 
 /**
  * OpenAI Request Model
- * 
+ *
  * Represents a request to the OpenAI API for vision analysis.
  * This model handles the structure and validation of API requests, including the model to use and input to send.
- * 
+ *
  * @property string $model The OpenAI model to use (e.g., 'gpt-4o-mini')
  * @property array $input The input array containing the role and content
  * @property-read string $detail The detail level for image analysis
@@ -18,24 +18,24 @@ class OpenAiRequest extends Model
 {
     public string $model = '';
     public array $input = [];
-    
+
     private string $prompt = '';
     private string $imageUrl = '';
     private string $detail = 'low';
 
     /**
      * Gets the detail level for image analysis
-     * 
+     *
      * @return string The detail level
      */
     public function getDetail(): string
     {
         return $this->detail;
     }
-    
+
     /**
      * Sets the prompt text for the request
-     * 
+     *
      * @param string $prompt The prompt text to use
      * @return self For method chaining
      */
@@ -45,10 +45,10 @@ class OpenAiRequest extends Model
         $this->buildInput();
         return $this;
     }
-    
+
     /**
      * Sets the image URL for the request
-     * 
+     *
      * @param string $imageUrl The URL of the image to analyze
      * @return self For method chaining
      */
@@ -58,10 +58,10 @@ class OpenAiRequest extends Model
         $this->buildInput();
         return $this;
     }
-    
+
     /**
      * Sets the detail level for image analysis
-     * 
+     *
      * @param string $detail The detail level (auto, low, or high)
      * @return self For method chaining
      */
@@ -71,14 +71,14 @@ class OpenAiRequest extends Model
         $this->buildInput();
         return $this;
     }
-    
+
     /**
      * Builds the input array structure from the current properties
      */
     private function buildInput(): void
     {
         $content = [];
-        
+
         // Add text content if prompt is set
         if (!empty($this->prompt)) {
             $content[] = [
@@ -86,7 +86,7 @@ class OpenAiRequest extends Model
                 'text' => $this->prompt
             ];
         }
-        
+
         // Add image content if imageUrl is set
         if (!empty($this->imageUrl)) {
             $content[] = [
@@ -95,7 +95,7 @@ class OpenAiRequest extends Model
                 'detail' => $this->detail
             ];
         }
-        
+
         // Set the input array with the built content
         $this->input = [
             [
@@ -107,7 +107,7 @@ class OpenAiRequest extends Model
 
     /**
      * Defines the validation rules for the request model.
-     * 
+     *
      * @return array The validation rules
      */
     public function defineRules(): array
@@ -116,18 +116,16 @@ class OpenAiRequest extends Model
             [['model', 'input'], 'required'],
             ['model', 'string'],
             ['input', 'safe'],
-            ['model', 'validateDetail'], 
+            ['model', 'validateDetail'],
         ];
     }
-    
+
     /**
      * Validates the detail property
      *
-     * @param string $attribute The attribute being validated (not used, but required by validator)
-     * @param mixed $params Validator parameters (not used, but required by validator)
      * @return void
      */
-    public function validateDetail($attribute, $params): void
+    public function validateDetail(): void
     {
         // Custom validator for detail value
         if (!in_array($this->detail, ['auto', 'low', 'high'])) {
@@ -147,7 +145,7 @@ class OpenAiRequest extends Model
         };
         return $fields;
     }
-    
+
     /**
      * @inheritdoc
      */
@@ -159,4 +157,4 @@ class OpenAiRequest extends Model
             'input' => $this->input,
         ];
     }
-} 
+}
