@@ -148,45 +148,52 @@ class AiAltText extends Plugin
         
         // Pre-calculate counts for each site
         foreach ($sites as $site) {
-            // Get ALL image assets for this site
-            $allAssets = Asset::find()
-                ->kind(Asset::KIND_IMAGE)
-                ->siteId($site->id)
-                ->all();
+            try {
+                // Get all image assets for this site using a simpler query approach
+                $query = Asset::find()
+                    ->kind(Asset::KIND_IMAGE)
+                    ->siteId($site->id);
                 
-            $totalAssetCount = count($allAssets);
-            
-            // Count by inspecting each asset
-            $withAltCount = 0;
-            $withoutAltCount = 0;
-            
-            foreach ($allAssets as $asset) {
-                $altText = $asset->alt;
-                // Log some sample assets to verify alt text
-                if (count($allAssets) <= 5 || rand(1, 10) === 1) {
-                    Craft::info("Asset {$asset->id} ({$asset->filename}) alt text: '" . $altText . "'", __METHOD__);
+                // Get all assets - this avoids any where clause with field_alt
+                $allAssets = $query->all();
+                $totalAssetCount = count($allAssets);
+                
+                // Count by inspecting each asset
+                $withAltCount = 0;
+                $withoutAltCount = 0;
+                
+                foreach ($allAssets as $asset) {
+                    $altText = $asset->alt;
+                    
+                    // Check for actual non-empty alt text
+                    if ($altText !== null && trim($altText) !== '') {
+                        $withAltCount++;
+                    } else {
+                        $withoutAltCount++;
+                    }
                 }
                 
-                // Check for actual non-empty alt text
-                if ($altText !== null && trim($altText) !== '') {
-                    $withAltCount++;
-                } else {
-                    $withoutAltCount++;
-                }
+                // Store counts for this site
+                $siteAltTextCounts[$site->id] = [
+                    'total' => $totalAssetCount,
+                    'with' => $withAltCount,
+                    'without' => $withoutAltCount
+                ];
+                
+                // Add to totals
+                $totalAssetsWithAltTextForAllSites += $withAltCount;
+                $totalAssetsWithoutAltTextForAllSites += $withoutAltCount;
+                
+                Craft::info("Site {$site->name}: Total: {$totalAssetCount}, With Alt: {$withAltCount}, Without Alt: {$withoutAltCount}", __METHOD__);
+            } catch (\Exception $e) {
+                Craft::error("Error counting assets for site {$site->name}: " . $e->getMessage(), __METHOD__);
+                // Use safe defaults if there's an error
+                $siteAltTextCounts[$site->id] = [
+                    'total' => 0,
+                    'with' => 0,
+                    'without' => 0
+                ];
             }
-            
-            // Store counts for this site
-            $siteAltTextCounts[$site->id] = [
-                'total' => $totalAssetCount,
-                'with' => $withAltCount,
-                'without' => $withoutAltCount
-            ];
-            
-            // Add to totals
-            $totalAssetsWithAltTextForAllSites += $withAltCount;
-            $totalAssetsWithoutAltTextForAllSites += $withoutAltCount;
-            
-            Craft::info("Site {$site->name}: Total: {$totalAssetCount}, With Alt: {$withAltCount}, Without Alt: {$withoutAltCount}", __METHOD__);
         }
         
         Craft::info("Total assets WITH alt text for ALL sites: {$totalAssetsWithAltTextForAllSites}", __METHOD__);
