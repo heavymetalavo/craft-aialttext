@@ -155,36 +155,19 @@ class AiAltText extends Plugin
             ];
 
             try {
-                // Manually fetch assets to avoid ElementQuery->count() which causes the field_alt error
-                $assets = Craft::$app->getDb()->createCommand("
-                    SELECT a.id, a.filename 
-                    FROM {{%assets}} a 
-                    JOIN {{%elements}} e ON a.id = e.id 
-                    WHERE e.enabled = 1 AND e.dateDeleted IS NULL
-                ")->queryAll();
+                // Use Craft's asset service to get all assets rather than direct SQL
+                $assets = Asset::find()
+                    ->kind(Asset::KIND_IMAGE)
+                    ->siteId($site->id)
+                    ->status(null)  // Get all assets regardless of status
+                    ->all();
                 
-                if (empty($assets)) {
-                    continue;
-                }
-                
-                $imageAssetCount = 0;
+                $imageAssetCount = count($assets);
                 $withAltCount = 0;
                 $withoutAltCount = 0;
                 
-                // For each asset, check if it's an image and if it has alt text
-                foreach ($assets as $assetData) {
-                    // Load the actual asset to get its properties
-                    $asset = Asset::find()
-                        ->id($assetData['id'])
-                        ->siteId($site->id)
-                        ->one();
-                    
-                    if (!$asset || $asset->kind !== Asset::KIND_IMAGE) {
-                        continue;
-                    }
-                    
-                    $imageAssetCount++;
-                    
+                // For each asset, check if it has alt text
+                foreach ($assets as $asset) {
                     // Check alt text
                     $altText = $asset->alt;
                     if ($altText !== null && trim($altText) !== '') {
