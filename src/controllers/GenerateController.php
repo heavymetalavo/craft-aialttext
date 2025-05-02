@@ -113,7 +113,7 @@ class GenerateController extends Controller
             );
             
             // Redirect back to settings page
-            return $this->redirect('ai-alt-text/settings');
+            return $this->redirect('settings/plugins/ai-alt-text');
         } catch (\Exception $e) {
             Craft::error('Error queueing alt text generation for all assets: ' . $e->getMessage(), __METHOD__);
             
@@ -121,7 +121,7 @@ class GenerateController extends Controller
                 Craft::t('ai-alt-text', 'Error: {message}', ['message' => $e->getMessage()])
             );
             
-            return $this->redirect('ai-alt-text/settings');
+            return $this->redirect('settings/plugins/ai-alt-text');
         }
     }
 }
