@@ -41,8 +41,9 @@ class AiAltTextService extends Component
     {
         $queue = Craft::$app->getQueue();
 
+        $assetSiteId = $asset->siteId;
         if ($currentSiteId) {
-            $assetSiteId = $currentSiteId ?? $asset->siteId;
+            $assetSiteId = $currentSiteId;
         }
 
         // Check if there's already a job for this element
