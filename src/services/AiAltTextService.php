@@ -53,14 +53,17 @@ class AiAltTextService extends Component
             $existingJobs = $queue->getJobInfo();
             $hasExistingJob = false;
             foreach ($existingJobs as $job) {
-                if (isset($job['description']) && str_contains($job['description'], "Asset: $asset->id")) {
+                // Only skip if both asset ID AND site ID match an existing job
+                if (isset($job['description']) && 
+                    str_contains($job['description'], "Asset: $asset->id") && 
+                    str_contains($job['description'], "Site: $assetSiteId")) {
                     $hasExistingJob = true;
                     break;
                 }
             }
 
             if ($hasExistingJob) {
-                Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "$asset->filename (ID: $asset->id) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."));
+                Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "$asset->filename (ID: $asset->id, Site: $assetSiteId) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."));
                 return;
             }
         }

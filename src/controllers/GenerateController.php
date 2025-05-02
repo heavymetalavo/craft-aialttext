@@ -139,8 +139,8 @@ class GenerateController extends Controller
                             // Log which asset we're queuing
                             Craft::info('Queuing alt text generation for asset: ' . $asset->id . ' (' . $asset->filename . ') in site ' . $site->name, __METHOD__);
                             
-                            // Create a job for the asset
-                            AiAltText::getInstance()->aiAltTextService->createJob($asset, false, $site->id, true);
+                            // Create a job for the asset - don't need to skip the check anymore
+                            AiAltText::getInstance()->aiAltTextService->createJob($asset, false, $site->id);
                             $queuedCount++;
                         } catch (\Exception $e) {
                             Craft::error('Error queuing job for asset ' . $asset->id . ': ' . $e->getMessage(), __METHOD__);
