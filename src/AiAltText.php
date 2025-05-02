@@ -67,6 +67,7 @@ class AiAltText extends Plugin
             UrlManager::EVENT_REGISTER_CP_URL_RULES,
             function(RegisterUrlRulesEvent $event) {
                 $event->rules['ai-alt-text/generate/single-asset'] = 'ai-alt-text/generate/single-asset';
+                $event->rules['ai-alt-text/generate-all-assets'] = 'ai-alt-text/generate/generate-all-assets';
             }
         );
 
@@ -136,11 +137,48 @@ class AiAltText extends Plugin
      */
     protected function settingsHtml(): ?string
     {
+        // Get current site
+        $currentSite = Craft::$app->getSites()->getCurrentSite();
+        $sites = Craft::$app->getSites()->getAllSites();
+        
+        // Count total assets
+        $totalAssets = Asset::find()
+            ->kind(Asset::KIND_IMAGE)
+            ->siteId($currentSite->id)
+            ->count();
+            
+        // Count assets with alt text
+        $totalAssetsWithAltText = Asset::find()
+            ->kind(Asset::KIND_IMAGE)
+            ->siteId($currentSite->id)
+            ->andWhere(['not', ['alt' => null]])
+            ->andWhere(['not', ['alt' => '']])
+            ->count();
+            
+        // Calculate assets without alt text
+        $totalAssetsWithoutAltText = $totalAssets - $totalAssetsWithAltText;
+        
+        // Function to get count for specific site
+        $totalAssetsWithAltTextForSite = function($siteId) {
+            return Asset::find()
+                ->kind(Asset::KIND_IMAGE)
+                ->siteId($siteId)
+                ->andWhere(['not', ['alt' => null]])
+                ->andWhere(['not', ['alt' => '']])
+                ->count();
+        };
+        
         return Craft::$app->view->renderTemplate(
             'ai-alt-text/_settings',
             [
                 'plugin' => $this,
                 'settings' => $this->getSettings(),
+                'totalAssets' => $totalAssets,
+                'totalAssetsWithAltText' => $totalAssetsWithAltText,
+                'totalAssetsWithoutAltText' => $totalAssetsWithoutAltText,
+                'currentSite' => $currentSite,
+                'sites' => $sites,
+                'totalAssetsWithAltTextForSite' => $totalAssetsWithAltTextForSite,
             ]
         );
     }

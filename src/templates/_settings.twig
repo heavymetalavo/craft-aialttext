@@ -13,6 +13,22 @@
     <li>The plugin will queue jobs to generate alt text for each selected asset</li>
 </ol>
 
+<h2>Bulk actions</h2>
+
+<p>Generate alt text for all assets</p>
+
+<p>Total assets: {{ totalAssets }}</p>
+<p>Total assets with alt text for current Site: {{ totalAssetsWithAltText }}</p>
+<p>Total assets without alt text for current Site: {{ totalAssetsWithoutAltText }}</p>
+{# If sites > 1, show the total assets with alt text for each site skip current Site #}
+{% if sites|length > 1 %}
+    {% for site in sites | filter(site => site.id != currentSite.id) %}
+        <p>Total assets with alt text for {{ site.name }}: {{ totalAssetsWithAltTextForSite(site.id) }}</p>
+    {% endfor %}
+{% endif %}
+
+<a href="{{ url('ai-alt-text/generate-all-assets') }}" class="btn submit">Generate alt text for all assets</a>
+
 <h2>Settings</h2>
 
 {{ forms.autosuggestField({
