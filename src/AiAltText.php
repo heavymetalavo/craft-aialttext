@@ -68,6 +68,7 @@ class AiAltText extends Plugin
             function(RegisterUrlRulesEvent $event) {
                 $event->rules['ai-alt-text/generate/single-asset'] = 'ai-alt-text/generate/single-asset';
                 $event->rules['ai-alt-text/generate-all-assets'] = 'ai-alt-text/generate/generate-all-assets';
+                $event->rules['ai-alt-text/generate-assets-without-alt-text'] = 'ai-alt-text/generate/generate-assets-without-alt-text';
             }
         );
 
