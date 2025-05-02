@@ -36,26 +36,33 @@ class AiAltTextService extends Component
 
     /**
      * Creates a job for the given element
+     * 
+     * @param Asset $asset The asset to create a job for
+     * @param bool $saveCurrentSiteOffQueue Whether to process the current site off queue
+     * @param int|null $currentSiteId The current site ID
+     * @param bool $skipExistingJobCheck Whether to skip the check for existing jobs (useful for bulk operations)
      */
-    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null): void
+    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false): void
     {
         $queue = Craft::$app->getQueue();
 
         $assetSiteId = $currentSiteId ?? $asset->siteId;
 
         // Check if there's already a job for this element
-        $existingJobs = $queue->getJobInfo();
-        $hasExistingJob = false;
-        foreach ($existingJobs as $job) {
-            if (isset($job['description']) && str_contains($job['description'], "Asset: $asset->id")) {
-                $hasExistingJob = true;
-                break;
+        if (!$skipExistingJobCheck) {
+            $existingJobs = $queue->getJobInfo();
+            $hasExistingJob = false;
+            foreach ($existingJobs as $job) {
+                if (isset($job['description']) && str_contains($job['description'], "Asset: $asset->id")) {
+                    $hasExistingJob = true;
+                    break;
+                }
             }
-        }
 
-        if ($hasExistingJob) {
-            Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "$asset->filename (ID: $asset->id) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."));
-            return;
+            if ($hasExistingJob) {
+                Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "$asset->filename (ID: $asset->id) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."));
+                return;
+            }
         }
 
         if ($asset->kind !== Asset::KIND_IMAGE) {
