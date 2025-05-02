@@ -164,21 +164,42 @@ class AiAltText extends Plugin
         
         Craft::info("Total assets WITHOUT alt text for site {$currentSite->name}: {$totalAssetsWithoutAltText}", __METHOD__);
         
+        // Calculate totals across all sites
+        $totalAssetsWithAltTextForAllSites = 0;
+        $totalAssetsWithoutAltTextForAllSites = 0;
+        
         // Pre-calculate counts for each site
         $siteAltTextCounts = [];
         foreach ($sites as $site) {
-            if ($site->id != $currentSite->id) {
-                $withAltText = Asset::find()
-                    ->kind(Asset::KIND_IMAGE)
-                    ->siteId($site->id)
-                    ->andWhere(['not', ['or', ['alt' => null], ['alt' => '']]])
-                    ->count();
-                    
-                $siteAltTextCounts[$site->id] = $withAltText;
+            // Get total assets for this site
+            $siteAssetCount = Asset::find()
+                ->kind(Asset::KIND_IMAGE)
+                ->siteId($site->id)
+                ->count();
                 
-                Craft::info("Total assets WITH alt text for site {$site->name}: {$withAltText}", __METHOD__);
+            // Get assets with alt text for this site
+            $siteWithAltText = Asset::find()
+                ->kind(Asset::KIND_IMAGE)
+                ->siteId($site->id)
+                ->andWhere(['not', ['or', ['alt' => null], ['alt' => '']]])
+                ->count();
+                
+            // Calculate without alt text for this site
+            $siteWithoutAltText = $siteAssetCount - $siteWithAltText;
+            
+            // Add to totals
+            $totalAssetsWithAltTextForAllSites += $siteWithAltText;
+            $totalAssetsWithoutAltTextForAllSites += $siteWithoutAltText;
+            
+            // Store count for this site if not current site
+            if ($site->id != $currentSite->id) {
+                $siteAltTextCounts[$site->id] = $siteWithAltText;
+                Craft::info("Total assets WITH alt text for site {$site->name}: {$siteWithAltText}", __METHOD__);
             }
         }
+        
+        Craft::info("Total assets WITH alt text for ALL sites: {$totalAssetsWithAltTextForAllSites}", __METHOD__);
+        Craft::info("Total assets WITHOUT alt text for ALL sites: {$totalAssetsWithoutAltTextForAllSites}", __METHOD__);
         
         return Craft::$app->view->renderTemplate(
             'ai-alt-text/_settings',
@@ -188,6 +209,8 @@ class AiAltText extends Plugin
                 'totalAssets' => $totalAssets,
                 'totalAssetsWithAltText' => $totalAssetsWithAltText,
                 'totalAssetsWithoutAltText' => $totalAssetsWithoutAltText,
+                'totalAssetsWithAltTextForAllSites' => $totalAssetsWithAltTextForAllSites,
+                'totalAssetsWithoutAltTextForAllSites' => $totalAssetsWithoutAltTextForAllSites,
                 'currentSite' => $currentSite,
                 'sites' => $sites,
                 'siteAltTextCounts' => $siteAltTextCounts,
