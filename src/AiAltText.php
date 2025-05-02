@@ -163,10 +163,10 @@ class AiAltText extends Plugin
             }
             
             // Count assets with alt text (not null AND not empty string)
-            // Use rawContent to directly access the content column data
+            // In Craft, we can use the field handle directly in the element query
             $withAltTextQuery = (clone $totalAssetQuery)
-                ->andWhere(['not', ['field_alt' => null]])
-                ->andWhere(['not', ['field_alt' => '']]);
+                ->andWhere(['not', ['alt' => null]])
+                ->andWhere(['not', ['alt' => '']]);
             
             $withAltTextCount = $withAltTextQuery->count();
             

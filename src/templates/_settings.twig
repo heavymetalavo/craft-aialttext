@@ -30,16 +30,16 @@
         {% if sites|length > 1 %}
             <tr class="totalcount">
                 <td><strong>All Sites Total</strong></td>
-                <td>{{ totalAssets * sites|length }}</td>
+                <td>{{ totalAssetsWithAltTextForAllSites + totalAssetsWithoutAltTextForAllSites }}</td>
                 <td>{{ totalAssetsWithAltTextForAllSites }}</td>
                 <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
             </tr>
             {% for site in sites %}
             <tr>
                 <td>{{ site.name }}</td>
-                <td>{{ totalAssets }}</td>
-                <td>{{ siteAltTextCounts[site.id] }}</td>
-                <td>{{ totalAssets - siteAltTextCounts[site.id] }}</td>
+                <td>{{ siteAltTextCounts[site.id].total }}</td>
+                <td>{{ siteAltTextCounts[site.id].with }}</td>
+                <td>{{ siteAltTextCounts[site.id].without }}</td>
             </tr>
             {% endfor %}
         {% endif %}
