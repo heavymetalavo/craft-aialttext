@@ -27,14 +27,14 @@
         </tr>
     </thead>
     <tbody>
-        <tr>
-            <td><strong>{{ currentSite.name }} (current)</strong></td>
-            <td>{{ totalAssets }}</td>
-            <td>{{ totalAssetsWithAltText }}</td>
-            <td>{{ totalAssetsWithoutAltText }}</td>
-        </tr>
         {% if sites|length > 1 %}
-            {% for site in sites | filter(site => site.id != currentSite.id) %}
+            <tr class="totalcount">
+                <td><strong>All Sites Total</strong></td>
+                <td>{{ totalAssets * sites|length }}</td>
+                <td>{{ totalAssetsWithAltTextForAllSites }}</td>
+                <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
+            </tr>
+            {% for site in sites %}
             <tr>
                 <td>{{ site.name }}</td>
                 <td>{{ totalAssets }}</td>
@@ -42,12 +42,6 @@
                 <td>{{ totalAssets - siteAltTextCounts[site.id] }}</td>
             </tr>
             {% endfor %}
-            <tr class="totalcount">
-                <td><strong>All Sites Total</strong></td>
-                <td>{{ totalAssets * sites|length }}</td>
-                <td>{{ totalAssetsWithAltTextForAllSites }}</td>
-                <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
-            </tr>
         {% endif %}
     </tbody>
 </table>
