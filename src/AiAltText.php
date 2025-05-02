@@ -16,6 +16,7 @@ use heavymetalavo\craftaialttext\services\AiAltTextService;
 use heavymetalavo\craftaialttext\models\Settings;
 use yii\base\Event;
 use craft\events\RegisterUrlRulesEvent;
+use craft\helpers\Cp;
 
 /**
  * AI Alt Text Plugin
@@ -105,15 +106,18 @@ class AiAltText extends Plugin
             Element::EVENT_AFTER_SAVE,
             function(ModelEvent $event) {
                 /** @var Asset $element */
-                $element = $event->sender;
+                $asset = $event->sender;
 
                 // Only process new assets that are images and if the setting is enabled
                 if (
                     $event->isNew
-                    && $element->kind === Asset::KIND_IMAGE
+                    && $asset->kind === Asset::KIND_IMAGE
                     && $this->getSettings()->generateForNewAssets
                 ) {
-                    AiAltText::getInstance()->aiAltTextService->createJob($element);
+                    // Save current site ID
+                    $currentSite = Cp::requestedSite();
+                    // Pass current site ID to create a job
+                    AiAltText::getInstance()->aiAltTextService->createJob($asset, false, $currentSite->id);
                 }
             }
         );

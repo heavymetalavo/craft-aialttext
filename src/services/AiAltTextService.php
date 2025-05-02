@@ -37,9 +37,14 @@ class AiAltTextService extends Component
     /**
      * Creates a job for the given element
      */
-    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false): void
+    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null): void
     {
         $queue = Craft::$app->getQueue();
+
+        if ($currentSiteId) {
+            $assetSiteId = $currentSiteId ?? $asset->siteId;
+        }
+
         // Check if there's already a job for this element
         $existingJobs = $queue->getJobInfo();
         $hasExistingJob = false;
@@ -65,7 +70,7 @@ class AiAltTextService extends Component
 
         // Check if we need to save the current site off queue
         if ($saveCurrentSiteOffQueue) {
-            $this->generateAltText($asset, $asset->siteId);
+            $this->generateAltText($asset, $assetSiteId);
     
             if (!$saveTranslatedResultsToEachSite) {
                 return;
@@ -77,10 +82,10 @@ class AiAltTextService extends Component
             'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Asset: {id}, Site: {siteId})', [
                 'filename' => $asset->filename,
                 'id' => $asset->id,
-                'siteId' => $asset->siteId,
+                'siteId' => $assetSiteId,
             ]),
             'assetId' => $asset->id,
-            'siteId' => $asset->siteId,
+            'siteId' => $assetSiteId,
         ]));
 
         // return early if we're not saving translated results to each site
@@ -91,7 +96,7 @@ class AiAltTextService extends Component
         // If we're saving results to each site and translated results for each site, we need to queue a job for each site
         foreach (Craft::$app->getSites()->getAllSites() as $site) {
             // Skip the current site
-            if ($saveCurrentSiteOffQueue && $site->id === $asset->siteId) {
+            if ($saveCurrentSiteOffQueue && $site->id === $assetSiteId) {
                 continue;
             }
 
