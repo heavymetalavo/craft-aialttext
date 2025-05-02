@@ -146,26 +146,47 @@ class AiAltText extends Plugin
         $totalAssetsWithoutAltTextForAllSites = 0;
         $siteAltTextCounts = [];
         
-        // Pre-calculate counts for each site
+        // Manually count assets for each site to avoid problematic database queries
         foreach ($sites as $site) {
+            $siteAltTextCounts[$site->id] = [
+                'total' => 0,
+                'with' => 0,
+                'without' => 0
+            ];
+
             try {
-                // Get all image assets for this site using a simpler query approach
-                $query = Asset::find()
-                    ->kind(Asset::KIND_IMAGE)
-                    ->siteId($site->id);
+                // Manually fetch assets to avoid ElementQuery->count() which causes the field_alt error
+                $assets = Craft::$app->getDb()->createCommand("
+                    SELECT a.id, a.filename 
+                    FROM {{%assets}} a 
+                    JOIN {{%elements}} e ON a.id = e.id 
+                    WHERE e.enabled = 1 AND e.dateDeleted IS NULL
+                ")->queryAll();
                 
-                // Get all assets - this avoids any where clause with field_alt
-                $allAssets = $query->all();
-                $totalAssetCount = count($allAssets);
+                if (empty($assets)) {
+                    continue;
+                }
                 
-                // Count by inspecting each asset
+                $imageAssetCount = 0;
                 $withAltCount = 0;
                 $withoutAltCount = 0;
                 
-                foreach ($allAssets as $asset) {
-                    $altText = $asset->alt;
+                // For each asset, check if it's an image and if it has alt text
+                foreach ($assets as $assetData) {
+                    // Load the actual asset to get its properties
+                    $asset = Asset::find()
+                        ->id($assetData['id'])
+                        ->siteId($site->id)
+                        ->one();
                     
-                    // Check for actual non-empty alt text
+                    if (!$asset || $asset->kind !== Asset::KIND_IMAGE) {
+                        continue;
+                    }
+                    
+                    $imageAssetCount++;
+                    
+                    // Check alt text
+                    $altText = $asset->alt;
                     if ($altText !== null && trim($altText) !== '') {
                         $withAltCount++;
                     } else {
@@ -175,7 +196,7 @@ class AiAltText extends Plugin
                 
                 // Store counts for this site
                 $siteAltTextCounts[$site->id] = [
-                    'total' => $totalAssetCount,
+                    'total' => $imageAssetCount,
                     'with' => $withAltCount,
                     'without' => $withoutAltCount
                 ];
@@ -184,20 +205,11 @@ class AiAltText extends Plugin
                 $totalAssetsWithAltTextForAllSites += $withAltCount;
                 $totalAssetsWithoutAltTextForAllSites += $withoutAltCount;
                 
-                Craft::info("Site {$site->name}: Total: {$totalAssetCount}, With Alt: {$withAltCount}, Without Alt: {$withoutAltCount}", __METHOD__);
+                Craft::info("Site {$site->name}: Total: {$imageAssetCount}, With Alt: {$withAltCount}, Without Alt: {$withoutAltCount}", __METHOD__);
             } catch (\Exception $e) {
                 Craft::error("Error counting assets for site {$site->name}: " . $e->getMessage(), __METHOD__);
-                // Use safe defaults if there's an error
-                $siteAltTextCounts[$site->id] = [
-                    'total' => 0,
-                    'with' => 0,
-                    'without' => 0
-                ];
             }
         }
-        
-        Craft::info("Total assets WITH alt text for ALL sites: {$totalAssetsWithAltTextForAllSites}", __METHOD__);
-        Craft::info("Total assets WITHOUT alt text for ALL sites: {$totalAssetsWithoutAltTextForAllSites}", __METHOD__);
         
         // For backward compatibility with the template
         $totalAssets = $siteAltTextCounts[$currentSite->id]['total'] ?? 0;
