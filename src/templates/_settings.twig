@@ -17,19 +17,44 @@
 
 <p>Generate alt text for all assets</p>
 
-<p>Total assets: {{ totalAssets }}</p>
-<p>Total assets with alt text for current Site: {{ totalAssetsWithAltText }}</p>
-<p>Total assets without alt text for current Site: {{ totalAssetsWithoutAltText }}</p>
-{# If sites > 1, show the total assets with alt text for each site skip current Site #}
-{% if sites|length > 1 %}
-    <p>Total assets with alt text for all sites {{ totalAssetsWithAltTextForAllSites }}</p>
-    <p>Total assets without alt text for all sites {{ totalAssetsWithoutAltTextForAllSites }}</p>
-    {% for site in sites | filter(site => site.id != currentSite.id) %}
-        <p>Total assets with alt text for {{ site.name }}: {{ siteAltTextCounts[site.id] }}</p>
-    {% endfor %}
-{% endif %}
+<table class="data fullwidth">
+    <thead>
+        <tr>
+            <th>Site</th>
+            <th>Total Assets</th>
+            <th>With Alt Text</th>
+            <th>Without Alt Text</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>{{ currentSite.name }} (current)</strong></td>
+            <td>{{ totalAssets }}</td>
+            <td>{{ totalAssetsWithAltText }}</td>
+            <td>{{ totalAssetsWithoutAltText }}</td>
+        </tr>
+        {% if sites|length > 1 %}
+            {% for site in sites | filter(site => site.id != currentSite.id) %}
+            <tr>
+                <td>{{ site.name }}</td>
+                <td>{{ totalAssets }}</td>
+                <td>{{ siteAltTextCounts[site.id] }}</td>
+                <td>{{ totalAssets - siteAltTextCounts[site.id] }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="totalcount">
+                <td><strong>All Sites Total</strong></td>
+                <td>{{ totalAssets * sites|length }}</td>
+                <td>{{ totalAssetsWithAltTextForAllSites }}</td>
+                <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
 
-<a href="{{ url('ai-alt-text/generate-all-assets') }}" class="btn submit">Generate alt text for all assets</a>
+<div class="buttons">
+    <a href="{{ url('ai-alt-text/generate-all-assets') }}" class="btn submit">Generate alt text for all assets</a>
+</div>
 
 <h2>Settings</h2>
 
