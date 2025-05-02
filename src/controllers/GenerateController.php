@@ -80,16 +80,27 @@ class GenerateController extends Controller
             $assets = Asset::find()
                 ->kind(Asset::KIND_IMAGE)
                 ->siteId($currentSite->id)
+                ->andWhere(['or', 
+                    ['alt' => null],
+                    ['alt' => '']
+                ])
                 ->all();
+            
+            // Log asset count for debugging
+            Craft::info('Found ' . count($assets) . ' assets without alt text to process', __METHOD__);
                 
             $count = 0;
             $settings = AiAltText::getInstance()->getSettings();
             
             foreach ($assets as $asset) {
-                // Skip assets that already have alt text if we're not forcing regeneration
+                // Double-check that the asset doesn't have alt text (just in case)
                 if (!empty($asset->alt)) {
+                    Craft::info('Skipping asset ' . $asset->id . ' because it already has alt text: ' . $asset->alt, __METHOD__);
                     continue;
                 }
+                
+                // Log which asset we're queuing
+                Craft::info('Queuing alt text generation for asset: ' . $asset->id . ' (' . $asset->filename . ')', __METHOD__);
                 
                 // Create a job for the asset
                 AiAltText::getInstance()->aiAltTextService->createJob($asset, false, $currentSite->id);

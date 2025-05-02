@@ -141,33 +141,42 @@ class AiAltText extends Plugin
         $currentSite = Craft::$app->getSites()->getCurrentSite();
         $sites = Craft::$app->getSites()->getAllSites();
         
-        // Count total assets
+        // Count total assets (only images)
         $totalAssets = Asset::find()
             ->kind(Asset::KIND_IMAGE)
             ->siteId($currentSite->id)
             ->count();
             
-        // Count assets with alt text
+        // Debug asset counts
+        Craft::info("Total image assets for site {$currentSite->name}: {$totalAssets}", __METHOD__);
+            
+        // Count assets with alt text (not null AND not empty string)
         $totalAssetsWithAltText = Asset::find()
             ->kind(Asset::KIND_IMAGE)
             ->siteId($currentSite->id)
-            ->andWhere(['not', ['alt' => null]])
-            ->andWhere(['not', ['alt' => '']])
+            ->andWhere(['not', ['or', ['alt' => null], ['alt' => '']]])
             ->count();
+            
+        Craft::info("Total assets WITH alt text for site {$currentSite->name}: {$totalAssetsWithAltText}", __METHOD__);
             
         // Calculate assets without alt text
         $totalAssetsWithoutAltText = $totalAssets - $totalAssetsWithAltText;
+        
+        Craft::info("Total assets WITHOUT alt text for site {$currentSite->name}: {$totalAssetsWithoutAltText}", __METHOD__);
         
         // Pre-calculate counts for each site
         $siteAltTextCounts = [];
         foreach ($sites as $site) {
             if ($site->id != $currentSite->id) {
-                $siteAltTextCounts[$site->id] = Asset::find()
+                $withAltText = Asset::find()
                     ->kind(Asset::KIND_IMAGE)
                     ->siteId($site->id)
-                    ->andWhere(['not', ['alt' => null]])
-                    ->andWhere(['not', ['alt' => '']])
+                    ->andWhere(['not', ['or', ['alt' => null], ['alt' => '']]])
                     ->count();
+                    
+                $siteAltTextCounts[$site->id] = $withAltText;
+                
+                Craft::info("Total assets WITH alt text for site {$site->name}: {$withAltText}", __METHOD__);
             }
         }
         
