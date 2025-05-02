@@ -191,11 +191,9 @@ class AiAltText extends Plugin
             $totalAssetsWithAltTextForAllSites += $siteWithAltText;
             $totalAssetsWithoutAltTextForAllSites += $siteWithoutAltText;
             
-            // Store count for this site if not current site
-            if ($site->id != $currentSite->id) {
-                $siteAltTextCounts[$site->id] = $siteWithAltText;
-                Craft::info("Total assets WITH alt text for site {$site->name}: {$siteWithAltText}", __METHOD__);
-            }
+            // Store count for this site (for all sites including current)
+            $siteAltTextCounts[$site->id] = $siteWithAltText;
+            Craft::info("Total assets WITH alt text for site {$site->name}: {$siteWithAltText}", __METHOD__);
         }
         
         Craft::info("Total assets WITH alt text for ALL sites: {$totalAssetsWithAltTextForAllSites}", __METHOD__);
