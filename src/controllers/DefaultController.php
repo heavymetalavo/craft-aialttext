@@ -110,8 +110,6 @@ class DefaultController extends Controller
         
         // Return the data
         return [
-            'plugin' => AiAltText::getInstance(),
-            'settings' => AiAltText::getInstance()->getSettings(),
             'totalAssetsWithAltTextForAllSites' => $totalAssetsWithAltTextForAllSites,
             'totalAssetsWithoutAltTextForAllSites' => $totalAssetsWithoutAltTextForAllSites,
             'currentSite' => $currentSite,
