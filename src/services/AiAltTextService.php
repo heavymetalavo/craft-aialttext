@@ -36,26 +36,37 @@ class AiAltTextService extends Component
 
     /**
      * Creates a job for the given element
+     * 
+     * @param Asset $asset The asset to create a job for
+     * @param bool $saveCurrentSiteOffQueue Whether to process the current site off queue
+     * @param int|null $currentSiteId The current site ID
+     * @param bool $skipExistingJobCheck Whether to skip the check for existing jobs (useful for bulk operations)
+     * @param bool $forceRegeneration Whether to force regeneration even if alt text exists
      */
-    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null): void
+    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $forceRegeneration = false): void
     {
         $queue = Craft::$app->getQueue();
 
         $assetSiteId = $currentSiteId ?? $asset->siteId;
 
         // Check if there's already a job for this element
-        $existingJobs = $queue->getJobInfo();
-        $hasExistingJob = false;
-        foreach ($existingJobs as $job) {
-            if (isset($job['description']) && str_contains($job['description'], "Asset: $asset->id")) {
-                $hasExistingJob = true;
-                break;
+        if (!$skipExistingJobCheck) {
+            $existingJobs = $queue->getJobInfo();
+            $hasExistingJob = false;
+            foreach ($existingJobs as $job) {
+                // Only skip if both asset ID AND site ID match an existing job
+                if (isset($job['description']) && 
+                    str_contains($job['description'], "Asset: $asset->id") && 
+                    str_contains($job['description'], "Site: $assetSiteId")) {
+                    $hasExistingJob = true;
+                    break;
+                }
             }
-        }
 
-        if ($hasExistingJob) {
-            Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "$asset->filename (ID: $asset->id) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."));
-            return;
+            if ($hasExistingJob) {
+                Craft::$app->getSession()->setNotice(Craft::t('ai-alt-text', "$asset->filename (ID: $asset->id, Site: $assetSiteId) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again."));
+                return;
+            }
         }
 
         if ($asset->kind !== Asset::KIND_IMAGE) {
@@ -68,7 +79,7 @@ class AiAltTextService extends Component
 
         // Check if we need to save the current site off queue
         if ($saveCurrentSiteOffQueue) {
-            $this->generateAltText($asset, $assetSiteId);
+            $this->generateAltText($asset, $assetSiteId, $forceRegeneration);
     
             if (!$saveTranslatedResultsToEachSite) {
                 return;
@@ -84,6 +95,7 @@ class AiAltTextService extends Component
             ]),
             'assetId' => $asset->id,
             'siteId' => $assetSiteId,
+            'forceRegeneration' => $forceRegeneration,
         ]));
 
         // return early if we're not saving translated results to each site
@@ -106,6 +118,7 @@ class AiAltTextService extends Component
                 ]),
                 'assetId' => $asset->id,
                 'siteId' => $site->id,
+                'forceRegeneration' => $forceRegeneration,
             ]));
         }
     }
@@ -119,16 +132,20 @@ class AiAltTextService extends Component
      * - Returns the generated alt text
      *
      * @param Asset $asset The asset to generate alt text for
+     * @param int|null $siteId The site ID
+     * @param bool $forceRegeneration Whether to force regeneration even if alt text exists
      * @return string The generated alt text
      * @throws Exception If the asset is invalid or alt text generation fails
      */
-    public function generateAltText(Asset $asset, int $siteId = null): string
+    public function generateAltText(Asset $asset, int $siteId = null, bool $forceRegeneration = false): string
     {
         if ($asset->kind !== Asset::KIND_IMAGE) {
             throw new Exception('Asset must be an image');
         }
 
-        if (AiAltText::getInstance()->getSettings()->preSaveAsset && empty($asset->alt)) {
+        // Only pre-save if the alt is empty and we're not forcing regeneration
+        if (AiAltText::getInstance()->getSettings()->preSaveAsset && 
+            (empty($asset->alt) || $forceRegeneration)) {
             $asset->alt = '';
             if (!Craft::$app->elements->saveElement($asset)) {
                 throw new Exception('Failed to pre-save asset: ' . $asset->filename);
@@ -148,7 +165,6 @@ class AiAltTextService extends Component
 
         Craft::info('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
         return $altText;
-
     }
 
     /**

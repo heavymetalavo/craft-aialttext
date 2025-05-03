@@ -67,6 +67,8 @@ class AiAltText extends Plugin
             UrlManager::EVENT_REGISTER_CP_URL_RULES,
             function(RegisterUrlRulesEvent $event) {
                 $event->rules['ai-alt-text/generate/single-asset'] = 'ai-alt-text/generate/single-asset';
+                $event->rules['ai-alt-text/generate-all-assets'] = 'ai-alt-text/generate/generate-all-assets';
+                $event->rules['ai-alt-text/generate-assets-without-alt-text'] = 'ai-alt-text/generate/generate-assets-without-alt-text';
             }
         );
 
@@ -136,11 +138,80 @@ class AiAltText extends Plugin
      */
     protected function settingsHtml(): ?string
     {
+        // Get current site
+        $currentSite = Craft::$app->getSites()->getCurrentSite();
+        $sites = Craft::$app->getSites()->getAllSites();
+        
+        // Initialize totals
+        $totalAssetsWithAltTextForAllSites = 0;
+        $totalAssetsWithoutAltTextForAllSites = 0;
+        $siteAltTextCounts = [];
+        
+        // Manually count assets for each site to avoid problematic database queries
+        foreach ($sites as $site) {
+            $siteAltTextCounts[$site->id] = [
+                'total' => 0,
+                'with' => 0,
+                'without' => 0
+            ];
+
+            try {
+                // Use Craft's asset service to get all assets rather than direct SQL
+                $assets = Asset::find()
+                    ->kind(Asset::KIND_IMAGE)
+                    ->siteId($site->id)
+                    ->status(null)  // Get all assets regardless of status
+                    ->all();
+                
+                $imageAssetCount = count($assets);
+                $withAltCount = 0;
+                $withoutAltCount = 0;
+                
+                // For each asset, check if it has alt text
+                foreach ($assets as $asset) {
+                    // Check alt text
+                    $altText = $asset->alt;
+                    if ($altText !== null && trim($altText) !== '') {
+                        $withAltCount++;
+                    } else {
+                        $withoutAltCount++;
+                    }
+                }
+                
+                // Store counts for this site
+                $siteAltTextCounts[$site->id] = [
+                    'total' => $imageAssetCount,
+                    'with' => $withAltCount,
+                    'without' => $withoutAltCount
+                ];
+                
+                // Add to totals
+                $totalAssetsWithAltTextForAllSites += $withAltCount;
+                $totalAssetsWithoutAltTextForAllSites += $withoutAltCount;
+                
+                Craft::info("Site {$site->name}: Total: {$imageAssetCount}, With Alt: {$withAltCount}, Without Alt: {$withoutAltCount}", __METHOD__);
+            } catch (\Exception $e) {
+                Craft::error("Error counting assets for site {$site->name}: " . $e->getMessage(), __METHOD__);
+            }
+        }
+        
+        // For backward compatibility with the template
+        $totalAssets = $siteAltTextCounts[$currentSite->id]['total'] ?? 0;
+        $totalAssetsWithAltText = $siteAltTextCounts[$currentSite->id]['with'] ?? 0;
+        $totalAssetsWithoutAltText = $siteAltTextCounts[$currentSite->id]['without'] ?? 0;
+        
         return Craft::$app->view->renderTemplate(
             'ai-alt-text/_settings',
             [
-                'plugin' => $this,
                 'settings' => $this->getSettings(),
+                'totalAssets' => $totalAssets,
+                'totalAssetsWithAltText' => $totalAssetsWithAltText,
+                'totalAssetsWithoutAltText' => $totalAssetsWithoutAltText,
+                'totalAssetsWithAltTextForAllSites' => $totalAssetsWithAltTextForAllSites,
+                'totalAssetsWithoutAltTextForAllSites' => $totalAssetsWithoutAltTextForAllSites,
+                'currentSite' => $currentSite,
+                'sites' => $sites,
+                'siteAltTextCounts' => $siteAltTextCounts,
             ]
         );
     }

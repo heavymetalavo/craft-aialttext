@@ -4,16 +4,75 @@
 
 <h2>Instructions</h2>
 
-<p>Lots of info in <a target="_blank" href="https://github.com/heavymetalavo/craft-aialttext">the plugin docs</a>, but in short;
+<p>Lots of info in <a target="_blank" href="https://github.com/heavymetalavo/craft-aialttext">the plugin docs</a>, but a short summary;
 <ol>
-    <li>Check the plugin settings are suitable for your project</li>
-    <li>Go to the <strong>Assets</strong> section in the Control Panel to view the table of assets</li>
-    <li>Select the checkboxes of all the assets you want to generate alt text for</li>
-    <li>Click the cog icon to reveal the Element actions and select <strong>Generate AI Alt Text</strong></li>
+    <li>Check the plugin settings are suitable for your project (and your API key is added)</li>
+    <li>Ensure your volumes have the native `alt` field assigned to the field layout</li>
+    <li>Ensure your templates are updated to use the `alt` field, you could consider a fallback `asset.alt ?: asset.title` if that what was used before</li>
+    <li>Then generate some AI Alt text by performing one of the following actions:
+        <ol>
+            <li>Triggering a bulk action in the bulk actions table</li>
+            <li>For individual or a group of specific assets find them in the <strong>Assets</strong> manager section</a> clicking the checkbox on a row, clicking the cog icon to reveal the Element actions menu and select <strong>Generate AI Alt Text</strong></li>
+            <li>When viewing a single asset's page, open the action menu and select <strong>Generate AI Alt Text</strong></li>
+            <li>Upload a new asset (if the upload setting is enabled)</li>
+        </ol>
+    </li>
     <li>The plugin will queue jobs to generate alt text for each selected asset</li>
 </ol>
 
-<h2>Settings</h2>
+<hr />
+
+<h2>Bulk actions</h2>
+
+<p>Generate alt text for all assets</p>
+
+<p>⚠️ These actions can generate alt text for all assets on a single Site or all Sites, even if the <strong>Save translated results for each Site</strong> setting is disabled.</p>
+
+<table class="data fullwidth">
+    <thead>
+        <tr>
+            <th>Site</th>
+            <th>Total Assets</th>
+            <th>With Alt Text</th>
+            <th>Without Alt Text</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if sites|length > 1 %}
+            <tr class="totalcount">
+                <td><strong>All Sites</strong></td>
+                <td>{{ totalAssetsWithAltTextForAllSites + totalAssetsWithoutAltTextForAllSites }}</td>
+                <td>{{ totalAssetsWithAltTextForAllSites }}</td>
+                <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
+                <td>
+                    <div class="buttons">
+                        <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets') }}" class="btn small submit">Generate all</a>
+                        <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text') }}" class="btn small submit">Generate missing</a>
+                    </div>
+                </td>
+            </tr>
+            {% for site in sites %}
+            <tr>
+                <td>{{ site.name }}</td>
+                <td>{{ siteAltTextCounts[site.id].total }}</td>
+                <td>{{ siteAltTextCounts[site.id].with }}</td>
+                <td>{{ siteAltTextCounts[site.id].without }}</td>
+                <td>
+                    <div class="buttons">
+                        <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets', {siteId: site.id}) }}" class="btn small submit">Generate all</a>
+                        <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text', {siteId: site.id}) }}" class="btn small submit">Generate missing</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        {% endif %}
+    </tbody>
+</table>
+
+<hr />
+
+<h2 id="settings">Settings</h2>
 
 {{ forms.autosuggestField({
     label: "OpenAI API Key"|t("aialttext"),

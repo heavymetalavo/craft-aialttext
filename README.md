@@ -1,6 +1,6 @@
 # 🤖 💬 AI Alt Text
   
-Generate suitable alt text for CraftCMS Asset Images using OpenAI's API.
+Generate alt text for CraftCMS Asset Images using OpenAI's API.
 
 [Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft5) | [GitHub Repository](https://github.com/heavymetalavo/craft-aialttext)
 
@@ -55,19 +55,18 @@ ddev craft plugin/install ai-alt-text
 1. Check the plugin settings are suitable for your project (and your API key is added)
 2. Ensure your volumes have the native `alt` field assigned to the field layout
 3. Ensure your templates are updated to use the `alt` field, you could consider a fallback `asset.alt ?: asset.title` if that what was used before
-4. Go to the **Assets** section in the Control Panel to view the table of assets
-5. Select the checkboxes of all the assets you want to generate alt text for
-6. Click the cog icon to reveal the Element actions and select **Generate AI Alt Text**
-7. The plugin will queue jobs to generate alt text for each selected asset
+4. Then generate some AI Alt text by performing one of the following actions:
+    1. Triggering a bulk action in the bulk actions table
+    2. For individual or a group of specific assets find them in the <strong>Assets</strong> manager section</a> clicking the checkbox on a row, clicking the cog icon to reveal the Element actions menu and select <strong>Generate AI Alt Text</strong>
+    3. When viewing a single asset's page, open the action menu and select <strong>Generate AI Alt Text</strong>
+    4. Upload a new asset (if the upload setting is enabled)
+5. The plugin will queue jobs to generate alt text for each selected asset
 
-You can also generate alt text for a single asset by:
-1. Opening the asset in the Control Panel
-2. Clicking the action menu `...` icon in the top-right corner
-3. Selecting **Generate AI Alt Text** from the dropdown menu
+![The Bulk Actions table in the AI Alt Text settings page](src/bulk-actions.png)
 
-Alternatively, you can enable the "Generate for new assets" option in the plugin settings to automatically generate alt text for newly uploaded assets.
+![The CraftCMS assets manager with two assets selected and the 'Generate AI Alt Text' option visible in the active element actions menu](src/assets-manager.png)
 
-![CraftCMS asset library table with two assets selected and the 'Generate AI Alt Text' option visible in the dropdown.](src/generate-ai-alt-text-elements-action-example.png)
+![The active actions menu when viewing a single asset shows the 'Generate AI Alt Text' option](src/single-asset.png)
 
 Example twig:
 
