@@ -4,23 +4,20 @@
 
 <h2>Instructions</h2>
 
-<p>Lots of info in <a target="_blank" href="https://github.com/heavymetalavo/craft-aialttext">the plugin docs</a>, but in short;
+<p>Lots of info in <a target="_blank" href="https://github.com/heavymetalavo/craft-aialttext">the plugin docs</a>, but a short summary;
 <ol>
-    <li>Check <a href="#settings">the plugin settings</a> are suitable for your project</li>
-    <li>For existing assets: 
+    <li>1. Check the plugin settings are suitable for your project (and your API key is added)</li>
+    <li>2. Ensure your volumes have the native `alt` field assigned to the field layout</li>
+    <li>3. Ensure your templates are updated to use the `alt` field, you could consider a fallback `asset.alt ?: asset.title` if that what was used before</li>
+    <li>4. Then generate some AI Alt text by performing one of the following actions:
         <ol>
-            <li>Trigger a bulk action in the table beneath</li>
-            <li>For individual or a group of specific assets process them by finding them in <a href="{{ url('assets') }}">the <strong>Assets</strong> manager section</a> clicking the checkbox on a table row then clicking the cog icon to reveal the Element actions and select <strong>Generate AI Alt Text</strong></li>
+            <li>Triggering a bulk action in the bulk actions table</li>
+            <li>For individual or a group of specific assets find them in the <strong>Assets</strong> manager section</a> clicking the checkbox on a row, clicking the cog icon to reveal the Element actions menu and select <strong>Generate AI Alt Text</strong></li>
             <li>When viewing a single asset's page, open the action menu and select <strong>Generate AI Alt Text</strong></li>
-        <ol>
-    </li>
-    <li>For new assets:
-        <ol>
-            <li>Enable the <strong>Generate for new image assets (on upload)</strong> setting</li>
-            <li>Upload an image</li>
+            <li>Upload a new asset (if the upload setting is enabled)</li>
         </ol>
     </li>
-    <li>The plugin will queue jobs to generate alt text for each selected asset</li>
+    <li>5. The plugin will queue jobs to generate alt text for each selected asset</li>
 </ol>
 
 <hr />

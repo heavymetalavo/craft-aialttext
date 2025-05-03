@@ -6,7 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.5.0] 2025-05-02
-- Added new feature to generate AI alt text for all assets
+- Added new bulk actions features to generate AI alt text for all assets in a Site
+- Added new bulk actions features to generate AI alt text for all assets missing alt text in a Site
+- Added new bulk actions features to generate AI alt text for all assets across all Sites
+- Added new bulk actions features to generate AI alt text for all assets missing alt text across all Sites
+- Improving instructions within settings template
+- Improving instruction within README
 
 ## [1.4.1] 2025-05-02
 - Fixed issue where uploading a new asset via the current Site would only generate alt text for the default Site
