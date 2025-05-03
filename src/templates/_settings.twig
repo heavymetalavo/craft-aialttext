@@ -24,6 +24,7 @@
             <th>Total Assets</th>
             <th>With Alt Text</th>
             <th>Without Alt Text</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -33,6 +34,12 @@
                 <td>{{ totalAssetsWithAltTextForAllSites + totalAssetsWithoutAltTextForAllSites }}</td>
                 <td>{{ totalAssetsWithAltTextForAllSites }}</td>
                 <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
+                <td>
+                    <div class="buttons">
+                        <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets') }}" class="btn small">Generate all</a>
+                        <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text') }}" class="btn small">Generate missing</a>
+                    </div>
+                </td>
             </tr>
             {% for site in sites %}
             <tr>
@@ -40,16 +47,17 @@
                 <td>{{ siteAltTextCounts[site.id].total }}</td>
                 <td>{{ siteAltTextCounts[site.id].with }}</td>
                 <td>{{ siteAltTextCounts[site.id].without }}</td>
+                <td>
+                    <div class="buttons">
+                        <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets', {siteId: site.id}) }}" class="btn small">Generate all</a>
+                        <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text', {siteId: site.id}) }}" class="btn small">Generate missing</a>
+                    </div>
+                </td>
             </tr>
             {% endfor %}
         {% endif %}
     </tbody>
 </table>
-
-<div class="buttons">
-    <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets') }}" class="btn submit">Generate alt text for all assets</a>
-    <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text') }}" class="btn">Generate alt text for assets without alt text </a>
-</div>
 
 <h2>Settings</h2>
 
