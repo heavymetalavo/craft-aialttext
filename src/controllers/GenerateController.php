@@ -87,7 +87,7 @@ class GenerateController extends Controller
                 Craft::$app->getSession()->setError(
                     Craft::t('ai-alt-text', 'Invalid site ID: {siteId}', ['siteId' => $siteId])
                 );
-                return $this->redirect('settings/plugins/ai-alt-text');
+                return $this->redirect('ai-alt-text/bulk-actions');
             }
         } else {
             // Otherwise process all sites
@@ -192,8 +192,8 @@ class GenerateController extends Controller
                 );
             }
             
-            // Redirect back to settings page
-            return $this->redirect('settings/plugins/ai-alt-text');
+            // Redirect back to bulk actions page
+            return $this->redirect('ai-alt-text/bulk-actions');
         } catch (\Exception $e) {
             Craft::error('Error queueing alt text generation for assets without alt text: ' . $e->getMessage(), __METHOD__);
             
@@ -201,7 +201,7 @@ class GenerateController extends Controller
                 Craft::t('ai-alt-text', 'Error: {message}', ['message' => $e->getMessage()])
             );
             
-            return $this->redirect('settings/plugins/ai-alt-text');
+            return $this->redirect('ai-alt-text/bulk-actions');
         }
     }
 
@@ -230,7 +230,7 @@ class GenerateController extends Controller
                 Craft::$app->getSession()->setError(
                     Craft::t('ai-alt-text', 'Invalid site ID: {siteId}', ['siteId' => $siteId])
                 );
-                return $this->redirect('settings/plugins/ai-alt-text');
+                return $this->redirect('ai-alt-text/bulk-actions');
             }
         } else {
             // Otherwise process all sites
@@ -321,8 +321,8 @@ class GenerateController extends Controller
                 );
             }
             
-            // Redirect back to settings page
-            return $this->redirect('settings/plugins/ai-alt-text');
+            // Redirect back to bulk actions page
+            return $this->redirect('ai-alt-text/bulk-actions');
         } catch (\Exception $e) {
             Craft::error('Error queueing alt text generation for all assets: ' . $e->getMessage(), __METHOD__);
             
@@ -330,7 +330,7 @@ class GenerateController extends Controller
                 Craft::t('ai-alt-text', 'Error: {message}', ['message' => $e->getMessage()])
             );
             
-            return $this->redirect('settings/plugins/ai-alt-text');
+            return $this->redirect('ai-alt-text/bulk-actions');
         }
     }
 }
