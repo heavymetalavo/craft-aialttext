@@ -45,24 +45,6 @@ class DefaultController extends Controller
     }
 
     /**
-     * Settings page
-     *
-     * @return Response
-     */
-    public function actionSettings(): Response
-    {
-        $this->requirePermission('accessCp');
-        
-        // Get the plugin instance
-        $plugin = AiAltText::getInstance();
-        
-        return $this->renderTemplate('ai-alt-text/_settings', [
-            'plugin' => $plugin,
-            'settings' => $plugin->getSettings()
-        ]);
-    }
-    
-    /**
      * Get asset statistics for all sites
      *
      * @return array

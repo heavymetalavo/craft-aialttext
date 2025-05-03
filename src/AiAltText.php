@@ -74,7 +74,6 @@ class AiAltText extends Plugin
                 // Add CP URLs for bulk actions and settings
                 $event->rules['ai-alt-text'] = 'ai-alt-text/default/index';
                 $event->rules['ai-alt-text/bulk-actions'] = 'ai-alt-text/default/bulk-actions'; 
-                $event->rules['ai-alt-text/settings'] = 'ai-alt-text/default/settings';
             }
         );
 
