@@ -62,11 +62,11 @@ ddev craft plugin/install ai-alt-text
     4. Upload a new asset (if the upload setting is enabled)
 5. The plugin will queue jobs to generate alt text for each selected asset
 
-![The Bulk Actions table in the AI Alt Text settings page](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/main/src/src/bulk-actions.png)
+![The Bulk Actions table in the AI Alt Text settings page](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/main/src/bulk-actions.png)
 
-![The CraftCMS assets manager with two assets selected and the 'Generate AI Alt Text' option visible in the active element actions menu](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/main/src/src/assets-manager.png)
+![The CraftCMS assets manager with two assets selected and the 'Generate AI Alt Text' option visible in the active element actions menu](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/main/src/assets-manager.png)
 
-![The active actions menu when viewing a single asset shows the 'Generate AI Alt Text' option](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/main/src/src/single-asset.png)
+![The active actions menu when viewing a single asset shows the 'Generate AI Alt Text' option](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/main/src/single-asset.png)
 
 Example twig:
 
