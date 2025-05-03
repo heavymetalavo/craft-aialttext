@@ -163,7 +163,7 @@ class AiAltText extends Plugin
         // Add sub navigation items
         $item['subnav'] = [
             'bulk-actions' => ['label' => 'Bulk Actions', 'url' => 'ai-alt-text/bulk-actions'],
-            'settings' => ['label' => 'Settings', 'url' => 'ai-alt-text/settings'],
+            'settings' => ['label' => 'Settings', 'url' => 'settings/plugins/ai-alt-text'],
         ];
         
         return $item;
