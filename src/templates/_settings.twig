@@ -7,11 +7,23 @@
 <p>Lots of info in <a target="_blank" href="https://github.com/heavymetalavo/craft-aialttext">the plugin docs</a>, but in short;
 <ol>
     <li>Check the plugin settings are suitable for your project</li>
-    <li>Go to the <strong>Assets</strong> section in the Control Panel to view the table of assets</li>
-    <li>Select the checkboxes of all the assets you want to generate alt text for</li>
-    <li>Click the cog icon to reveal the Element actions and select <strong>Generate AI Alt Text</strong></li>
+    <li>For existing assets: 
+        <ol>
+            <li>Trigger a bulk action in the table beneath</li>
+            <li>For individual or a group of specific assets process them by finding them in <a href="{{ url('assets') }}">the <strong>Assets</strong> manager section</a> clicking the checkbox on a table row then clicking the cog icon to reveal the Element actions and select <strong>Generate AI Alt Text</strong></li>
+            <li>When viewing a single asset's page, open the action menu and select <strong>Generate AI Alt Text</strong></li>
+        </ol>
+    </li>
+    <li>For new assets:
+        <ol>
+            <li>Enable the <strong>Generate for new image assets (on upload)</strong> setting</li>
+            <li>Upload an image</li>
+        </ol>
+    </li>
     <li>The plugin will queue jobs to generate alt text for each selected asset</li>
 </ol>
+
+<hr />
 
 <h2>Bulk actions</h2>
 
@@ -58,6 +70,8 @@
         {% endif %}
     </tbody>
 </table>
+
+<hr />
 
 <h2>Settings</h2>
 
