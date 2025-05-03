@@ -36,8 +36,8 @@
                 <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
                 <td>
                     <div class="buttons">
-                        <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets') }}" class="btn small">Generate all</a>
-                        <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text') }}" class="btn small">Generate missing</a>
+                        <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets') }}" class="btn small submit">Generate all</a>
+                        <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text') }}" class="btn small submit">Generate missing</a>
                     </div>
                 </td>
             </tr>
@@ -49,8 +49,8 @@
                 <td>{{ siteAltTextCounts[site.id].without }}</td>
                 <td>
                     <div class="buttons">
-                        <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets', {siteId: site.id}) }}" class="btn small">Generate all</a>
-                        <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text', {siteId: site.id}) }}" class="btn small">Generate missing</a>
+                        <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets', {siteId: site.id}) }}" class="btn small submit">Generate all</a>
+                        <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text', {siteId: site.id}) }}" class="btn small submit">Generate missing</a>
                     </div>
                 </td>
             </tr>

@@ -76,11 +76,27 @@ class GenerateController extends Controller
         $processedCount = 0;
         $queuedCount = 0;
         $settings = AiAltText::getInstance()->getSettings();
-        $allSites = Craft::$app->getSites()->getAllSites();
+        
+        // Check if a specific site ID was provided
+        $siteId = $this->request->getParam('siteId');
+        
+        // If site ID was provided, only process that site
+        if ($siteId) {
+            $sites = [Craft::$app->getSites()->getSiteById($siteId)];
+            if (!$sites[0]) {
+                Craft::$app->getSession()->setError(
+                    Craft::t('ai-alt-text', 'Invalid site ID: {siteId}', ['siteId' => $siteId])
+                );
+                return $this->redirect('settings/plugins/ai-alt-text');
+            }
+        } else {
+            // Otherwise process all sites
+            $sites = Craft::$app->getSites()->getAllSites();
+        }
         
         try {
             // First, count how many assets we need to process
-            foreach ($allSites as $site) {
+            foreach ($sites as $site) {
                 $assets = Asset::find()
                     ->kind(Asset::KIND_IMAGE)
                     ->siteId($site->id)
@@ -93,10 +109,10 @@ class GenerateController extends Controller
                 $totalCount += $assets;
             }
             
-            Craft::info('Total assets without alt text across all sites: ' . $totalCount, __METHOD__);
+            Craft::info('Total assets without alt text: ' . $totalCount, __METHOD__);
             
             // Now process each site's assets
-            foreach ($allSites as $site) {
+            foreach ($sites as $site) {
                 // Process each site
                 Craft::info('Processing assets for site: ' . $site->name . ' (ID: ' . $site->id . ')', __METHOD__);
                 
@@ -139,7 +155,7 @@ class GenerateController extends Controller
                             // Log which asset we're queuing
                             Craft::info('Queuing alt text generation for asset: ' . $asset->id . ' (' . $asset->filename . ') in site ' . $site->name, __METHOD__);
                             
-                            // Create a job for the asset - don't need to skip the check anymore
+                            // Create a job for the asset
                             AiAltText::getInstance()->aiAltTextService->createJob($asset, false, $site->id);
                             $queuedCount++;
                         } catch (\Exception $e) {
@@ -158,17 +174,28 @@ class GenerateController extends Controller
             }
             
             // Set flash message
-            Craft::$app->getSession()->setNotice(
-                Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets across all sites (out of {total} total assets without alt text).', [
-                    'count' => $queuedCount,
-                    'total' => $totalCount
-                ])
-            );
+            if ($siteId) {
+                $siteName = $sites[0]->name;
+                Craft::$app->getSession()->setNotice(
+                    Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets in site {site} (out of {total} total assets without alt text).', [
+                        'count' => $queuedCount,
+                        'total' => $totalCount,
+                        'site' => $siteName
+                    ])
+                );
+            } else {
+                Craft::$app->getSession()->setNotice(
+                    Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets across all sites (out of {total} total assets without alt text).', [
+                        'count' => $queuedCount,
+                        'total' => $totalCount
+                    ])
+                );
+            }
             
             // Redirect back to settings page
             return $this->redirect('settings/plugins/ai-alt-text');
         } catch (\Exception $e) {
-            Craft::error('Error queueing alt text generation for all assets: ' . $e->getMessage(), __METHOD__);
+            Craft::error('Error queueing alt text generation for assets without alt text: ' . $e->getMessage(), __METHOD__);
             
             Craft::$app->getSession()->setError(
                 Craft::t('ai-alt-text', 'Error: {message}', ['message' => $e->getMessage()])
@@ -192,11 +219,27 @@ class GenerateController extends Controller
         $processedCount = 0;
         $queuedCount = 0;
         $settings = AiAltText::getInstance()->getSettings();
-        $allSites = Craft::$app->getSites()->getAllSites();
+        
+        // Check if a specific site ID was provided
+        $siteId = $this->request->getParam('siteId');
+        
+        // If site ID was provided, only process that site
+        if ($siteId) {
+            $sites = [Craft::$app->getSites()->getSiteById($siteId)];
+            if (!$sites[0]) {
+                Craft::$app->getSession()->setError(
+                    Craft::t('ai-alt-text', 'Invalid site ID: {siteId}', ['siteId' => $siteId])
+                );
+                return $this->redirect('settings/plugins/ai-alt-text');
+            }
+        } else {
+            // Otherwise process all sites
+            $sites = Craft::$app->getSites()->getAllSites();
+        }
         
         try {
             // First, count how many assets we need to process
-            foreach ($allSites as $site) {
+            foreach ($sites as $site) {
                 $assets = Asset::find()
                     ->kind(Asset::KIND_IMAGE)
                     ->siteId($site->id)
@@ -205,10 +248,10 @@ class GenerateController extends Controller
                 $totalCount += $assets;
             }
             
-            Craft::info('Total image assets across all sites: ' . $totalCount, __METHOD__);
+            Craft::info('Total image assets: ' . $totalCount, __METHOD__);
             
             // Now process each site's assets
-            foreach ($allSites as $site) {
+            foreach ($sites as $site) {
                 // Process each site
                 Craft::info('Processing ALL assets for site: ' . $site->name . ' (ID: ' . $site->id . ')', __METHOD__);
                 
@@ -260,12 +303,23 @@ class GenerateController extends Controller
             }
             
             // Set flash message
-            Craft::$app->getSession()->setNotice(
-                Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets across all sites (out of {total} total image assets).', [
-                    'count' => $queuedCount,
-                    'total' => $totalCount
-                ])
-            );
+            if ($siteId) {
+                $siteName = $sites[0]->name;
+                Craft::$app->getSession()->setNotice(
+                    Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets in site {site} (out of {total} total image assets).', [
+                        'count' => $queuedCount,
+                        'total' => $totalCount,
+                        'site' => $siteName
+                    ])
+                );
+            } else {
+                Craft::$app->getSession()->setNotice(
+                    Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets across all sites (out of {total} total image assets).', [
+                        'count' => $queuedCount,
+                        'total' => $totalCount
+                    ])
+                );
+            }
             
             // Redirect back to settings page
             return $this->redirect('settings/plugins/ai-alt-text');
