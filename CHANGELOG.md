@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] 2025-05-05
+
+- Fixed issue where apps with 1 x Site cannot see any bulk action table rows
+
 ## [1.5.0] 2025-05-02
 - Added new bulk actions features to generate AI alt text for all assets in a Site
 - Added new bulk actions features to generate AI alt text for all assets missing alt text in a Site
