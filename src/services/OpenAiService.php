@@ -270,9 +270,9 @@ class OpenAiService extends Component
             throw new Exception("Asset transform has unsupported MIME type: $transformMimeType");
         }
 
-        // Get the image URL with transformation if needed
+        $assetTransform = $asset->setTransform($transformParams);
         // Make sure that we do not get a "generate transform" url, but a real url with true
-        $imageUrl = $asset->getUrl($transformParams, true);
+        $imageUrl = $assetTransform->getUrl($transformParams, true);
 
         // If we have a URL, check if it's accessible remotely
         if (!empty($imageUrl)) {
@@ -284,7 +284,7 @@ class OpenAiService extends Component
 
         // If no public URL is available or URL is not accessible, try to get the file contents and encode as base64
         if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            $assetContents = $asset->getContents();
+            $assetContents = $assetTransform->getContents();
 
             // Encode as base64 and create data URI
             $base64Image = base64_encode($assetContents);
