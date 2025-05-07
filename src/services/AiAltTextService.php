@@ -55,9 +55,10 @@ class AiAltTextService extends Component
             $hasExistingJob = false;
             foreach ($existingJobs as $job) {
                 // Only skip if both asset ID AND site ID match an existing job
-                if (isset($job['description']) && 
-                    str_contains($job['description'], "Asset: $asset->id") && 
-                    str_contains($job['description'], "Site: $assetSiteId")) {
+                if (isset($job['description'])
+                    && str_contains($job['description'], "Asset: $asset->id")
+                    && str_contains($job['description'], "Site: $assetSiteId")
+                    && $job['status'] !== 4) {
                     $hasExistingJob = true;
                     break;
                 }
@@ -143,15 +144,6 @@ class AiAltTextService extends Component
             throw new Exception('Asset must be an image');
         }
 
-        // Only pre-save if the alt is empty and we're not forcing regeneration
-        if (AiAltText::getInstance()->getSettings()->preSaveAsset && 
-            (empty($asset->alt) || $forceRegeneration)) {
-            $asset->alt = '';
-            if (!Craft::$app->elements->saveElement($asset)) {
-                throw new Exception('Failed to pre-save asset: ' . $asset->filename);
-            }
-        }
-
         $altText = $this->openAiService->generateAltText($asset, $siteId);
 
         if (empty($altText)) {
@@ -159,7 +151,8 @@ class AiAltTextService extends Component
         }
 
         $asset->alt = $altText;
-        if (!Craft::$app->elements->saveElement($asset, true)) {
+        $propogate = AiAltText::getInstance()->getSettings()->propogate;
+        if (!Craft::$app->elements->saveElement($asset, true, $propogate)) {
             throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
         }
 

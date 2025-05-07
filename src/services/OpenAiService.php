@@ -184,14 +184,10 @@ class OpenAiService extends Component
 
         // For GIFs, check if they're animated
         if ($extension === 'gif' && $mimeType === 'image/gif') {
-            $filePath = $asset->getPath();
-            if (file_exists($filePath)) {
-                $fileContents = file_get_contents($filePath);
-                // Check for multiple image frames in GIF
-                if (substr_count($fileContents, "\x21\xF9\x04") > 1) {
-                    Craft::warning('Animated GIF detected. Will attempt to convert first frame to JPEG.', __METHOD__);
-                    return true; // We'll handle conversion in generateAltText
-                }
+            $fileContents = $asset->getContents();
+            // Check for multiple image frames in GIF
+            if (substr_count($fileContents, "\x21\xF9\x04") > 1) {
+                return false;
             }
         }
 
@@ -228,9 +224,30 @@ class OpenAiService extends Component
         $height = $asset->getHeight();
 
         // Check if format needs to be converted
-        $extension = strtolower($asset->getExtension());
-        $acceptedExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
-        $needsFormatConversion = !in_array($extension, $acceptedExtensions);
+        $acceptedMimeTypes = [
+            'image/png',
+            'image/jpeg',
+            'image/webp',
+            'image/gif',
+        ];
+        $assetMimeType = strtolower($asset->getMimeType());
+
+        // Check if the asset is an animated gif which OpenAI API does not support
+        if ($assetMimeType === 'image/gif') {
+            $fileContents = $asset->getContents();
+            // Check for multiple image frames in GIF
+            if (substr_count($fileContents, "\x21\xF9\x04") > 1) {
+                throw new Exception('Animated GIF detected, this is not supported.');
+            }
+        }
+        
+        // decide if we need to transform svgs
+        if (!Craft::$app->getConfig()->get('transformSvgs') && $assetMimeType === 'image/svg+xml') {
+            throw new Exception('SVGs are not supported by the OpenAI API and transformSvgs is disabled.');
+        }
+
+        // decide if we need to transform the image to become a jpeg
+        $needsFormatConversion = !in_array($mimeType, $acceptedMimeTypes);
 
         // Set up transform parameters
         $transformParams = [];
@@ -245,6 +262,12 @@ class OpenAiService extends Component
             $transformParams['width'] = 2048;
             $transformParams['height'] = 2048;
             $transformParams['mode'] = 'fit';
+        }
+
+        // Check mime type of the transform:
+        $transformMimeType = $asset->getMimeType($transformParams);
+        if (!in_array($transformMimeType, $acceptedMimeTypes)) {
+            throw new Exception("Asset transform has unsupported MIME type: $transformMimeType");
         }
 
         // Get the image URL with transformation if needed
