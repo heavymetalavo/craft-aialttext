@@ -242,7 +242,7 @@ class OpenAiService extends Component
         }
         
         // decide if we need to transform svgs
-        if (!Craft::$app->getConfig()->get('transformSvgs') && $assetMimeType === 'image/svg+xml') {
+        if (!Craft::$app->getConfig()->getGeneral()->transformSvgs && $assetMimeType === 'image/svg+xml') {
             throw new Exception('SVGs are not supported by the OpenAI API and transformSvgs is disabled.');
         }
 
