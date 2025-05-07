@@ -247,7 +247,7 @@ class OpenAiService extends Component
         }
 
         // decide if we need to transform the image to become a jpeg
-        $needsFormatConversion = !in_array($mimeType, $acceptedMimeTypes);
+        $needsFormatConversion = !in_array($assetMimeType, $acceptedMimeTypes);
 
         // Set up transform parameters
         $transformParams = [];
