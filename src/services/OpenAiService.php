@@ -286,15 +286,9 @@ class OpenAiService extends Component
         if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
             $assetContents = $asset->getContents();
 
-            // Get the MIME type
-            $mimeType = $asset->getMimeType();
-            if (empty($mimeType)) {
-                $mimeType = 'image/jpeg'; // Default to JPEG if MIME type is unknown
-            }
-
             // Encode as base64 and create data URI
             $base64Image = base64_encode($assetContents);
-            $imageUrl = "data:$mimeType;base64,$base64Image";
+            $imageUrl = "data:$transformMimeType;base64,$base64Image";
         }
 
         $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel) ?? 'low';
