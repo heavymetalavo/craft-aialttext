@@ -50,7 +50,7 @@ class Settings extends Model
     /**
      * @var bool Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
      */
-    public bool $propogate = false;
+    public bool $propagate = false;
 
     /**
      * @var bool Whether to save the translated result to each Site's Asset's translatable alt text field
@@ -74,7 +74,7 @@ class Settings extends Model
             ['prompt', 'string'],
             ['openAiImageInputDetailLevel', 'string'],
             ['openAiImageInputDetailLevel', 'in', 'range' => ['low', 'high']],
-            ['propogate', 'boolean'],
+            ['propagate', 'boolean'],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
         ];
