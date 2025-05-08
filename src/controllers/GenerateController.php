@@ -177,7 +177,7 @@ class GenerateController extends Controller
             if ($siteId) {
                 $siteName = $sites[0]->name;
                 Craft::$app->getSession()->setNotice(
-                    Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets in site {site} (out of {total} total assets without alt text).', [
+                    Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets in site {site} (out of {total} total assets).', [
                         'count' => $queuedCount,
                         'total' => $totalCount,
                         'site' => $siteName
@@ -185,7 +185,7 @@ class GenerateController extends Controller
                 );
             } else {
                 Craft::$app->getSession()->setNotice(
-                    Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets across all sites (out of {total} total assets without alt text).', [
+                    Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets across all sites (out of {total} total assets).', [
                         'count' => $queuedCount,
                         'total' => $totalCount
                     ])
