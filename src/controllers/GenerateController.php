@@ -177,7 +177,7 @@ class GenerateController extends Controller
             if ($siteId) {
                 $siteName = $sites[0]->name;
                 Craft::$app->getSession()->setNotice(
-                    Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets in site {site})', [
+                    Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets in site {site}', [
                         'count' => $queuedCount,
                         'site' => $siteName
                     ])
