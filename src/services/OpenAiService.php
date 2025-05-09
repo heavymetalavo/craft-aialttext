@@ -175,7 +175,7 @@ class OpenAiService extends Component
         }
 
         // For GIFs, check if they're animated
-        if ($extension === 'gif' && $mimeType === 'image/gif') {
+        if ($mimeType === 'image/gif') {
             $fileContents = $asset->getContents();
             // Check for multiple image frames in GIF
             if (substr_count($fileContents, "\x21\xF9\x04") > 1) {

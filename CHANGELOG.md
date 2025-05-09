@@ -1,5 +1,9 @@
 # Release Notes for AI Alt Text
 
+## 1.5.4 - 2025-05-09
+
+- Removing unused variable
+
 ## 1.5.3 - 2025-05-09
 - Improve bulk action notice wording
 - Improved logic to not skip generating alt text for an asset where a job is in the queue but it has a failed status
