@@ -92,7 +92,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **Save Translated Results to Each Site** | Whether to save translated results to an Asset's translatable alt text field for each Site. | `false` |
 
 #### 🧠 Model Options
-Models that support vision capabilities:
+Some models that support vision capabilities:
 - `gpt-4.1-nano` - Fast, affordable small model for focused tasks (default)
 - `gpt-4o` - Fast, intelligent, flexible GPT model
 - `o1` - High-intelligence reasoning model
