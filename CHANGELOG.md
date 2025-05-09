@@ -2,7 +2,7 @@
 
 ## 1.5.4 - 2025-05-09
 
-- Removing unused variable
+- Removing unused variable `$extension` missed from removing the extension tests in v1.5.3
 
 ## 1.5.3 - 2025-05-09
 - Improve bulk action notice wording
