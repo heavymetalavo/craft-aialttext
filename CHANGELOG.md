@@ -1,13 +1,13 @@
 # Release Notes for AI Alt Text
 
-## 1.5.3-unreleased
+## 1.5.3
 - Improve bulk action notice wording
-- ✅ Improved logic to not skip generating alt text for an asset where a job is in the queue but it has a failed status
-- ✅ Replacing `preSaveAsset` setting with `propagate` setting, `preSaveAsset` tried to resolve an issue where the same value could be saved over multiple sites. Could sometimes cause errors e.g. `Failed to pre-save asset: Copy-of-Copy-of-Simple-Quote-Motivational-Poster-1.png`, 
-- ✅ Replacing native `file_get_contents` function with `$assets->getContents` in animated gif test, which is more reliable across asset different platforms
-- ✅ Updating `OpenAiService::generateAltText()` to check a file's mime type can be sent to OpenAI API more reliably, 
-- ✅ Added new `OpenAiService::generateAltText()` test to check if SVGs can be transformed to an accepted mime type
-- ✅ Added new `OpenAiService::generateAltText()` test to check if resulting transform which will be sent to OpenAI is accepted mime type
+- Improved logic to not skip generating alt text for an asset where a job is in the queue but it has a failed status
+- Replacing `preSaveAsset` setting with `propagate` setting, `preSaveAsset` tried to resolve an issue where the same value could be saved over multiple sites. Could sometimes cause errors e.g. `Failed to pre-save asset: Copy-of-Copy-of-Simple-Quote-Motivational-Poster-1.png`, 
+- Replacing native `file_get_contents` function with `$assets->getContents` in animated gif test, which is more reliable across asset different platforms
+- Updating `OpenAiService::generateAltText()` to check a file's mime type can be sent to OpenAI API more reliably, 
+- Added new `OpenAiService::generateAltText()` test to check if SVGs can be transformed to an accepted mime type
+- Added new `OpenAiService::generateAltText()` test to check if resulting transform which will be sent to OpenAI is accepted mime type
 
 ## 1.5.2 - 2025-05-06
 
