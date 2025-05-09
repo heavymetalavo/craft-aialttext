@@ -154,20 +154,12 @@ class OpenAiService extends Component
      * Validates if the asset is an accepted image format and converts if needed
      *
      * @param Asset $asset The asset to validate
-     * @return bool Whether the asset is an accepted format or was successfully converted
+     * @return bool Whether the asset is an accepted mimetype or was successfully converted
      * @throws ImageTransformException
      */
     private function isValidImageFormat(Asset $asset): bool
     {
-        $extension = strtolower($asset->getExtension());
         $mimeType = strtolower($asset->getMimeType());
-
-        // Check for accepted extensions
-        $acceptedExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
-        if (!in_array($extension, $acceptedExtensions)) {
-            Craft::warning('Asset has unsupported extension: ' . $extension . '. Will attempt to convert to JPEG.', __METHOD__);
-            return true; // We'll handle conversion in generateAltText
-        }
 
         // Check for accepted MIME types
         $acceptedMimeTypes = [
