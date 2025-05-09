@@ -117,12 +117,12 @@
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Pre-save Asset'|t('aialttext'),
-    id: 'preSaveAsset',
-    name: 'preSaveAsset',
-    instructions: "If enabled, the plugin will pre-save the asset if alt field is empty before saving a value to it, prevents same initial value being saved to each Site"|t("aialttext"),
-    on: settings.preSaveAsset,
-    errors: settings.getErrors('preSaveAsset'),
+    label: 'propagate'|t('aialttext'),
+    id: 'propagate',
+    name: ' ',
+    instructions: "Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites."|t("aialttext"),
+    on: settings.propagate,
+    errors: settings.getErrors('propagate'),
 }) }}
 
 {{ forms.lightswitchField({

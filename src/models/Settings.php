@@ -48,9 +48,9 @@ class Settings extends Model
     public string $openAiImageInputDetailLevel = 'low';
 
     /**
-     * @var bool Whether to pre-save the asset if alt field is empty before saving a value to it, prevents same value being saved to each Site
+     * @var bool Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
      */
-    public bool $preSaveAsset = true;
+    public bool $propagate = false;
 
     /**
      * @var bool Whether to save the translated result to each Site's Asset's translatable alt text field
@@ -74,7 +74,7 @@ class Settings extends Model
             ['prompt', 'string'],
             ['openAiImageInputDetailLevel', 'string'],
             ['openAiImageInputDetailLevel', 'in', 'range' => ['low', 'high']],
-            ['preSaveAsset', 'boolean'],
+            ['propagate', 'boolean'],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
         ];

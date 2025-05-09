@@ -154,20 +154,12 @@ class OpenAiService extends Component
      * Validates if the asset is an accepted image format and converts if needed
      *
      * @param Asset $asset The asset to validate
-     * @return bool Whether the asset is an accepted format or was successfully converted
+     * @return bool Whether the asset is an accepted mimetype or was successfully converted
      * @throws ImageTransformException
      */
     private function isValidImageFormat(Asset $asset): bool
     {
-        $extension = strtolower($asset->getExtension());
         $mimeType = strtolower($asset->getMimeType());
-
-        // Check for accepted extensions
-        $acceptedExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
-        if (!in_array($extension, $acceptedExtensions)) {
-            Craft::warning('Asset has unsupported extension: ' . $extension . '. Will attempt to convert to JPEG.', __METHOD__);
-            return true; // We'll handle conversion in generateAltText
-        }
 
         // Check for accepted MIME types
         $acceptedMimeTypes = [
@@ -184,14 +176,10 @@ class OpenAiService extends Component
 
         // For GIFs, check if they're animated
         if ($extension === 'gif' && $mimeType === 'image/gif') {
-            $filePath = $asset->getPath();
-            if (file_exists($filePath)) {
-                $fileContents = file_get_contents($filePath);
-                // Check for multiple image frames in GIF
-                if (substr_count($fileContents, "\x21\xF9\x04") > 1) {
-                    Craft::warning('Animated GIF detected. Will attempt to convert first frame to JPEG.', __METHOD__);
-                    return true; // We'll handle conversion in generateAltText
-                }
+            $fileContents = $asset->getContents();
+            // Check for multiple image frames in GIF
+            if (substr_count($fileContents, "\x21\xF9\x04") > 1) {
+                return false;
             }
         }
 
@@ -228,9 +216,30 @@ class OpenAiService extends Component
         $height = $asset->getHeight();
 
         // Check if format needs to be converted
-        $extension = strtolower($asset->getExtension());
-        $acceptedExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
-        $needsFormatConversion = !in_array($extension, $acceptedExtensions);
+        $acceptedMimeTypes = [
+            'image/png',
+            'image/jpeg',
+            'image/webp',
+            'image/gif',
+        ];
+        $assetMimeType = strtolower($asset->getMimeType());
+
+        // Check if the asset is an animated gif which OpenAI API does not support
+        if ($assetMimeType === 'image/gif') {
+            $fileContents = $asset->getContents();
+            // Check for multiple image frames in GIF
+            if (substr_count($fileContents, "\x21\xF9\x04") > 1) {
+                throw new Exception('Animated GIF detected, this is not supported.');
+            }
+        }
+        
+        // decide if we need to transform svgs
+        if (!Craft::$app->getConfig()->getGeneral()->transformSvgs && $assetMimeType === 'image/svg+xml') {
+            throw new Exception('SVGs are not supported by the OpenAI API and transformSvgs is disabled.');
+        }
+
+        // decide if we need to transform the image to become a jpeg
+        $needsFormatConversion = !in_array($assetMimeType, $acceptedMimeTypes);
 
         // Set up transform parameters
         $transformParams = [];
@@ -247,9 +256,15 @@ class OpenAiService extends Component
             $transformParams['mode'] = 'fit';
         }
 
-        // Get the image URL with transformation if needed
+        // Check mime type of the transform:
+        $transformMimeType = $asset->getMimeType($transformParams);
+        if (!in_array($transformMimeType, $acceptedMimeTypes)) {
+            throw new Exception("Asset transform has unsupported MIME type: $transformMimeType");
+        }
+
+        $assetTransform = $asset->setTransform($transformParams);
         // Make sure that we do not get a "generate transform" url, but a real url with true
-        $imageUrl = $asset->getUrl($transformParams, true);
+        $imageUrl = $assetTransform->getUrl($transformParams, true);
 
         // If we have a URL, check if it's accessible remotely
         if (!empty($imageUrl)) {
@@ -261,17 +276,11 @@ class OpenAiService extends Component
 
         // If no public URL is available or URL is not accessible, try to get the file contents and encode as base64
         if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            $assetContents = $asset->getContents();
-
-            // Get the MIME type
-            $mimeType = $asset->getMimeType();
-            if (empty($mimeType)) {
-                $mimeType = 'image/jpeg'; // Default to JPEG if MIME type is unknown
-            }
+            $assetContents = $assetTransform->getContents();
 
             // Encode as base64 and create data URI
             $base64Image = base64_encode($assetContents);
-            $imageUrl = "data:$mimeType;base64,$base64Image";
+            $imageUrl = "data:$transformMimeType;base64,$base64Image";
         }
 
         $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel) ?? 'low';
