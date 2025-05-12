@@ -250,7 +250,7 @@ class OpenAiService extends Component
         }
 
         // Add dimension constraints if needed
-        if ($width > 2048 || $height > 2048) {
+        if ($width > 2048 || $height > 2048 || $asset->getSize() > 20 * 1024 * 1024) {
             $transformParams['width'] = 2048;
             $transformParams['height'] = 2048;
             $transformParams['mode'] = 'fit';
@@ -262,9 +262,9 @@ class OpenAiService extends Component
             throw new Exception("Asset transform has unsupported MIME type: $transformMimeType");
         }
 
-        $assetTransform = $asset->setTransform($transformParams);
+        $asset->setTransform($transformParams);
         // Make sure that we do not get a "generate transform" url, but a real url with true
-        $imageUrl = $assetTransform->getUrl($transformParams, true);
+        $imageUrl = $asset->getUrl($transformParams, true);
 
         // If we have a URL, check if it's accessible remotely
         if (!empty($imageUrl)) {
@@ -276,7 +276,14 @@ class OpenAiService extends Component
 
         // If no public URL is available or URL is not accessible, try to get the file contents and encode as base64
         if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            $assetContents = $assetTransform->getContents();
+            if ($needsFormatConversion) {
+                // See https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148
+                throw new Exception("Asset $asset->filename has no URL and an unsupported MIME type \"$assetMimeType\". A transform is required but retrieving the file contents for a transform is unsupported.");
+            }
+            if (!empty($transformParams)) {
+                throw new Exception("Asset $asset->filename has no URL and requires a transform, but retrieving the file contents for a transform is unsupported.");
+            }
+            $assetContents = $asset->getContents();
 
             // Encode as base64 and create data URI
             $base64Image = base64_encode($assetContents);

@@ -122,6 +122,34 @@ To add this field:
 5. Save changes to the volume
 6. Update your templates to use the new `alt` field
 
+## Limitations
+
+- The OpenAI API has [image input requirements](https://platform.openai.com/docs/guides/images-vision?api-mode=responses#image-input-requirements) which can change
+- Where an unsupported file type is requested the plugin will attempt an image transform to a jpg to be sent instead
+- The plugin checks a file's mimetype to see if it's valid, [a filename contains the wrong extension this should not matter in craft ^5.8](https://github.com/craftcms/cms/issues/17246#issuecomment-2873706369)
+- If an asset's dimensions are larger than the dimensions required by the API an image transform is sent instead
+- If an asset has no URL (private) and requires a transform (e.g. if the original asset is an unsupported mime type, or, the dimensions are too large) the plugin [cannot retrieve the transform's file contents](https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148) to send a base64 encoded version of the image to the OpenAI API.
+
+### Supported file types	
+
+- PNG (.png)
+- JPEG (.jpeg and .jpg)
+- WEBP (.webp)
+- Non-animated GIF (.gif)
+
+### Size limits	
+
+- Up to 20MB per image
+- Low-resolution: 512px x 512px
+- High-resolution: 768px (short side) x 2000px (long side)
+
+### Other requirements	
+
+- No watermarks or logos
+- No text
+- No NSFW content
+- Clear enough for a human to understand
+
 ## 🛠️ Troubleshooting
 
 - If the plugin returns errors about API authentication, verify your API key.
