@@ -264,8 +264,8 @@ class OpenAiService extends Component
                 $transformParams['height'] = min(round($transformParams['width'] / $aspectRatio), 2000);
             } else {
                 // Landscape: height is the short side
-                $transformParams['width'] = min(round($transformParams['height'] * $aspectRatio), 2000);
                 $transformParams['height'] = min($height, 768);
+                $transformParams['width'] = min(round($transformParams['height'] * $aspectRatio), 2000);
             }
             $transformParams['mode'] = 'fit';
         }
