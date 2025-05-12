@@ -264,14 +264,15 @@ class OpenAiService extends Component
                 $transformParams['height'] = min(round($transformParams['width'] / $aspectRatio), 2000);
             } else {
                 // Landscape: height is the short side
-                $transformParams['height'] = min($height, 768);
                 $transformParams['width'] = min(round($transformParams['height'] * $aspectRatio), 2000);
+                $transformParams['height'] = min($height, 768);
             }
             $transformParams['mode'] = 'fit';
         }
 
         // Very unlikely a 20MB file will be under 2000x768, but just in case lets set the quality to 75 to mitigate the risk of that scenario
-        if ($asset->getSize() > 20 * 1024 * 1024) {
+        if (empty($transformParams) && $asset->size >  20 * 1024 * 1024) {
+            Craft::info("$asset->filename is 20MB file detected setting transform quality to 75", __METHOD__);
             $transformParams['quality'] = 75;
         }
 
