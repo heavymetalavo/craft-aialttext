@@ -2,11 +2,12 @@
 
 ## 1.5.5-unreleased
 
-- Adding limitations to readme
-- Adding test to ensure file size is under 20MB API limit
-- Adding new test & exception for private assets with no url and unsupported mime type which cannot be transformed
-- Adding new test & exception for private assets with no url but require a transform as Craft does not support retreiving file contents for transforms
-- Replacing references to `$assetTransform` with `$asset` as we are updating the model with `setTransform()`, they should be the same.
+- ✅ Adding limitations to readme
+- ✅ Adding test to ensure file size is under 20MB API limit
+- ✅ Adding new test & exception for private assets with no url and unsupported mime type which cannot be transformed
+- ✅ Adding new test & exception for private assets with no url but require a transform as Craft does not support retreiving file contents for transforms
+- ✅ Replacing references to `$assetTransform` with `$asset` as we are updating the model with `setTransform()`, they should be the same.
+- Update logic to support new API limitation "768px (short side) x 2000px (long side)"
 
 ## 1.5.4 - 2025-05-09
 

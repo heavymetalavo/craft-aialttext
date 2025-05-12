@@ -249,11 +249,30 @@ class OpenAiService extends Component
             $transformParams['format'] = 'jpg';
         }
 
-        // Add dimension constraints if needed
-        if ($width > 2048 || $height > 2048 || $asset->getSize() > 20 * 1024 * 1024) {
-            $transformParams['width'] = 2048;
-            $transformParams['height'] = 2048;
+        // Determine short side and long side
+        $shortSide = min($width, $height);
+        $longSide = max($width, $height);
+        
+        // Add dimension constraints if needed - OpenAI requires max 768px for short side, 2000px for long side
+        if ($shortSide > 768 || $longSide > 2000) {
+            // Calculate the aspect ratio
+            $aspectRatio = $width / $height;
+            
+            if ($width <= $height) {
+                // Portrait or square: width is the short side
+                $transformParams['width'] = min($width, 768);
+                $transformParams['height'] = min(round($transformParams['width'] / $aspectRatio), 2000);
+            } else {
+                // Landscape: height is the short side
+                $transformParams['height'] = min($height, 768);
+                $transformParams['width'] = min(round($transformParams['height'] * $aspectRatio), 2000);
+            }
             $transformParams['mode'] = 'fit';
+        }
+
+        // Very unlikely a 20MB file will be under 2000x768, but just in case lets set the quality to 75 to mitigate the risk of that scenario
+        if ($asset->getSize() > 20 * 1024 * 1024) {
+            $transformParams['quality'] = 75;
         }
 
         // Check mime type of the transform:
