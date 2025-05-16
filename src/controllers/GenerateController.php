@@ -251,7 +251,7 @@ class GenerateController extends Controller
             // Now process each site's assets
             foreach ($sites as $site) {
                 // Process each site
-                Craft::info('Processing ALL assets for site: ' . $site->name . ' (ID: ' . $site->id . ')', __METHOD__);
+                Craft::info('Processing all assets for site: ' . $site->name . ' (ID: ' . $site->id . ')', __METHOD__);
                 
                 // Find all image assets for this site
                 // Process in batches to avoid memory issues

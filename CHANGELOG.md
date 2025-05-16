@@ -7,7 +7,7 @@
 - ✅ Adding new test & exception for private assets with no url and unsupported mime type which cannot be transformed
 - ✅ Adding new test & exception for private assets with no url but require a transform as Craft does not support retreiving file contents for transforms
 - ✅ Replacing references to `$assetTransform` with `$asset` as we are updating the model with `setTransform()`, they should be the same.
-- Update logic to support new API limitation "768px (short side) x 2000px (long side)"
+- ✅ Update logic to support new API limitation "768px (short side) x 2000px (long side)"
 - Update all queue job titles, notices and errors to only contain site ID if there is more than 1 Site
 - Fixed issue where remote SVGs were not sending a jpg transform to openai
 - Added option to select alt text field from field list

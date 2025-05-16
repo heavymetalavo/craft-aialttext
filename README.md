@@ -129,6 +129,7 @@ To add this field:
 - The plugin checks a file's mimetype to see if it's valid, [a filename contains the wrong extension this should not matter in craft ^5.8](https://github.com/craftcms/cms/issues/17246#issuecomment-2873706369)
 - If an asset's dimensions are larger than the dimensions required by the API an image transform is sent instead
 - If an asset has no URL (private) and requires a transform (e.g. if the original asset is an unsupported mime type, or, the dimensions are too large) the plugin [cannot retrieve the transform's file contents](https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148) to send a base64 encoded version of the image to the OpenAI API.
+- Where an alternative image transformer is used, e.g. when an application is hosted on [Servd](https://servd.host) and assets are processed through their asset platform this may not support svg -> raster transforms
 
 ### Supported file types	
 
