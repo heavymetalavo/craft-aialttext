@@ -9,6 +9,7 @@
 - Update logic to support new API dimensions limitation "768px (short side) x 2000px (long side)"
 - Update all queue job titles, notices and errors to only contain site ID if there is more than 1 Site
 - Update bulk actions table to only show 1 "total" row where there is only 1 site
+- Update some thrown exceptions to instead become Craft wanings, turns out the API may accept other files anyway!
 
 ## 1.5.4 - 2025-05-09
 

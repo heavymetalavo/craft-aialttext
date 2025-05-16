@@ -124,7 +124,7 @@ To add this field:
 
 ## Limitations
 
-- The OpenAI API has [image input requirements](https://platform.openai.com/docs/guides/images-vision?api-mode=responses#image-input-requirements) which have changed in the past month (2025-05)
+- The OpenAI API has [image input requirements](https://platform.openai.com/docs/guides/images-vision?api-mode=responses#image-input-requirements) which have changed in the past month (2025-05), however these requirements don't appear to be enforced, e.g. sending a base64 image above required image dimensions will be accepted by the API.
 - Where an unsupported file type is requested the plugin will attempt an image transform to a jpg to be sent instead
 - The plugin checks a file's mimetype to see if it's valid, [a filename which contains the wrong extension could return the wrong file type until Craft v5.8.0 is released](https://github.com/craftcms/cms/issues/17246#issuecomment-2873706369)
 - If an asset's dimensions are larger than the dimensions required by the API an image transform is sent instead
