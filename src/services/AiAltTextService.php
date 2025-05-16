@@ -94,7 +94,7 @@ class AiAltTextService extends Component
 
         // Save the current site on queue
         $queue->push(new GenerateAiAltTextJob([
-            'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}, Site: {siteId})', [
+            'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
                 'filename' => $asset->filename,
                 'id' => $asset->id,
                 'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $assetSiteId" : "",
