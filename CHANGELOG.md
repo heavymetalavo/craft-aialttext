@@ -2,14 +2,14 @@
 
 ## 1.5.5 - 2025-05-16
 
-- Adding limitations to readme
-- Adding test to check file size is under 20MB API limit, in super unlikely scenario where it is larger and within the required dimensions perform a transform where quality is reduced further
+- Update some thrown exceptions to instead become Craft wanings, turns out the API may accept other files anyway!
 - Adding new test & exception for private assets with no url and unsupported mime type which cannot be transformed
+- Adding test to check file size is under 20MB API limit, in super unlikely scenario where it is larger and within the required dimensions perform a transform where quality is reduced further
 - Adding new test & exception for private assets with no url but require a transform as Craft does not support retreiving file contents for transforms
+- Adding limitations to readme
 - Update logic to support new API dimensions limitation "768px (short side) x 2000px (long side)"
 - Update all queue job titles, notices and errors to only contain site ID if there is more than 1 Site
 - Update bulk actions table to only show 1 "total" row where there is only 1 site
-- Update some thrown exceptions to instead become Craft wanings, turns out the API may accept other files anyway!
 
 ## 1.5.4 - 2025-05-09
 
