@@ -56,7 +56,7 @@ class AiAltTextService extends Component
             foreach ($existingJobs as $job) {
                 // Only skip if both asset ID AND site ID match an existing job
                 if (isset($job['description'])
-                    && str_contains($job['description'], "Asset: $asset->id")
+                    && str_contains($job['description'], "ID: $asset->id")
                     && str_contains($job['description'], "Site: $assetSiteId")
                     && $job['status'] !== 4) {
                     $hasExistingJob = true;
@@ -94,7 +94,7 @@ class AiAltTextService extends Component
 
         // Save the current site on queue
         $queue->push(new GenerateAiAltTextJob([
-            'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Asset: {id}, Site: {siteId})', [
+            'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}, Site: {siteId})', [
                 'filename' => $asset->filename,
                 'id' => $asset->id,
                 'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $assetSiteId" : "",
@@ -117,7 +117,7 @@ class AiAltTextService extends Component
             }
 
             $queue->push(new GenerateAiAltTextJob([
-                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (Asset: {id}{siteMessageSuffix})', [
+                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
                     'filename' => $asset->filename,
                     'id' => $asset->id,
                     'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $site->id" : "",
