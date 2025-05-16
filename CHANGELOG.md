@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## 1.5.5-unreleased
+## 1.5.5 - 2025-05-16
 
 - ✅ Adding limitations to readme
 - ✅ Adding test to ensure file size is under 20MB API limit
@@ -9,9 +9,7 @@
 - ✅ Replacing references to `$assetTransform` with `$asset` as we are updating the model with `setTransform()`, they should be the same.
 - ✅ Update logic to support new API limitation "768px (short side) x 2000px (long side)"
 - ✅ Update all queue job titles, notices and errors to only contain site ID if there is more than 1 Site
-- Update bulk actions table to only show 1 "total" row where there is only 1 site
-- Fixed issue where remote SVGs were not sending a jpg transform to OpenAI
-- Added option to select alt text field from field list
+- ✅ Update bulk actions table to only show 1 "total" row where there is only 1 site
 
 ## 1.5.4 - 2025-05-09
 
