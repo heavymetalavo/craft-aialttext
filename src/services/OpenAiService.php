@@ -249,43 +249,54 @@ class OpenAiService extends Component
             $transformParams['format'] = 'jpg';
         }
 
-        // Determine short side and long side
-        $shortSide = min($width, $height);
-        $longSide = max($width, $height);
-        
-        // Add dimension constraints if needed - OpenAI requires max 768px for short side, 2000px for long side
-        if ($shortSide > 768 || $longSide > 2000) {
-            // Calculate the aspect ratio
-            $aspectRatio = $width / $height;
-            
-            // We want to maximize dimensions within constraints
-            // Calculate dimensions two ways and use the larger option
-            
-            // Option 1: Start with max long side (2000px)
-            $option1Width = $width >= $height ? 2000 : round(2000 * $aspectRatio);
-            $option1Height = $width >= $height ? round(2000 / $aspectRatio) : 2000;
-            
-            // Check if short side exceeds 768px
-            if (($width >= $height && $option1Height > 768) || ($height >= $width && $option1Width > 768)) {
-                // Option 2: Start with max short side (768px)
-                $option2Width = $width <= $height ? 768 : round(768 * $aspectRatio);
-                $option2Height = $width <= $height ? round(768 / $aspectRatio) : 768;
-                
-                // Use option 2 (short side constraint)
-                $transformParams['width'] = $option2Width;
-                $transformParams['height'] = $option2Height;
-                
-                Craft::info("Image dimensions constrained by short side: {$transformParams['width']}x{$transformParams['height']}", __METHOD__);
-            } else {
-                // Use option 1 (long side constraint)
-                $transformParams['width'] = $option1Width;
-                $transformParams['height'] = $option1Height;
-                
-                Craft::info("Image dimensions constrained by long side: {$transformParams['width']}x{$transformParams['height']}", __METHOD__);
-            }
-            
+        // If width is larger than height and width is larger than 2000px set transform params
+        if ($width > $height && $width > 2000) {
+            $transformParams['width'] = 2000;
+            $transformParams['height'] = 768;
+            $transformParams['mode'] = 'fit';
+        } elseif ($height > $width && $height > 2000) {
+            $transformParams['width'] = 768;
+            $transformParams['height'] = 2000;
             $transformParams['mode'] = 'fit';
         }
+
+        // // Determine short side and long side
+        // $shortSide = min($width, $height);
+        // $longSide = max($width, $height);
+        
+        // // Add dimension constraints if needed - OpenAI requires max 768px for short side, 2000px for long side
+        // if ($shortSide > 768 || $longSide > 2000) {
+        //     // Calculate the aspect ratio
+        //     $aspectRatio = $width / $height;
+            
+        //     // We want to maximize dimensions within constraints
+        //     // Calculate dimensions two ways and use the larger option
+            
+        //     // Option 1: Start with max long side (2000px)
+        //     $option1Width = $width >= $height ? 2000 : round(2000 * $aspectRatio);
+        //     $option1Height = $width >= $height ? round(2000 / $aspectRatio) : 2000;
+            
+        //     // Check if short side exceeds 768px
+        //     if (($width >= $height && $option1Height > 768) || ($height >= $width && $option1Width > 768)) {
+        //         // Option 2: Start with max short side (768px)
+        //         $option2Width = $width <= $height ? 768 : round(768 * $aspectRatio);
+        //         $option2Height = $width <= $height ? round(768 / $aspectRatio) : 768;
+                
+        //         // Use option 2 (short side constraint)
+        //         $transformParams['width'] = $option2Width;
+        //         $transformParams['height'] = $option2Height;
+                
+        //         Craft::info("Image dimensions constrained by short side: {$transformParams['width']}x{$transformParams['height']}", __METHOD__);
+        //     } else {
+        //         // Use option 1 (long side constraint)
+        //         $transformParams['width'] = $option1Width;
+        //         $transformParams['height'] = $option1Height;
+                
+        //         Craft::info("Image dimensions constrained by long side: {$transformParams['width']}x{$transformParams['height']}", __METHOD__);
+        //     }
+            
+        //     $transformParams['mode'] = 'fit';
+        // }
 
         // Very unlikely a 20MB file will be under 2000x768, but just in case lets set the quality to 75 to mitigate the risk of that scenario
         if (empty($transformParams) && $asset->size >  20 * 1024 * 1024) {
