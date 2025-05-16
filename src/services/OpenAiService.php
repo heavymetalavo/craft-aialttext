@@ -266,13 +266,15 @@ class OpenAiService extends Component
             $transformParams['quality'] = 75;
         }
 
+        // Set the transform
+        $asset->setTransform($transformParams);
+
         // Check mime type of the transform:
         $transformMimeType = $asset->getMimeType($transformParams);
         if (!in_array($transformMimeType, $acceptedMimeTypes)) {
-            throw new Exception("Asset transform has unsupported MIME type: $transformMimeType");
+            Craft::warning("Asset transform has unsupported MIME type: $transformMimeType, continuing with source asset...", __METHOD__);
         }
-
-        $asset->setTransform($transformParams);
+        
         // Make sure that we do not get a "generate transform" url, but a real url with true
         $imageUrl = $asset->getUrl($transformParams, true);
 
@@ -286,13 +288,13 @@ class OpenAiService extends Component
 
         // If no public URL is available or URL is not accessible, try to get the file contents and encode as base64
         if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            // if ($needsFormatConversion) {
-            //     // See https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148
-            //     throw new Exception("Asset $asset->filename has no URL and an unsupported MIME type \"$assetMimeType\". A transform is required but retrieving the file contents for a transform is unsupported.");
-            // }
-            // if (!empty($transformParams)) {
-            //     throw new Exception("Asset $asset->filename has no URL and requires a transform, but retrieving the file contents for a transform is unsupported.");
-            // }
+            if ($needsFormatConversion) {
+                // See https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148
+                Craft::warning("Asset $asset->filename has no URL and an unsupported MIME type \"$assetMimeType\". A transform is required but retrieving the file contents for a transform is unsupported. Continuing with source asset file contents for base64 encoding just incase it is accepted...", __METHOD__);
+            }
+            if (!empty($transformParams)) {
+                Craft::warning("Asset $asset->filename has no URL and requires a transform, but retrieving the file contents for a transform is unsupported. Continuing with source asset file contents for base64 encoding just incase it is accepted...", __METHOD__);
+            }
             $assetContents = $asset->getContents();
 
             // Encode as base64 and create data URI
