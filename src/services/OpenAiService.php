@@ -258,15 +258,32 @@ class OpenAiService extends Component
             // Calculate the aspect ratio
             $aspectRatio = $width / $height;
             
-            if ($width <= $height) {
-                // Portrait or square: width is the short side
-                $transformParams['width'] = min($width, 768);
-                $transformParams['height'] = min(round($transformParams['width'] / $aspectRatio), 2000);
+            // We want to maximize dimensions within constraints
+            // Calculate dimensions two ways and use the larger option
+            
+            // Option 1: Start with max long side (2000px)
+            $option1Width = $width >= $height ? 2000 : round(2000 * $aspectRatio);
+            $option1Height = $width >= $height ? round(2000 / $aspectRatio) : 2000;
+            
+            // Check if short side exceeds 768px
+            if (($width >= $height && $option1Height > 768) || ($height >= $width && $option1Width > 768)) {
+                // Option 2: Start with max short side (768px)
+                $option2Width = $width <= $height ? 768 : round(768 * $aspectRatio);
+                $option2Height = $width <= $height ? round(768 / $aspectRatio) : 768;
+                
+                // Use option 2 (short side constraint)
+                $transformParams['width'] = $option2Width;
+                $transformParams['height'] = $option2Height;
+                
+                Craft::info("Image dimensions constrained by short side: {$transformParams['width']}x{$transformParams['height']}", __METHOD__);
             } else {
-                // Landscape: height is the short side
-                $transformParams['height'] = min($height, 768);
-                $transformParams['width'] = min(round($transformParams['height'] * $aspectRatio), 2000);
+                // Use option 1 (long side constraint)
+                $transformParams['width'] = $option1Width;
+                $transformParams['height'] = $option1Height;
+                
+                Craft::info("Image dimensions constrained by long side: {$transformParams['width']}x{$transformParams['height']}", __METHOD__);
             }
+            
             $transformParams['mode'] = 'fit';
         }
 
