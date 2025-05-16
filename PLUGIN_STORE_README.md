@@ -122,6 +122,35 @@ To add this field:
 5. Save changes to the volume
 6. Update your templates to use the new `alt` field
 
+## Limitations
+
+- The OpenAI API has [image input requirements](https://platform.openai.com/docs/guides/images-vision?api-mode=responses#image-input-requirements) which have changed in the past month (2025-05), however these requirements don't appear to be enforced, e.g. sending a base64 image above required image dimensions will be accepted by the API.
+- Where an unsupported file type is requested the plugin will attempt an image transform to a jpg to be sent instead
+- The plugin checks a file's mimetype to see if it's valid, [a filename which contains the wrong extension could return the wrong file type until Craft v5.8.0 is released](https://github.com/craftcms/cms/issues/17246#issuecomment-2873706369)
+- If an asset's dimensions are larger than the dimensions required by the API an image transform is sent instead
+- If an asset has no URL (private) and requires a transform (e.g. if the original asset is an unsupported mime type, or, the dimensions are too large) the plugin [cannot retrieve the transform's file contents](https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148) to send a base64 encoded version of the image to the OpenAI API.
+- Where an alternative image transformer is used, e.g. when an application is hosted on [Servd](https://servd.host) and assets are processed through their asset platform this may not support svg -> raster transforms
+
+### Supported file types	
+
+- PNG (.png)
+- JPEG (.jpeg and .jpg)
+- WEBP (.webp)
+- Non-animated GIF (.gif)
+
+### Size limits	
+
+- Up to 20MB per image
+- Low-resolution: 512px x 512px
+- High-resolution: 768px (short side) x 2000px (long side)
+
+### Other requirements	
+
+- No watermarks or logos
+- No text
+- No NSFW content
+- Clear enough for a human to understand
+
 ## 🛠️ Troubleshooting
 
 - If the plugin returns errors about API authentication, verify your API key.

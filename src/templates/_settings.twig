@@ -40,7 +40,7 @@
     </thead>
     <tbody>
         <tr class="totalcount">
-            <td><strong>All Sites</strong></td>
+            <td><strong>{% if sites|length > 1 %} All Sites {% else %} {{ (sites|first).name }} {% endif %}</strong></td>
             <td>{{ totalAssetsWithAltTextForAllSites + totalAssetsWithoutAltTextForAllSites }}</td>
             <td>{{ totalAssetsWithAltTextForAllSites }}</td>
             <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>

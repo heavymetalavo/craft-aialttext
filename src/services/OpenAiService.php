@@ -249,22 +249,34 @@ class OpenAiService extends Component
             $transformParams['format'] = 'jpg';
         }
 
-        // Add dimension constraints if needed
-        if ($width > 2048 || $height > 2048) {
-            $transformParams['width'] = 2048;
-            $transformParams['height'] = 2048;
+        // If width is larger than height and width is larger than 2000px set transform params
+        if ($width > $height && ($width > 2000 || $height > 768)) {
+            $transformParams['width'] = 2000;
+            $transformParams['height'] = 768;
+            $transformParams['mode'] = 'fit';
+        } elseif ($height > $width && ($height > 2000 || $width > 768)) {
+            $transformParams['width'] = 768;
+            $transformParams['height'] = 2000;
             $transformParams['mode'] = 'fit';
         }
+        
+        // Very unlikely a 20MB file will be under 2000x768, but just in case lets set the quality to 75 to mitigate the risk of that scenario
+        if (empty($transformParams) && $asset->size >  20 * 1024 * 1024) {
+            Craft::info("$asset->filename is 20MB file detected setting transform quality to 75", __METHOD__);
+            $transformParams['quality'] = 75;
+        }
+
+        // Set the transform
+        $asset->setTransform($transformParams);
 
         // Check mime type of the transform:
         $transformMimeType = $asset->getMimeType($transformParams);
         if (!in_array($transformMimeType, $acceptedMimeTypes)) {
-            throw new Exception("Asset transform has unsupported MIME type: $transformMimeType");
+            Craft::warning("Asset transform has unsupported MIME type: $transformMimeType, continuing with source asset...", __METHOD__);
         }
-
-        $assetTransform = $asset->setTransform($transformParams);
+        
         // Make sure that we do not get a "generate transform" url, but a real url with true
-        $imageUrl = $assetTransform->getUrl($transformParams, true);
+        $imageUrl = $asset->getUrl($transformParams, true);
 
         // If we have a URL, check if it's accessible remotely
         if (!empty($imageUrl)) {
@@ -276,7 +288,14 @@ class OpenAiService extends Component
 
         // If no public URL is available or URL is not accessible, try to get the file contents and encode as base64
         if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            $assetContents = $assetTransform->getContents();
+            if ($needsFormatConversion) {
+                // See https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148
+                Craft::warning("Asset $asset->filename has no URL and an unsupported MIME type \"$assetMimeType\". A transform is required but retrieving the file contents for a transform is unsupported. Continuing with source asset file contents for base64 encoding just incase it is accepted...", __METHOD__);
+            }
+            if (!empty($transformParams)) {
+                Craft::warning("Asset $asset->filename has no URL and requires a transform, but retrieving the file contents for a transform is unsupported. Continuing with source asset file contents for base64 encoding just incase it is accepted...", __METHOD__);
+            }
+            $assetContents = $asset->getContents();
 
             // Encode as base64 and create data URI
             $base64Image = base64_encode($assetContents);
