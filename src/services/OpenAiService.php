@@ -286,13 +286,13 @@ class OpenAiService extends Component
 
         // If no public URL is available or URL is not accessible, try to get the file contents and encode as base64
         if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            if ($needsFormatConversion) {
-                // See https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148
-                throw new Exception("Asset $asset->filename has no URL and an unsupported MIME type \"$assetMimeType\". A transform is required but retrieving the file contents for a transform is unsupported.");
-            }
-            if (!empty($transformParams)) {
-                throw new Exception("Asset $asset->filename has no URL and requires a transform, but retrieving the file contents for a transform is unsupported.");
-            }
+            // if ($needsFormatConversion) {
+            //     // See https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148
+            //     throw new Exception("Asset $asset->filename has no URL and an unsupported MIME type \"$assetMimeType\". A transform is required but retrieving the file contents for a transform is unsupported.");
+            // }
+            // if (!empty($transformParams)) {
+            //     throw new Exception("Asset $asset->filename has no URL and requires a transform, but retrieving the file contents for a transform is unsupported.");
+            // }
             $assetContents = $asset->getContents();
 
             // Encode as base64 and create data URI
