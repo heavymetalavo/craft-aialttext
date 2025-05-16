@@ -157,6 +157,7 @@ To add this field:
 - For "bad request" errors, ensure your selected model supports vision capabilities.
 - Alt text generation is processed through Craft's queue system for bulk operations, so check the queue if generation seems to be taking a long time.
 - Any errors _should_ be logged, check your queue.log files!
+- Check the asset has a title! If somehow an asset exists without one craft will not be able to resave it.
 
 ## ⚠️ Disclaimer
 
