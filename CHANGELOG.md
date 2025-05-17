@@ -1,6 +1,7 @@
 # Release Notes for AI Alt Text
 
-## 1.5.6-unreleased
+## 1.5.6 - 2025-05-17
+
 - Fixed issue where running **Generate all** or **Generate missing** bulk actions could generate alt text for each site **Save translated results for each site** setting was enabled
 
 ## 1.5.5 - 2025-05-16
