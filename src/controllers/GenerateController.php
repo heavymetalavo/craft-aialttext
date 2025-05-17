@@ -156,7 +156,7 @@ class GenerateController extends Controller
                             Craft::info('Queuing alt text generation for asset: ' . $asset->id . ' (' . $asset->filename . ') in site ' . $site->name, __METHOD__);
                             
                             // Create a job for the asset
-                            AiAltText::getInstance()->aiAltTextService->createJob($asset, false, $site->id);
+                            AiAltText::getInstance()->aiAltTextService->createJob($asset, false, $site->id, false, true, true);
                             $queuedCount++;
                         } catch (\Exception $e) {
                             Craft::error('Error queuing job for asset ' . $asset->id . ': ' . $e->getMessage(), __METHOD__);
@@ -283,7 +283,7 @@ class GenerateController extends Controller
                             Craft::info('Queuing alt text generation for asset: ' . $asset->id . ' (' . $asset->filename . ') in site ' . $site->name, __METHOD__);
                             
                             // Set force regeneration to true to regenerate all assets
-                            AiAltText::getInstance()->aiAltTextService->createJob($asset, false, $site->id, false, true);
+                            AiAltText::getInstance()->aiAltTextService->createJob($asset, false, $site->id, false, true, true);
                             $queuedCount++;
                         } catch (\Exception $e) {
                             Craft::error('Error queuing job for asset ' . $asset->id . ': ' . $e->getMessage(), __METHOD__);

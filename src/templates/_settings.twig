@@ -24,9 +24,7 @@
 
 <h2>Bulk actions</h2>
 
-<p>Generate alt text for all assets</p>
-
-<p>⚠️ These actions can generate alt text for all assets on a single Site or all Sites, even if the <strong>Save translated results for each Site</strong> setting is disabled.</p>
+<p>Generate alt text for all assets, the <strong>Save translated results for each site</strong> setting will be ignored to perform the requested action.</p>
 
 <table class="data fullwidth">
     <thead>
@@ -40,7 +38,7 @@
     </thead>
     <tbody>
         <tr class="totalcount">
-            <td><strong>{% if sites|length > 1 %} All Sites {% else %} {{ (sites|first).name }} {% endif %}</strong></td>
+            <td><strong>{% if sites|length > 1 %} All sites {% else %} {{ (sites|first).name }} {% endif %}</strong></td>
             <td>{{ totalAssetsWithAltTextForAllSites + totalAssetsWithoutAltTextForAllSites }}</td>
             <td>{{ totalAssetsWithAltTextForAllSites }}</td>
             <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
@@ -135,10 +133,10 @@
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Save translated results for each Site'|t('aialttext'),
+    label: 'Save translated results for each site'|t('aialttext'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',
-    instructions: "If enabled, the plugin will queue an extra job for each Craft Site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the Craft Site (`en-GB` for British english, `en-US` for American english, `de` for German etc). When disabled, alt text will generate for assets on the current Site."|t("aialttext"),
+    instructions: "If enabled, the plugin will queue an extra job for each site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the site (`en-GB` for British english, `en-US` for American english, `de` for German etc). When disabled, alt text will generate for assets on the current site."|t("aialttext"),
     on: settings.saveTranslatedResultsToEachSite,
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}
