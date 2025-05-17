@@ -89,7 +89,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **Image Detail Level** | How detailed the image analysis should be. | `low` |
 | **Propagate** | Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites. | `false` |
 | **Generate for new assets** | Whether to automatically generate alt text when new assets are created. | `false` |
-| **Save Translated Results to Each Site** | Whether to save translated results to an Asset's translatable alt text field for each Site. | `false` |
+| **Save Translated Results to Each site** | Whether to save translated results to an Asset's translatable alt text field for each site. | `false` |
 
 #### 🧠 Model Options
 Some models that support vision capabilities:
