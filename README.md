@@ -83,13 +83,13 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 | Setting | Description | Default |
 |---------|-------------|---------|
-| **API Key** | Your OpenAI API key. You can get one from [OpenAI's API Platform](https://platform.openai.com/api-keys). | None (required) |
+| **API key** | Your OpenAI API key. You can get one from [OpenAI's API Platform](https://platform.openai.com/api-keys). | None (required) |
 | **Model** | The OpenAI model to use for generating alt text. | `gpt-4.1-nano` |
 | **Prompt** | The text prompt sent to the AI to generate alt text. Supports `{asset.property}` and `{site.property}` | See below |
-| **Image Detail Level** | How detailed the image analysis should be. | `low` |
+| **Image detail level** | How detailed the image analysis should be. | `low` |
 | **Propagate** | Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites. | `false` |
 | **Generate for new assets** | Whether to automatically generate alt text when new assets are created. | `false` |
-| **Save Translated Results to Each site** | Whether to save translated results to an Asset's translatable alt text field for each site. | `false` |
+| **Save translated results to each site** | Whether to save translated results to an Asset's translatable alt text field for each site. | `false` |
 
 #### 🧠 Model Options
 Some models that support vision capabilities:
