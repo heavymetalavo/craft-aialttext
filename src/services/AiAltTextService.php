@@ -43,7 +43,7 @@ class AiAltTextService extends Component
      * @param bool $skipExistingJobCheck Whether to skip the check for existing jobs (useful for bulk operations)
      * @param bool $forceRegeneration Whether to force regeneration even if alt text exists
      */
-    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $forceRegeneration = false): void
+    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $forceRegeneration = false, $skipSaveTranslatedResultsToEachSiteSetting = false): void
     {
         $queue = Craft::$app->getQueue();
 
@@ -78,7 +78,7 @@ class AiAltTextService extends Component
         }
 
         // Get the $saveTranslatedResultsToEachSite setting value
-        $saveTranslatedResultsToEachSite = AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;;
+        $saveTranslatedResultsToEachSite = $skipSaveTranslatedResultsToEachSiteSetting ? false : AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
 
         // Check if we need to save the current site off queue
         if ($saveCurrentSiteOffQueue) {
