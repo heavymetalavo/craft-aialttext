@@ -1,5 +1,8 @@
 # Release Notes for AI Alt Text
 
+## 1.5.7 - 2025-05-18
+- Fixed issue when processing images with square aspect ratios - where long side could be under 2000px but the short side could still be larger than 768px (the API limit) and would bypass image transforms generation with accepted dimensions.
+
 ## 1.5.6 - 2025-05-17
 
 - Fixed issue where running **Generate all** or **Generate missing** bulk actions could generate alt text for each site **Save translated results for each site** setting was enabled

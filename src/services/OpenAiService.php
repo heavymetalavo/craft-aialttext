@@ -250,11 +250,11 @@ class OpenAiService extends Component
         }
 
         // If width is larger than height and width is larger than 2000px set transform params
-        if ($width > $height && ($width > 2000 || $height > 768)) {
+        if ($width >= $height && ($width > 2000 || $height > 768)) {
             $transformParams['width'] = 2000;
             $transformParams['height'] = 768;
             $transformParams['mode'] = 'fit';
-        } elseif ($height > $width && ($height > 2000 || $width > 768)) {
+        } elseif ($height >= $width && ($height > 2000 || $width > 768)) {
             $transformParams['width'] = 768;
             $transformParams['height'] = 2000;
             $transformParams['mode'] = 'fit';
