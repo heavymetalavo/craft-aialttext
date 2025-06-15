@@ -1,5 +1,9 @@
 # Release Notes for AI Alt Text
 
+## 1.5.8 - 2025-06-15
+
+- Optimised queries used to build table data on settings pages to support sites with large numbers of assets.
+
 ## 1.5.7 - 2025-05-18
 - Fixed issue when processing images with square aspect ratios - where long side could be under 2000px but the short side could still be larger than 768px (the API limit) and would bypass image transforms generation with accepted dimensions.
 
