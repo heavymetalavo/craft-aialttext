@@ -136,7 +136,7 @@
     label: 'Save translated results for each site'|t('aialttext'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',
-    instructions: "If enabled, the plugin will queue an extra job for each site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the site (`en-GB` for British english, `en-US` for American english, `de` for German etc). When disabled, alt text will generate for assets on the current site."|t("aialttext"),
+    instructions: "If enabled, the plugin will queue an extra job for each site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the site (`en-GB` for British english, `en-US` for American english, `de` for German etc). When disabled, alt text will generate for assets on the site the control panel is currently working with only."|t("aialttext"),
     on: settings.saveTranslatedResultsToEachSite,
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}
