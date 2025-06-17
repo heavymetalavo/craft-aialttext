@@ -1,5 +1,16 @@
 # Release Notes for AI Alt Text
 
+## 1.6.0 - 2025-06-17
+
+- Adding new console commands for bulk actions:
+
+| Command | Description |
+|---------|-------------|
+| `ai-alt-text/generate/stats` | Show alt text coverage statistics |
+| `ai-alt-text/generate/missing` | Queue jobs for assets without alt text (recommended) |
+| `ai-alt-text/generate/all` | Queue jobs for ALL assets (⚠️ overwrites existing alt text) |
+| `ai-alt-text/generate/single <id>` | Queue job for a specific asset ID |
+
 ## 1.5.8 - 2025-06-15
 
 - Optimised queries used to build table data on settings pages to support sites with large numbers of assets.

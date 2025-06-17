@@ -75,6 +75,44 @@ Example twig:
 <img src="{{ asset.url }}" alt="{{ asset.alt ?: asset.title }}">
 ```
 
+## 🖥️ Console Commands
+
+**Important**: These commands will create **queue** jobs which when run will generate the alt text. By default, all commands process **all sites** unless `--site-id` is specified.
+
+### Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `ai-alt-text/generate/stats` | Show alt text coverage statistics |
+| `ai-alt-text/generate/missing` | Queue jobs for assets without alt text (recommended) |
+| `ai-alt-text/generate/all` | Queue jobs for ALL assets (⚠️ overwrites existing alt text) |
+| `ai-alt-text/generate/single <id>` | Queue job for a specific asset ID |
+
+### Options
+
+| Option | Alias | Description | Default |
+|--------|-------|-------------|---------|
+| `--site-id=<id>` | `-s` | Process only specific site (if not set, processes all sites) | * |
+| `--batch-size=<n>` | `-b` | Assets per batch (memory efficiency) | `500` |
+| `--verbose` | `-v` | Show detailed progress | `false` |
+| `--force` | `-f` | Skip confirmations | `false` |
+
+### Examples
+
+```sh
+# Check coverage across all sites
+./craft ai-alt-text/generate/stats
+
+# Queue missing alt text for all sites
+./craft ai-alt-text/generate/missing
+
+# Queue for specific site with verbose output
+./craft ai-alt-text/generate/missing --site-id=2 --verbose
+
+# Queue for single asset
+./craft ai-alt-text/generate/single 123
+```
+
 ## ⚙️ Plugin settings
 
 After installation, configure the plugin at **Settings → AI Alt Text**:
