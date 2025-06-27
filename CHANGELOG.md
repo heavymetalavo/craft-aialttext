@@ -1,5 +1,10 @@
 # Release Notes for AI Alt Text
 
+## 1.6.1 - 2025-06-27
+
+- Updating fallback format to png where source image is svg to preserve transparency
+- Fixed issue where passing the detail parameter in payloads for images smaller than 512x512 could result in a failed request
+
 ## 1.6.0 - 2025-06-17
 
 - Adding new console commands for bulk actions:

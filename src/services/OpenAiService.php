@@ -246,7 +246,14 @@ class OpenAiService extends Component
 
         // Always convert format if needed, regardless of dimensions
         if ($needsFormatConversion) {
+            // @todo check if webp is supported by the environment and use that and fall back to jpg
             $transformParams['format'] = 'jpg';
+
+            // check the image is a svg and fallback to transform to a png for transparency support
+            if ($assetMimeType === 'image/svg+xml') {
+                // @todo use webp and fallback to png for transparent images where webp is not supported
+                $transformParams['format'] = 'png';
+            }
         }
 
         // If width is larger than height and width is larger than 2000px set transform params
