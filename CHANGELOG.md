@@ -4,6 +4,12 @@
 
 - Updating fallback format to png where source image is svg to preserve transparency
 - Fixed issue where passing the detail parameter in payloads for images smaller than 512x512 could result in a failed request
+- Updating default prompt as prior could cause hallucinations on smaller sized images
+
+> [!NOTE]  
+> Default prompt has updated, latest suggested prompt:
+> Describe the image provided, make it suitable for an alt text description (roughly 150 characters maximum). Consider transparency within the image if supported by the file type, e.g. don't suggest it has a dark background if it is transparent. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}
+
 
 ## 1.6.0 - 2025-06-17
 
