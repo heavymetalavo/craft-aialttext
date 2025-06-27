@@ -309,7 +309,13 @@ class OpenAiService extends Component
             $imageUrl = "data:$transformMimeType;base64,$base64Image";
         }
 
-        $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel) ?? 'low';
+        // Only set detail parameter for images larger than 512x512 pixels
+        // OpenAI API doesn't accept detail parameter for smaller images
+        $detail = null;
+        if ($width > 512 || $height > 512) {
+            $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel) ?? 'low';
+        }
+        
         $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
         // parse $prompt for {asset.param} and replace with $asset->param
@@ -339,8 +345,12 @@ class OpenAiService extends Component
         $request = new OpenAiRequest();
         $request->model = $this->model;
         $request->setPrompt($prompt)
-            ->setImageUrl($imageUrl)
-            ->setDetail($detail);
+            ->setImageUrl($imageUrl);
+            
+        // Only set detail if the image is large enough
+        if ($detail !== null) {
+            $request->setDetail($detail);
+        }
 
         // Validate the request
         if (!$request->validate()) {
