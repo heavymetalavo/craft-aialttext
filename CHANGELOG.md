@@ -6,11 +6,6 @@
 - Fixed issue where sometimes passing the detail parameter in payloads for images smaller than 512x512 which can *sometimes* result in a failed OpenAI API response especially where the hosted Asset may be on Craft Cloud CDN.
 - Updating default prompt as the prior prompt could cause hallucinations on smaller sized images
 
-> [!NOTE]  
-> Default prompt has updated, latest suggested prompt:
-> Describe the image provided, make it suitable for an alt text description (roughly 150 characters maximum). Consider transparency within the image if supported by the file type, e.g. don't suggest it has a dark background if it is transparent. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}
-
-
 ## 1.6.0 - 2025-06-17
 
 - Adding new console commands for bulk actions:
