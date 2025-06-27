@@ -246,7 +246,14 @@ class OpenAiService extends Component
 
         // Always convert format if needed, regardless of dimensions
         if ($needsFormatConversion) {
+            // @todo check if webp is supported by the environment and use that and fall back to jpg
             $transformParams['format'] = 'jpg';
+
+            // check the image is a svg and fallback to transform to a png for transparency support
+            if ($assetMimeType === 'image/svg+xml') {
+                // @todo use webp and fallback to png for transparent images where webp is not supported
+                $transformParams['format'] = 'png';
+            }
         }
 
         // If width is larger than height and width is larger than 2000px set transform params
@@ -302,7 +309,13 @@ class OpenAiService extends Component
             $imageUrl = "data:$transformMimeType;base64,$base64Image";
         }
 
-        $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel) ?? 'low';
+        // Only set detail parameter for images larger than 512x512 pixels
+        // OpenAI API doesn't accept detail parameter for smaller images
+        $detail = null;
+        if ($width > 512 || $height > 512) {
+            $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel) ?? 'low';
+        }
+        
         $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
         // parse $prompt for {asset.param} and replace with $asset->param
@@ -322,7 +335,7 @@ class OpenAiService extends Component
 
         // Make sure we have a valid prompt
         if (empty($prompt)) {
-            $prompt = 'Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image.';
+            $prompt = 'Describe the image provided, make it suitable for an alt text description (roughly 150 characters maximum). Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}';
         }
 
         // Log asset info for debugging
@@ -332,8 +345,12 @@ class OpenAiService extends Component
         $request = new OpenAiRequest();
         $request->model = $this->model;
         $request->setPrompt($prompt)
-            ->setImageUrl($imageUrl)
-            ->setDetail($detail);
+            ->setImageUrl($imageUrl);
+            
+        // Only set detail if the image is large enough
+        if ($detail !== null) {
+            $request->setDetail($detail);
+        }
 
         // Validate the request
         if (!$request->validate()) {

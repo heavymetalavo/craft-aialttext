@@ -1,5 +1,11 @@
 # Release Notes for AI Alt Text
 
+## 1.6.1 - 2025-06-27
+
+- Updating fallback format to png where source image is svg to preserve transparency
+- Fixed issue where sometimes passing the detail parameter in payloads for images smaller than 512x512 which can *sometimes* result in a failed OpenAI API response especially where the hosted Asset may be on Craft Cloud CDN.
+- Updating default prompt as the prior prompt could cause hallucinations on smaller sized images
+
 ## 1.6.0 - 2025-06-17
 
 - Adding new console commands for bulk actions:

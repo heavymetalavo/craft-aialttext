@@ -142,7 +142,7 @@ To find out which models are capable of vision, check [the models page](https://
 
 #### 💬 Default prompt
 
-> Generate a brief (roughly 150 characters maximum) alt text description focusing on the main subject and overall composition. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}
+> Describe the image provided, make it suitable for an alt text description (roughly 150 characters maximum). Consider transparency within the image if supported by the file type, e.g. don't suggest it has a dark background if it is transparent. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}
 
 #### 🔍 Image detail options
 - `low` - Less detailed, faster and cheaper (default to protect against unexpected costs)
@@ -166,6 +166,7 @@ To add this field:
 ## Limitations
 
 - The OpenAI API has [image input requirements](https://platform.openai.com/docs/guides/images-vision?api-mode=responses#image-input-requirements) which have changed in the past month (2025-05), however these requirements don't appear to be enforced, e.g. sending a base64 image above required image dimensions will be accepted by the API.
+- Craft CMS uses the [Imagine library](https://github.com/php-imagine/Imagine) for image processing, which can only transform [select image formats](https://github.com/php-imagine/Imagine/blob/develop/src/Image/Format.php#L14-L32). Support for these formats may vary depending on what ImageMagick drivers are available in your environment. If a source image is in a supported format, the plugin will generate a transform in one of the supported file types to send to the OpenAI API.
 - Where an unsupported file type is requested the plugin will attempt an image transform to a jpg to be sent instead
 - The plugin checks a file's mimetype to see if it's valid, [a filename which contains the wrong extension could return the wrong file type until Craft v5.8.0 is released](https://github.com/craftcms/cms/issues/17246#issuecomment-2873706369)
 - If an asset's dimensions are larger than the dimensions required by the API an image transform is sent instead
