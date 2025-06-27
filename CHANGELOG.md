@@ -3,8 +3,8 @@
 ## 1.6.1 - 2025-06-27
 
 - Updating fallback format to png where source image is svg to preserve transparency
-- Fixed issue where passing the detail parameter in payloads for images smaller than 512x512 could result in a failed request
-- Updating default prompt as prior could cause hallucinations on smaller sized images
+- Fixed issue where sometimes passing the detail parameter in payloads for images smaller than 512x512 which can *sometimes* result in a failed OpenAI API response especially where the hosted Asset may be on Craft Cloud CDN.
+- Updating default prompt as the prior prompt could cause hallucinations on smaller sized images
 
 > [!NOTE]  
 > Default prompt has updated, latest suggested prompt:
