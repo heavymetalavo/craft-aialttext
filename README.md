@@ -123,7 +123,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 |---------|-------------|---------|
 | **OpenAI API Key** | Your OpenAI API key. You can get one from [OpenAI's API Platform](https://platform.openai.com/api-keys). | None (required) |
 | **Prompt** | The text prompt sent to the AI to generate alt text. Supports `{asset.property}` and `{site.property}` | See below |
-| **Open AI Model** | The OpenAI model to use for generating alt text. | `gpt-4.1-nano` |
+| **Open AI Model** | The OpenAI model to use for generating alt text. | `gpt-5-nano` |
 | **Open AI Image Input Detail Level** | How detailed the image analysis should be. | `low` |
 | **Propagate** | Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites. | `false` |
 | **Generate for new image assets (on upload)** | Whether to automatically generate alt text when new assets are created. | `false` |
@@ -131,15 +131,16 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 #### 🧠 Model Options
 Some models that support vision capabilities:
-- `gpt-4.1-nano` - Fast, affordable small model for focused tasks (default)
+- `gpt-5-nano` - Fast, most affordable small model for focused tasks (default)
+- `gpt-4.1-nano` - Fast, affordable small model for focused tasks
 - `gpt-4o` - Fast, intelligent, flexible GPT model
 - `o1` - High-intelligence reasoning model
 
-To find out which models are capable of vision, check [the models page](https://platform.openai.com/docs/models), click into a model's detail page (e.g., [GPT-4.1-nano](https://platform.openai.com/docs/models/gpt-4.1-nano)) and look for "**Input**: Text, image" in the features columns at the top.
+To find out which models are capable of vision, check [the models page](https://platform.openai.com/docs/models), click into a model's detail page (e.g., [gpt-5-nano](https://platform.openai.com/docs/models/gpt-5-nano)) and look for "**Input**: Text, image" in the features columns at the top.
 
 #### 💬 Default prompt
 
-> Describe the image provided, make it suitable for an alt text description (roughly 150 characters maximum). Consider transparency within the image if supported by the file type, e.g. don't suggest it has a dark background if it is transparent. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}
+> Describe the image provided, make it suitable for an alt text description (roughly 150 characters maximum). Consider transparency within the image if supported by the file type, e.g. don't suggest it has a dark background if it is transparent. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. When describing a person do not assume their gender. Output in {site.language}
 
 #### 🔍 Image detail options
 - `low` - Less detailed, faster and cheaper (default to protect against unexpected costs)
@@ -200,7 +201,7 @@ To add this field:
 
 ## ⚠️ Disclaimer
 
-We've taken some steps to try prevent unexpected costs with default plugin settings (e.g. detail: `low` and model: `gpt-4.1-nano`) though we take no responsibility for excessive API token usage that may result from mistakes, bugs, or security vulnerabilities within this plugin so use at your own risk.
+We've taken some steps to try prevent unexpected costs with default plugin settings (e.g. detail: `low` and model: `gpt-5-nano`) though we take no responsibility for excessive API token usage that may result from mistakes, bugs, or security vulnerabilities within this plugin so use at your own risk.
 
 If you are concerned about unexpected charges we recommend:
 - Set up rate limits and spending caps at the API account level in your [OpenAI account settings](https://platform.openai.com/account/billing/limits)

@@ -1,5 +1,10 @@
 # Release Notes for AI Alt Text
 
+## 1.6.2 - 2025-08-19
+
+- Updating default model to be `gpt-5-nano`
+- Updating default prompt to include when describing a person do not assume their gender
+
 ## 1.6.1 - 2025-06-27
 
 - Updating fallback format to png where source image is svg to preserve transparency
