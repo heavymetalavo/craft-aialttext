@@ -1,5 +1,12 @@
 # Release Notes for AI Alt Text
 
+## UNRELEASED
+
+- Adding functionality to support a new AI Provider (Anthropic Claude)
+- Adding new setting field to choose AI Provider
+- Adding new settings template logic to show/hide relevant AI provider settings fields (e.g. model and api keys)
+- Migrating bulk actions to the CraftCMS Dashboard utilities area
+
 ## 1.6.2 - 2025-08-19
 
 - Updating default model to be `gpt-5-nano`

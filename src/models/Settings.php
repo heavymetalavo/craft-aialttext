@@ -16,12 +16,36 @@ use craft\base\Model;
  * @property string $prompt The prompt template for generating alt text
  * @property string $openAiImageInputDetailLevel The detail level for image analysis
  * @property bool $propagate Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
- * @property bool $saveTranslatedResultsToEachSite Whether to save the translated result to each Site's Asset's translatable alt text field
  * @property string $translationPromptAppendage The prompt suffix for translated results
  * @property bool $generateForNewAssets Whether to generate alt text for new assets automatically
+ * @property string $aiProvider The API provider to use ('openai', 'anthropic', or 'gemini')
+ * @property string $anthropicApiKey The Anthropic API key
+ * @property string $anthropicModel The Anthropic Model
+ * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('very_low', 'low', 'medium', 'high')
  */
 class Settings extends Model
 {
+    /**
+     * @var string The API provider to use
+     */
+    public string $aiProvider = 'anthropic';
+
+    /**
+     * @var string The Anthropic API key
+     */
+    public string $anthropicApiKey = '';
+
+    /**
+     * @var string The Anthropic model to use
+     */
+    public string $anthropicModel = 'claude-haiku-4-5';
+
+    /**
+     * @var string The Anthropic image detail level
+     */
+    public string $anthropicImageDetailLevel = 'medium';
+
+
     /**
      * @var string The OpenAI API key
      */
@@ -35,7 +59,7 @@ class Settings extends Model
     /**
      * @var string The prompt template for generating alt text
      */
-    public string $prompt = 'Describe the image provided, make it suitable for an alt text description (roughly 150 characters maximum). Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. When describing a person do not assume their gender. Output in {site.language}';
+    public string $prompt = 'Describe the image provided, make it suitable for an alt text description (roughly 150 characters maximum). Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}';
 
     /**
      * @var string The detail level for image analysis
@@ -68,9 +92,14 @@ class Settings extends Model
     public function defineRules(): array
     {
         return [
-            [['openAiApiKey', 'openAiModel', 'prompt'], 'required'],
+            [['aiProvider', 'prompt'], 'required'],
+            [['aiProvider'], 'in', 'range' => ['openai', 'anthropic']],
             ['openAiApiKey', 'string'],
             ['openAiModel', 'string'],
+            ['anthropicApiKey', 'string'],
+            ['anthropicModel', 'string'],
+            ['anthropicImageDetailLevel', 'in', 'range' => ['very_low', 'low', 'medium', 'high']],
+
             ['prompt', 'string'],
             ['openAiImageInputDetailLevel', 'string'],
             ['openAiImageInputDetailLevel', 'in', 'range' => ['low', 'high']],

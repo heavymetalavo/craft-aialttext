@@ -14,6 +14,9 @@ use craft\web\UrlManager;
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
 use heavymetalavo\craftaialttext\services\AiAltTextService;
 use heavymetalavo\craftaialttext\models\Settings;
+use heavymetalavo\craftaialttext\utilities\AiAltTextUtility;
+use craft\services\Utilities;
+use craft\events\RegisterComponentTypesEvent;
 use yii\base\Event;
 use craft\events\RegisterUrlRulesEvent;
 use craft\helpers\Cp;
@@ -117,6 +120,15 @@ class AiAltText extends Plugin
                 }
             }
         );
+
+        // Register Utility
+        Event::on(
+            Utilities::class,
+            Utilities::EVENT_REGISTER_UTILITIES,
+            function(RegisterComponentTypesEvent $event) {
+                $event->types[] = AiAltTextUtility::class;
+            }
+        );
     }
 
     /**
@@ -132,84 +144,10 @@ class AiAltText extends Plugin
      */
     protected function settingsHtml(): ?string
     {
-        // Get current site
-        $currentSite = Craft::$app->getSites()->getCurrentSite();
-        $sites = Craft::$app->getSites()->getAllSites();
-        
-        // Initialize totals
-        $totalAssetsWithAltTextForAllSites = 0;
-        $totalAssetsWithoutAltTextForAllSites = 0;
-        $siteAltTextCounts = [];
-        
-        // Efficiently count assets using database queries (no memory loading)
-        foreach ($sites as $site) {
-            $siteAltTextCounts[$site->id] = [
-                'total' => 0,
-                'with' => 0,
-                'without' => 0
-            ];
-
-            try {
-                // Count total image assets for this site (using count query, not loading assets)
-                $totalImageAssets = Asset::find()
-                    ->kind(Asset::KIND_IMAGE)
-                    ->siteId($site->id)
-                    ->status(null)
-                    ->count();
-                
-                // Count assets WITH alt text using database query
-                $withAltCount = Asset::find()
-                    ->kind(Asset::KIND_IMAGE)
-                    ->siteId($site->id)
-                    ->status(null)
-                    ->where(['not', ['alt' => null]])
-                    ->andWhere(['not', ['alt' => '']])
-                    ->count();
-                
-                // Calculate assets without alt text
-                $withoutAltCount = $totalImageAssets - $withAltCount;
-                
-                // Store counts for this site
-                $siteAltTextCounts[$site->id] = [
-                    'total' => $totalImageAssets,
-                    'with' => $withAltCount,
-                    'without' => $withoutAltCount
-                ];
-                
-                // Add to totals
-                $totalAssetsWithAltTextForAllSites += $withAltCount;
-                $totalAssetsWithoutAltTextForAllSites += $withoutAltCount;
-                
-                Craft::info("Site {$site->name}: Total: {$totalImageAssets}, With Alt: {$withAltCount}, Without Alt: {$withoutAltCount}", __METHOD__);
-            } catch (\Exception $e) {
-                Craft::error("Error counting assets for site {$site->name}: " . $e->getMessage(), __METHOD__);
-                
-                // Set safe defaults on error
-                $siteAltTextCounts[$site->id] = [
-                    'total' => 0,
-                    'with' => 0,
-                    'without' => 0
-                ];
-            }
-        }
-        
-        // For backward compatibility with the template
-        $totalAssets = $siteAltTextCounts[$currentSite->id]['total'] ?? 0;
-        $totalAssetsWithAltText = $siteAltTextCounts[$currentSite->id]['with'] ?? 0;
-        $totalAssetsWithoutAltText = $siteAltTextCounts[$currentSite->id]['without'] ?? 0;
-        
         return Craft::$app->view->renderTemplate(
             'ai-alt-text/_settings',
             [
                 'settings' => $this->getSettings(),
-                'totalAssets' => $totalAssets,
-                'totalAssetsWithAltText' => $totalAssetsWithAltText,
-                'totalAssetsWithoutAltText' => $totalAssetsWithoutAltText,
-                'totalAssetsWithAltTextForAllSites' => $totalAssetsWithAltTextForAllSites,
-                'totalAssetsWithoutAltTextForAllSites' => $totalAssetsWithoutAltTextForAllSites,
-                'currentSite' => $currentSite,
-                'sites' => $sites,
-                'siteAltTextCounts' => $siteAltTextCounts,
             ]
         );
     }
