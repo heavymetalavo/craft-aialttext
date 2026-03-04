@@ -2,6 +2,8 @@
   
 Generate alt text for CraftCMS Asset Images using OpenAI's API.
 
+🚨 Due to recent news about OpenAI signing a deal with the Department of War - Claude support is coming soon (hopefully 6th March 2026).
+
 [Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft5) | [GitHub Repository](https://github.com/heavymetalavo/craft-aialttext)
 
 ## Video demo
