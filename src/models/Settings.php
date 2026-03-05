@@ -28,7 +28,7 @@ class Settings extends Model
     /**
      * @var string The API provider to use
      */
-    public string $aiProvider = 'anthropic';
+    public string $aiProvider = '';
 
     /**
      * @var string The Anthropic API key
@@ -38,12 +38,12 @@ class Settings extends Model
     /**
      * @var string The Anthropic model to use
      */
-    public string $anthropicModel = 'claude-haiku-4-5';
+    public string $anthropicModel = '';
 
     /**
      * @var string The Anthropic image detail level
      */
-    public string $anthropicImageDetailLevel = 'medium';
+    public string $anthropicImageDetailLevel = '';
 
 
     /**
@@ -54,7 +54,7 @@ class Settings extends Model
     /**
      * @var string The OpenAI model to use, must have vision capabilities
      */
-    public string $openAiModel = 'gpt-5-nano';
+    public string $openAiModel = '';
 
     /**
      * @var string The prompt template for generating alt text
@@ -69,7 +69,7 @@ class Settings extends Model
      * - high: More detailed analysis on higher quality image, more expensive
      * - auto: let the model decide
      */
-    public string $openAiImageInputDetailLevel = 'low';
+    public string $openAiImageInputDetailLevel = '';
 
     /**
      * @var bool Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.

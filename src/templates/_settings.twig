@@ -56,9 +56,9 @@
     label: 'Anthropic Model'|t('aialttext'),
     id: 'anthropicModel',
     name: 'anthropicModel',
-    instructions: "The Anthropic Claude model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-3-5-sonnet-latest`."|t("aialttext"),
+    instructions: "The Anthropic Claude model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-haiku-4-5`."|t("aialttext"),
     value: settings.anthropicModel,
-    placeholder: 'claude-3-5-sonnet-latest',
+    placeholder: 'claude-haiku-4-5',
     errors: settings.getErrors('anthropicModel'),
     suggestEnvVars: true,
 }) }}
@@ -69,10 +69,10 @@
     name: 'anthropicImageDetailLevel',
     instructions: "How large the image should be scaled before sending to Anthropic. Smaller images process faster and consume fewer tokens, but have less detail."|t("aialttext"),
     options: [
-        { label: 'Very Low (200x200)', value: 'very_low' },
-        { label: 'Low (500x500)', value: 'low' },
-        { label: 'Medium (1000x1000)', value: 'medium' },
-        { label: 'High (1536x1536)', value: 'high' }
+        { label: 'Very Low (300px x 300px)', value: 'very_low' },
+        { label: 'Low (500px x 500px)', value: 'low' },
+        { label: 'Medium (1000px x 1000px)', value: 'medium' },
+        { label: 'High (1568px x 1568px)', value: 'high' }
     ],
     value: settings.anthropicImageDetailLevel,
     errors: settings.getErrors('anthropicImageDetailLevel')

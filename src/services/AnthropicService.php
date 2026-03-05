@@ -16,7 +16,7 @@ use heavymetalavo\craftaialttext\models\api\AnthropicResponse;
  *
  * Handles API interactions with Anthropic's Claude to generate alt text via the Messages API.
  */
-class AnthropicService extends Component
+class AnthropicService extends ApiService
 {
     private string $apiKey;
     private string $model;
@@ -31,165 +31,103 @@ class AnthropicService extends Component
         $this->detailLevel = AiAltText::getInstance()->getSettings()->anthropicImageDetailLevel;
     }
 
-    /**
-     * Checks if a URL is accessible remotely
-     */
-    private function isUrlAccessible(string $url): bool
-    {
-        try {
-            $client = Craft::createGuzzleClient();
-            $response = $client->head($url, [
-                'timeout' => 5,
-                'connect_timeout' => 5,
-                'allow_redirects' => true,
-            ]);
-            return $response->getStatusCode() === 200;
-        } catch (Exception $e) {
-            Craft::warning('URL accessibility check failed: ' . $e->getMessage(), __METHOD__);
-            return false;
-        }
-    }
+
 
     /**
      * Generates alt text using Claude Messages API
      */
     public function generateAltText(Asset $asset, ?int $siteId = null): string
     {
-        $mimeType = strtolower($asset->getMimeType());
-        $acceptedMimeTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
-        
-        $needsFormatConversion = !in_array($mimeType, $acceptedMimeTypes);
-        if ($mimeType === 'image/gif') {
-            $fileContents = $asset->getContents();
-            if (substr_count($fileContents, "\x21\xF9\x04") > 1) {
-                $needsFormatConversion = true; // Attempt to grab single frame by converting
-            }
-        }
-
-        if (!Craft::$app->getConfig()->getGeneral()->transformSvgs && $mimeType === 'image/svg+xml') {
-            throw new Exception('SVGs are not supported by the Anthropic API and transformSvgs is disabled.');
-        }
-        
-        $transformParams = [
-            'mode'  => 'fit',
-        ];
-        if ($needsFormatConversion) {
-            $transformParams['format'] = $mimeType === 'image/svg+xml' ? 'png' : 'jpg';
-        }
+        $this->validateImageSupport($asset);
 
         $targetDimension = match ($this->detailLevel) {
-            'very_low' => 200,
+            'very_low' => 300,
             'low' => 500,
-            'high' => 1536,
-            default => 1000, // medium
+            'medium' => 1000,
+            'high' => 1568,
+            default => 1000,
         };
 
-        // Avoid extremely large images for API
-        $width = $asset->getWidth();
-        $height = $asset->getHeight();
+        // Claude Vision: max long edge based on detail level, max 5MB payload, max ~1600 tokens
+        $transformParams = $this->getVisionTransformParams($asset, maxLongEdge: $targetDimension, maxFileSizeMb: 5, maxTokens: 1600);
         
-        if ($width > $targetDimension || $height > $targetDimension) {
-            if ($width >= $height) {
-                // Wide image
-                $transformParams['width'] = $targetDimension;
-                // keep aspect ratio by adjusting height relative to the original aspect ratio
-                $transformParams['height'] = (int)round(($height / $width) * $targetDimension); 
-            } else {
-                // Tall image
-                $transformParams['height'] = $targetDimension;
-                $transformParams['width'] = (int)round(($width / $height) * $targetDimension);
-            }
+        if (!empty($transformParams)) {
+            $asset->setTransform($transformParams);
         }
 
-        if (empty($transformParams) && $asset->size > 20 * 1024 * 1024) {
-            $transformParams['quality'] = 75;
-        }
-
-        $asset->setTransform($transformParams);
+        // Output mime-type
         $transformMimeType = $asset->getMimeType($transformParams);
+        
+        if (!$this->isAcceptedMimeType($transformMimeType)) {
+            throw new Exception("Asset transform produced unsupported MIME type: $transformMimeType. Supported formats are: " . implode(', ', self::ACCEPTED_MIME_TYPES));
+        }
+        
         $imageUrl = $asset->getUrl($transformParams, true);
 
-        if (!empty($imageUrl) && !$this->isUrlAccessible($imageUrl)) {
-            $imageUrl = null;
+        // If we have a URL, check if it's accessible remotely
+        if (!empty($imageUrl)) {
+            if (!$this->isUrlAccessible($imageUrl)) {
+                Craft::warning('Asset URL is not accessible remotely: ' . $imageUrl, __METHOD__);
+                $imageUrl = null; // Reset to null to trigger base64 encoding
+            }
         }
 
         $imageSource = null;
-        
-        // Always try to fetch the transformed URL using Guzzle to get the resized contents
-        if (!empty($imageUrl)) {
-            try {
-                $client = Craft::createGuzzleClient();
-                $response = $client->get($imageUrl, ['timeout' => 10]);
-                if ($response->getStatusCode() === 200) {
-                    $assetContents = (string)$response->getBody();
-                    $base64Image = base64_encode($assetContents);
-                    $imageSource = [
-                        'type' => 'base64',
-                        'media_type' => $transformMimeType,
-                        'data' => $base64Image,
-                    ];
-                }
-            } catch (Exception $e) {
-                Craft::warning('Failed to download transformed image URL for Anthropic: ' . $e->getMessage(), __METHOD__);
-                $imageUrl = null; // Trigger fallback
-            }
-        }
 
-        // Fallback to original asset contents if URL wasn't accessible or downloaded
-        if (empty($imageSource)) {
-            $assetContents = $asset->getContents();
-            $base64Image = base64_encode($assetContents);
+        // If no public URL is available or URL is not accessible, fall back to base64 encoding
+        if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
+            $base64Image = $this->getAssetBase64String($asset, $imageUrl, $transformParams);
             $imageSource = [
                 'type' => 'base64',
                 'media_type' => $transformMimeType,
                 'data' => $base64Image,
             ];
-            Craft::warning("Anthropic API: No URL available or download failed for transformed image $asset->filename. Using original, un-scaled asset file contents for base64 encoding.", __METHOD__);
+            return $this->sendRequest(null, $imageSource, $transformMimeType, $asset, $siteId);
         }
 
-        return $this->sendAnthropicRequest(null, $imageSource, $transformMimeType, $asset, $siteId);
+        return $this->sendRequest($imageUrl, null, $transformMimeType, $asset, $siteId);
     }
 
-    private function sendAnthropicRequest(?string $imageUrl, ?array $imageSource, string $mimeType, Asset $asset, ?int $siteId): string
+    private function sendRequest(?string $imageUrl, ?array $base64ImageSource, string $mimeType, Asset $asset, ?int $siteId): string
     {
-        $promptTemplate = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
-
-        $prompt = preg_replace_callback('/{asset\.(.*?)}/', function ($matches) use ($asset) {
-            return $asset->{$matches[1]};
-        }, $promptTemplate);
-
-        $site = Craft::$app->getSites()->getSiteById($siteId);
-        $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
-            return $site->{$matches[1]};
-        }, $prompt);
-
-        if (empty($prompt)) {
-            $prompt = 'Describe this image for an alt text.';
-        }
-
-        $requestModel = new AnthropicRequest();
-        $requestModel->model = $this->model;
-        $requestModel->setPrompt($prompt);
-        if ($imageSource) {
-            $requestModel->setImageSource($imageSource);
-        } elseif ($imageUrl) {
-            $requestModel->setImageUrl($imageUrl);
-        }
-
-        if (!$requestModel->validate()) {
-            throw new Exception("Invalid Anthropic request: " . \json_encode($requestModel->getErrors()));
-        }
-
-        $client = Craft::createGuzzleClient();
-
         try {
-            $response = $client->post($this->baseUrl, [
+            // Log the request intent for debugging
+            Craft::info('Anthropic API request initiated for asset: ' . $asset->filename, __METHOD__);
+
+            $promptTemplate = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
+
+            $prompt = preg_replace_callback('/{asset\.(.*?)}/', function ($matches) use ($asset) {
+                return $asset->{$matches[1]};
+            }, $promptTemplate);
+
+            $site = Craft::$app->getSites()->getSiteById($siteId);
+            $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
+                return $site->{$matches[1]};
+            }, $prompt);
+
+            $requestModel = new AnthropicRequest();
+            $requestModel->model = $this->model;
+            $requestModel->setPrompt($prompt);
+            if ($base64ImageSource) {
+                $requestModel->setImageSource($base64ImageSource);
+            } elseif ($imageUrl) {
+                $requestModel->setImageUrl($imageUrl);
+            }
+
+            if (!$requestModel->validate()) {
+                throw new Exception("Invalid Anthropic request: " . \json_encode($requestModel->getErrors()));
+            }
+
+            // Convert explicit request structure to array for the JSON payload
+            $requestArray = $requestModel->toArray();
+
+            $response = $this->client->post($this->baseUrl, [
                 'headers' => [
                     'x-api-key' => $this->apiKey,
                     'anthropic-version' => '2023-06-01',
                     'content-type' => 'application/json',
                 ],
-                'json' => $requestModel->toArray(),
+                'json' => $requestArray,
             ]);
 
             $responseBody = (string)$response->getBody();
