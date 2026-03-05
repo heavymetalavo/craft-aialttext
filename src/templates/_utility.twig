@@ -1,0 +1,49 @@
+<div class="flex flex-nowrap" style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid rgba(0,0,0,0.05);">
+    <a href="{{ cpUrl('settings/plugins/ai-alt-text') }}" class="btn " data-icon="settings">Plugin Settings</a>
+</div>
+
+<h2>Bulk actions</h2>
+
+<p>Generate alt text for all assets, the <strong>Save translated results for each site</strong> setting will be ignored to perform the requested action.</p>
+
+<table class="data fullwidth">
+    <thead>
+        <tr>
+            <th>Site</th>
+            <th>Total Assets</th>
+            <th>With Alt Text</th>
+            <th>Without Alt Text</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr class="totalcount">
+            <td><strong>{% if sites|length > 1 %} All sites {% else %} {{ (sites|first).name }} {% endif %}</strong></td>
+            <td>{{ totalAssetsWithAltTextForAllSites + totalAssetsWithoutAltTextForAllSites }}</td>
+            <td>{{ totalAssetsWithAltTextForAllSites }}</td>
+            <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
+            <td>
+                <div class="buttons">
+                    <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets') }}" class="btn small submit">Generate all</a>
+                    <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text') }}" class="btn small submit">Generate missing</a>
+                </div>
+            </td>
+        </tr>
+        {% if sites|length > 1 %}
+            {% for site in sites %}
+            <tr>
+                <td>{{ site.name }}</td>
+                <td>{{ siteAltTextCounts[site.id].total }}</td>
+                <td>{{ siteAltTextCounts[site.id].with }}</td>
+                <td>{{ siteAltTextCounts[site.id].without }}</td>
+                <td>
+                    <div class="buttons">
+                        <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets', {siteId: site.id}) }}" class="btn small submit">Generate all</a>
+                        <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text', {siteId: site.id}) }}" class="btn small submit">Generate missing</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        {% endif %}
+    </tbody>
+</table>

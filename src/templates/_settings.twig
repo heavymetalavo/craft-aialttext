@@ -11,7 +11,7 @@
     <li>Ensure your templates are updated to use the `alt` field, you could consider a fallback `asset.alt ?: asset.title` if that what was used before</li>
     <li>Then generate some AI Alt text by performing one of the following actions:
         <ol>
-            <li>Triggering a bulk action in the bulk actions table</li>
+            <li>Triggering a bulk action in the <a href="{{ cpUrl('utilities/ai-alt-text-bulk-actions') }}">bulk actions utility</a></li>
             <li>For individual or a group of specific assets find them in the <strong>Assets</strong> manager section</a> clicking the checkbox on a row, clicking the cog icon to reveal the Element actions menu and select <strong>Generate AI Alt Text</strong></li>
             <li>When viewing a single asset's page, open the action menu and select <strong>Generate AI Alt Text</strong></li>
             <li>Upload a new asset (if the upload setting is enabled)</li>
@@ -20,57 +20,69 @@
     <li>The plugin will queue jobs to generate alt text for each selected asset</li>
 </ol>
 
-<hr />
 
-<h2>Bulk actions</h2>
-
-<p>Generate alt text for all assets, the <strong>Save translated results for each site</strong> setting will be ignored to perform the requested action.</p>
-
-<table class="data fullwidth">
-    <thead>
-        <tr>
-            <th>Site</th>
-            <th>Total Assets</th>
-            <th>With Alt Text</th>
-            <th>Without Alt Text</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr class="totalcount">
-            <td><strong>{% if sites|length > 1 %} All sites {% else %} {{ (sites|first).name }} {% endif %}</strong></td>
-            <td>{{ totalAssetsWithAltTextForAllSites + totalAssetsWithoutAltTextForAllSites }}</td>
-            <td>{{ totalAssetsWithAltTextForAllSites }}</td>
-            <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
-            <td>
-                <div class="buttons">
-                    <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets') }}" class="btn small submit">Generate all</a>
-                    <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text') }}" class="btn small submit">Generate missing</a>
-                </div>
-            </td>
-        </tr>
-        {% if sites|length > 1 %}
-            {% for site in sites %}
-            <tr>
-                <td>{{ site.name }}</td>
-                <td>{{ siteAltTextCounts[site.id].total }}</td>
-                <td>{{ siteAltTextCounts[site.id].with }}</td>
-                <td>{{ siteAltTextCounts[site.id].without }}</td>
-                <td>
-                    <div class="buttons">
-                        <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets', {siteId: site.id}) }}" class="btn small submit">Generate all</a>
-                        <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text', {siteId: site.id}) }}" class="btn small submit">Generate missing</a>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        {% endif %}
-    </tbody>
-</table>
-
-<hr />
 
 <h2 id="settings">Settings</h2>
+
+{{ forms.selectField({
+    label: "AI Provider"|t("aialttext"),
+    instructions: "Choose which AI service to use for generating alt text"|t("aialttext"),
+    id: "aiProvider",
+    name: "aiProvider",
+    options: [
+        { label: 'Anthropic Claude', value: 'anthropic' },
+        { label: 'OpenAI', value: 'openai' }
+    ],
+    value: settings.aiProvider,
+    errors: settings.getErrors("aiProvider"),
+    toggle: true,
+    targetPrefix: 'provider-'
+}) }}
+
+<div id="provider-anthropic" {% if settings.aiProvider != 'anthropic' %}class="hidden"{% endif %}>
+<h3>Anthropic Claude Settings</h3>
+
+{{ forms.autosuggestField({
+    label: "Anthropic API Key"|t("aialttext"),
+    instructions: "The API key from your [Anthropic Console account](https://console.anthropic.com/)"|t("aialttext"),
+    id: "anthropicApiKey",
+    name: "anthropicApiKey",
+    suggestEnvVars: true,
+    value: settings.anthropicApiKey,
+    errors: settings.getErrors("anthropicApiKey"),
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'Anthropic Model'|t('aialttext'),
+    id: 'anthropicModel',
+    name: 'anthropicModel',
+    instructions: "The Anthropic Claude model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-haiku-4-5`."|t("aialttext"),
+    value: settings.anthropicModel,
+    placeholder: 'claude-haiku-4-5',
+    errors: settings.getErrors('anthropicModel'),
+    suggestEnvVars: true,
+}) }}
+
+{{ forms.selectField({
+    label: 'Anthropic Image Input Detail Level'|t('app'),
+    id: 'anthropicImageDetailLevel',
+    name: 'anthropicImageDetailLevel',
+    instructions: "How large the image should be scaled before sending to Anthropic. Smaller images process faster and consume fewer tokens, but have less detail."|t("aialttext"),
+    options: [
+        { label: 'Very Low (300px x 300px)', value: 'very_low' },
+        { label: 'Low (500px x 500px)', value: 'low' },
+        { label: 'Medium (1000px x 1000px)', value: 'medium' },
+        { label: 'High (1568px x 1568px)', value: 'high' }
+    ],
+    value: settings.anthropicImageDetailLevel,
+    errors: settings.getErrors('anthropicImageDetailLevel')
+}) }}
+</div>
+
+
+
+<div id="provider-openai" {% if settings.aiProvider != 'openai' %}class="hidden"{% endif %}>
+<h3>OpenAI Settings</h3>
 
 {{ forms.autosuggestField({
     label: "OpenAI API Key"|t("aialttext"),
@@ -82,21 +94,11 @@
     errors: settings.getErrors("openAiApiKey"),
 }) }}
 
-{{ forms.textareaField({
-    label: 'Prompt'|t('app'),
-    id: 'prompt',
-    name: 'prompt',
-    instructions: "The text prompt which will be sent to OpenAI with the image to generate the response, supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`"|t("aialttext"),
-    value: settings.prompt,
-    placeholder: "Describe the image provided, make it suitable for an alt text description (roughly 150 characters maximum). Consider transparency within the image if supported by the file type, e.g. don't suggest it has a dark background if it is transparent. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}",
-    errors: settings.getErrors('prompt'),
-}) }}
-
 {{ forms.autosuggestField({
     label: 'Open AI Model'|t('app'),
     id: 'openAiModel',
     name: 'openAiModel',
-    instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models)"|t("aialttext"),
+    instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models) E.g., `gpt-5-nano`."|t("aialttext"),
     value: settings.openAiModel,
     placeholder: 'gpt-5-nano',
     errors: settings.getErrors('openAiModel'),
@@ -107,15 +109,28 @@
     label: 'Open AI Image Input Detail Level'|t('app'),
     id: 'openAiImageInputDetailLevel',
     name: 'openAiImageInputDetailLevel',
-    instructions: "Specify the [Image input detail level](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#specify-image-input-detail-level), `low` costs the least at 85 tokens. Please read about [Image input requirements](https://platform.openai.com/docs/guides/images#image-input-requirements), [limitations](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#limitations) and [calculating costs & cost calculation examples](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#calculating-costs) in the OpenAI platform docs for more."|t("aialttext"),
+    instructions: "Specify the [Image input detail level](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#specify-image-input-detail-level), `low` costs the least at 85 tokens."|t("aialttext"),
     value: settings.openAiImageInputDetailLevel,
     placeholder: 'low',
     errors: settings.getErrors('openAiImageInputDetailLevel'),
     suggestEnvVars: true,
 }) }}
+</div>
+
+<hr />
+
+{{ forms.textareaField({
+    label: 'Prompt'|t('app'),
+    id: 'prompt',
+    name: 'prompt',
+    instructions: "The text prompt which will be sent to the AI with the image to generate the response, supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`"|t("aialttext"),
+    value: settings.prompt,
+    placeholder: "Describe the image provided, make it suitable for an alt text description. Output in {site.language}",
+    errors: settings.getErrors('prompt'),
+}) }}
 
 {{ forms.lightswitchField({
-    label: 'propagate'|t('aialttext'),
+    label: 'Propagate'|t('aialttext'),
     id: 'propagate',
     name: ' ',
     instructions: "Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites."|t("aialttext"),
@@ -140,3 +155,16 @@
     on: settings.saveTranslatedResultsToEachSite,
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}
+
+{% js %}
+window.addEventListener('pageshow', function (event) {
+    if (event.persisted) {
+        var providerSelect = document.querySelector('select[name="aiProvider"]');
+        if (providerSelect) {
+            providerSelect.dispatchEvent(new Event('change'));
+        }
+    }
+});
+{% endjs %}
+
+

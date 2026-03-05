@@ -22,6 +22,8 @@ use craft\enums\MenuItemType;
 class AiAltTextService extends Component
 {
     private OpenAiService $openAiService;
+    private AnthropicService $anthropicService;
+
 
     /**
      * Constructor
@@ -32,6 +34,8 @@ class AiAltTextService extends Component
     {
         parent::__construct();
         $this->openAiService = new OpenAiService();
+
+        $this->anthropicService = new AnthropicService();
     }
 
     /**
@@ -157,13 +161,19 @@ class AiAltTextService extends Component
      * @return string The generated alt text
      * @throws Exception If the asset is invalid or alt text generation fails
      */
-    public function generateAltText(Asset $asset, int $siteId = null, bool $forceRegeneration = false): string
+    public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceRegeneration = false): string
     {
         if ($asset->kind !== Asset::KIND_IMAGE) {
             throw new Exception('Asset must be an image');
         }
 
-        $altText = $this->openAiService->generateAltText($asset, $siteId);
+        $provider = AiAltText::getInstance()->getSettings()->aiProvider;
+
+        if ($provider === 'anthropic') {
+            $altText = $this->anthropicService->generateAltText($asset, $siteId);
+        } else {
+            $altText = $this->openAiService->generateAltText($asset, $siteId);
+        }
 
         if (empty($altText)) {
             throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
