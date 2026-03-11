@@ -167,7 +167,7 @@ class AiAltTextService extends Component
             throw new Exception('Asset must be an image');
         }
 
-        $provider = AiAltText::getInstance()->getSettings()->aiProvider;
+        $provider = \craft\helpers\App::parseEnv(AiAltText::getInstance()->getSettings()->aiProvider);
 
         if ($provider === 'anthropic') {
             $altText = $this->anthropicService->generateAltText($asset, $siteId);

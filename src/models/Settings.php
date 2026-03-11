@@ -19,9 +19,9 @@ use craft\base\Model;
  * @property string $translationPromptAppendage The prompt suffix for translated results
  * @property bool $generateForNewAssets Whether to generate alt text for new assets automatically
  * @property string $aiProvider The API provider to use ('openai', 'anthropic', or 'gemini')
- * @property string $anthropicApiKey The Anthropic API key
- * @property string $anthropicModel The Anthropic Model
- * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('very_low', 'low', 'medium', 'high')
+ * @property string $claudeApiKey The Anthropic API key
+ * @property string $claudeModel The Anthropic Model
+ * @property string $claudeImageDetailLevel The Anthropic Image Detail Level ('very_low', 'low', 'medium', 'high')
  */
 class Settings extends Model
 {
@@ -33,17 +33,17 @@ class Settings extends Model
     /**
      * @var string The Anthropic API key
      */
-    public string $anthropicApiKey = '';
+    public string $claudeApiKey = '';
 
     /**
      * @var string The Anthropic model to use
      */
-    public string $anthropicModel = '';
+    public string $claudeModel = '';
 
     /**
      * @var string The Anthropic image detail level
      */
-    public string $anthropicImageDetailLevel = '';
+    public string $claudeImageDetailLevel = '';
 
 
     /**
@@ -93,16 +93,40 @@ class Settings extends Model
     {
         return [
             [['aiProvider', 'prompt'], 'required'],
-            [['aiProvider'], 'in', 'range' => ['openai', 'anthropic']],
+            [
+                ['aiProvider'],
+                function($attribute) {
+                    $val = \craft\helpers\App::parseEnv($this->$attribute);
+                    if (!in_array($val, ['openai', 'anthropic'], true)) {
+                        $this->addError($attribute, 'Invalid AI Provider configured.');
+                    }
+                }
+            ],
             ['openAiApiKey', 'string'],
             ['openAiModel', 'string'],
-            ['anthropicApiKey', 'string'],
-            ['anthropicModel', 'string'],
-            ['anthropicImageDetailLevel', 'in', 'range' => ['very_low', 'low', 'medium', 'high']],
+            ['claudeApiKey', 'string'],
+            ['claudeModel', 'string'],
+            [
+                ['claudeImageDetailLevel'],
+                function($attribute) {
+                    $val = \craft\helpers\App::parseEnv($this->$attribute);
+                    if (!in_array($val, ['very_low', 'low', 'medium', 'high', ''], true)) {
+                        $this->addError($attribute, 'Invalid Anthropic Image Detail Level configured.');
+                    }
+                }
+            ],
 
             ['prompt', 'string'],
             ['openAiImageInputDetailLevel', 'string'],
-            ['openAiImageInputDetailLevel', 'in', 'range' => ['low', 'high']],
+            [
+                ['openAiImageInputDetailLevel'],
+                function($attribute) {
+                    $val = \craft\helpers\App::parseEnv($this->$attribute);
+                    if (!in_array($val, ['low', 'high', ''], true)) {
+                        $this->addError($attribute, 'Invalid OpenAI Image Input Detail Level configured.');
+                    }
+                }
+            ],
             ['propagate', 'boolean'],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],

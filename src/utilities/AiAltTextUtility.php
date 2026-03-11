@@ -65,8 +65,7 @@ class AiAltTextUtility extends Utility
                     ->kind(Asset::KIND_IMAGE)
                     ->siteId($site->id)
                     ->status(null)
-                    ->where(['not', ['alt' => null]])
-                    ->andWhere(['not', ['alt' => '']])
+                    ->hasAlt(true)
                     ->count();
                 
                 $withoutAltCount = $totalImageAssets - $withAltCount;

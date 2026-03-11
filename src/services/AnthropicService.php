@@ -26,9 +26,9 @@ class AnthropicService extends ApiService
     public function __construct()
     {
         parent::__construct();
-        $this->apiKey = App::parseEnv(AiAltText::getInstance()->getSettings()->anthropicApiKey);
-        $this->model = App::parseEnv(AiAltText::getInstance()->getSettings()->anthropicModel);
-        $this->detailLevel = AiAltText::getInstance()->getSettings()->anthropicImageDetailLevel;
+        $this->apiKey = App::parseEnv(AiAltText::getInstance()->getSettings()->claudeApiKey);
+        $this->model = App::parseEnv(AiAltText::getInstance()->getSettings()->claudeModel);
+        $this->detailLevel = AiAltText::getInstance()->getSettings()->claudeImageDetailLevel;
     }
 
 
