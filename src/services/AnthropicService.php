@@ -6,6 +6,7 @@ use Craft;
 use craft\base\Component;
 use craft\elements\Asset;
 use craft\helpers\App;
+use craft\helpers\Json;
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\api\AnthropicRequest;
@@ -115,7 +116,7 @@ class AnthropicService extends ApiService
             }
 
             if (!$requestModel->validate()) {
-                throw new Exception("Invalid Anthropic request: " . \json_encode($requestModel->getErrors()));
+                throw new Exception("Invalid Anthropic request: " . Json::encode($requestModel->getErrors()));
             }
 
             // Convert explicit request structure to array for the JSON payload

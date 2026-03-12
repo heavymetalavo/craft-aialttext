@@ -10,6 +10,7 @@ use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
 use Exception;
 use craft\events\DefineMenuItemsEvent;
 use craft\enums\MenuItemType;
+use craft\helpers\App;
 
 /**
  * AI Alt Text Service
@@ -167,7 +168,7 @@ class AiAltTextService extends Component
             throw new Exception('Asset must be an image');
         }
 
-        $provider = \craft\helpers\App::parseEnv(AiAltText::getInstance()->getSettings()->aiProvider);
+        $provider = App::parseEnv(AiAltText::getInstance()->getSettings()->aiProvider);
 
         if ($provider === 'anthropic') {
             $altText = $this->anthropicService->generateAltText($asset, $siteId);

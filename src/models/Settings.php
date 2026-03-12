@@ -3,6 +3,7 @@
 namespace heavymetalavo\craftaialttext\models;
 
 use craft\base\Model;
+use craft\helpers\App;
 
 /**
  * Plugin Settings Model
@@ -96,7 +97,7 @@ class Settings extends Model
             [
                 ['aiProvider'],
                 function($attribute) {
-                    $val = \craft\helpers\App::parseEnv($this->$attribute);
+                    $val = App::parseEnv($this->$attribute);
                     if (!in_array($val, ['openai', 'anthropic'], true)) {
                         $this->addError($attribute, 'Invalid AI Provider configured.');
                     }
@@ -109,7 +110,7 @@ class Settings extends Model
             [
                 ['claudeImageDetailLevel'],
                 function($attribute) {
-                    $val = \craft\helpers\App::parseEnv($this->$attribute);
+                    $val = App::parseEnv($this->$attribute);
                     if (!in_array($val, ['very_low', 'low', 'medium', 'high', ''], true)) {
                         $this->addError($attribute, 'Invalid Anthropic Image Detail Level configured.');
                     }
@@ -121,7 +122,7 @@ class Settings extends Model
             [
                 ['openAiImageInputDetailLevel'],
                 function($attribute) {
-                    $val = \craft\helpers\App::parseEnv($this->$attribute);
+                    $val = App::parseEnv($this->$attribute);
                     if (!in_array($val, ['low', 'high', ''], true)) {
                         $this->addError($attribute, 'Invalid OpenAI Image Input Detail Level configured.');
                     }

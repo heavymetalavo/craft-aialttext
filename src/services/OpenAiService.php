@@ -8,6 +8,7 @@ use craft\elements\Asset;
 use craft\errors\AssetException;
 use craft\errors\ImageTransformException;
 use craft\helpers\App;
+use craft\helpers\Json;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
@@ -60,7 +61,7 @@ class OpenAiService extends ApiService
     {
         try {
             // Log the request for debugging
-            Craft::info('OpenAI API request: ' . json_encode($requestData), __METHOD__);
+            Craft::info('OpenAI API request: ' . Json::encode($requestData), __METHOD__);
 
             $response = $this->client->post($this->baseUrl . '/responses', [
                 'headers' => [
@@ -87,7 +88,7 @@ class OpenAiService extends ApiService
 
             // Make sure the response model is valid
             if (!$responseModel->validate()) {
-                $errorMsg = 'Response validation failed: ' . json_encode($responseModel->getErrors());
+                $errorMsg = 'Response validation failed: ' . Json::encode($responseModel->getErrors());
                 Craft::warning($errorMsg, __METHOD__);
                 // Set error if not already set
                 if (!$responseModel->hasError()) {
@@ -223,7 +224,7 @@ class OpenAiService extends ApiService
 
         // Validate the request
         if (!$request->validate()) {
-            throw new Exception('Invalid request: ' . json_encode($request->getErrors()));
+            throw new Exception('Invalid request: ' . Json::encode($request->getErrors()));
         }
 
         // Convert to array explicitly to avoid potential object-to-array conversion issues
