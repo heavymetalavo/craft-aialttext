@@ -10,6 +10,7 @@
 - Updated shared logic for image transformation and base64 encoding across providers
 - Updated error handling for API request failures and asset accessibility checks
 - Updated settings page instructions to be more clear
+- Fixed bug where alt text would propagate across sites despite propagate setting being disabled
 
 ## 1.6.2 - 2025-08-19
 
