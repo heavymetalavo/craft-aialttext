@@ -20,9 +20,9 @@ use craft\helpers\App;
  * @property string $translationPromptAppendage The prompt suffix for translated results
  * @property bool $generateForNewAssets Whether to generate alt text for new assets automatically
  * @property string $aiProvider The API provider to use ('openai', 'anthropic', or 'gemini')
- * @property string $claudeApiKey The Anthropic API key
- * @property string $claudeModel The Anthropic Model
- * @property string $claudeImageDetailLevel The Anthropic Image Detail Level ('very_low', 'low', 'medium', 'high')
+ * @property string $anthropicApiKey The Anthropic API key
+ * @property string $anthropicModel The Anthropic Model
+ * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('very_low', 'low', 'medium', 'high')
  */
 class Settings extends Model
 {
@@ -34,17 +34,17 @@ class Settings extends Model
     /**
      * @var string The Anthropic API key
      */
-    public string $claudeApiKey = '';
+    public string $anthropicApiKey = '';
 
     /**
      * @var string The Anthropic model to use
      */
-    public string $claudeModel = '';
+    public string $anthropicModel = '';
 
     /**
      * @var string The Anthropic image detail level
      */
-    public string $claudeImageDetailLevel = '';
+    public string $anthropicImageDetailLevel = '';
 
 
     /**
@@ -105,10 +105,10 @@ class Settings extends Model
             ],
             ['openAiApiKey', 'string'],
             ['openAiModel', 'string'],
-            ['claudeApiKey', 'string'],
-            ['claudeModel', 'string'],
+            ['anthropicApiKey', 'string'],
+            ['anthropicModel', 'string'],
             [
-                ['claudeImageDetailLevel'],
+                ['anthropicImageDetailLevel'],
                 function($attribute) {
                     $val = App::parseEnv($this->$attribute);
                     if (!in_array($val, ['very_low', 'low', 'medium', 'high', ''], true)) {

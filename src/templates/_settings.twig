@@ -42,33 +42,33 @@
 <hr />
 
 <div id="settings-provider-anthropic">
-<h3>Anthropic Claude Settings</h3>
+<h3>Anthropic Settings</h3>
 
 {{ forms.autosuggestField({
-    label: "Claude API Key"|t("aialttext"),
+    label: "Anthropic API Key"|t("aialttext"),
     instructions: "The API key from your [Anthropic Console account](https://console.anthropic.com/)"|t("aialttext"),
-    id: "claudeApiKey",
-    name: "claudeApiKey",
+    id: "anthropicApiKey",
+    name: "anthropicApiKey",
     suggestEnvVars: true,
-    value: settings.claudeApiKey,
-    errors: settings.getErrors("claudeApiKey"),
+    value: settings.anthropicApiKey,
+    errors: settings.getErrors("anthropicApiKey"),
 }) }}
 
 {{ forms.autosuggestField({
-    label: 'Claude Model'|t('aialttext'),
-    id: 'claudeModel',
-    name: 'claudeModel',
-    instructions: "The Anthropic Claude model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-haiku-4-5`."|t("aialttext"),
-    value: settings.claudeModel,
+    label: 'Anthropic Model'|t('aialttext'),
+    id: 'anthropicModel',
+    name: 'anthropicModel',
+    instructions: "The Anthropic model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-haiku-4-5`."|t("aialttext"),
+    value: settings.anthropicModel,
     placeholder: 'claude-haiku-4-5',
-    errors: settings.getErrors('claudeModel'),
+    errors: settings.getErrors('anthropicModel'),
     suggestEnvVars: true,
 }) }}
 
 {{ forms.selectField({
-    label: 'Claude Image Input Detail Level'|t('app'),
-    id: 'claudeImageDetailLevel',
-    name: 'claudeImageDetailLevel',
+    label: 'Anthropic Image Detail Level'|t('app'),
+    id: 'anthropicImageDetailLevel',
+    name: 'anthropicImageDetailLevel',
     instructions: "How large the image should be scaled before sending to Anthropic. Smaller images process faster and consume fewer tokens, but have less detail."|t("aialttext"),
     options: [
         { label: 'Very Low (300px x 300px)', value: 'very_low' },
@@ -76,8 +76,8 @@
         { label: 'Medium (1000px x 1000px)', value: 'medium' },
         { label: 'High (1568px x 1568px)', value: 'high' }
     ],
-    value: settings.claudeImageDetailLevel,
-    errors: settings.getErrors('claudeImageDetailLevel')
+    value: settings.anthropicImageDetailLevel,
+    errors: settings.getErrors('anthropicImageDetailLevel')
 }) }}
 </div>
 

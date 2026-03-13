@@ -171,7 +171,7 @@ abstract class ApiService extends Component
      * @param int|null $maxLongEdge The maximum allowed length for the longest edge of the image
      * @param int $maxFileSizeMb The maximum file size in MB before a quality reduction is forced
      * @param int|null $maxPatches OpenAI tile budget — total 512px patch count ceiling (e.g. ceil(w/32)*ceil(h/32))
-     * @param int|null $maxTokens Claude token budget — total pixel-area token ceiling (e.g. (w*h)/750)
+     * @param int|null $maxTokens Anthropic token budget — total pixel-area token ceiling (e.g. (w*h)/750)
      * @return array The calculated transform params suited for Craft's transform engine
      */
     protected function getVisionTransformParams(Asset $asset, ?int $maxLongEdge = null, int $maxFileSizeMb = 20, ?int $maxPatches = null, ?int $maxTokens = null): array
@@ -233,7 +233,7 @@ abstract class ApiService extends Component
             }
         }
         
-        // Claude token budget: if the pixel area would exceed the token limit, scale down proportionally
+        // Anthropic token budget: if the pixel area would exceed the token limit, scale down proportionally
         if ($maxTokens !== null) {
             $tokenCount = ($width * $height) / 750;
             if ($tokenCount > $maxTokens) {

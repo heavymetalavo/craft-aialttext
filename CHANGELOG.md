@@ -2,10 +2,11 @@
 
 ## UNRELEASED
 
-- Adding functionality to support a new AI Provider (Anthropic Claude) via the Messages API
-- Adding automatic image scaling for Anthropic Claude to account for 5MB file limits and 1600 token area limits
+- Adding functionality to support a new AI Provider (Anthropic) via the Messages API
+- Adding image scaling for Anthropic to account for 5MB file limits and 1600 token area limits
 - Adding new setting field to choose AI Provider (OpenAI or Anthropic)
 - Adding new settings template logic to show/hide relevant AI provider settings fields (e.g. model and api keys)
+- Updated image scaling for OpenAI to account for patch budget limits
 - Updated bulk actions table and buttons to be migrated to the CraftCMS Dashboard utilities area for improved performance and visibility
 - Updated shared logic for image transformation and base64 encoding across providers
 - Updated error handling for API request failures and asset accessibility checks

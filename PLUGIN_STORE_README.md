@@ -1,6 +1,6 @@
 # 🤖 💬 AI Alt Text
   
-Generate alt text for CraftCMS Asset Images using Anthropic Claude API or the OpenAI API.
+Generate alt text for CraftCMS Asset Images using the Anthropic or OpenAI API.
 
 [Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft5) | [GitHub Repository](https://github.com/heavymetalavo/craft-aialttext)
 
@@ -13,7 +13,7 @@ Generate alt text for CraftCMS Asset Images using Anthropic Claude API or the Op
 This plugin requires: 
 - Craft CMS 5.0.0 or later
 - PHP 8.2 or later
-- An Anthropic Claude API key or an OpenAI API key
+- An Anthropic API key or an OpenAI API key
 
 ## 📥 Installation
 
@@ -41,7 +41,7 @@ ddev craft plugin/install ai-alt-text
 
 ## 🤖 Setup API Keys
 
-### Anthropic Claude
+### Anthropic
 
 1. Visit [https://console.anthropic.com/](https://console.anthropic.com/) and [sign up](https://console.anthropic.com/).
 2. Navigate to **Settings → API Keys**.
@@ -130,7 +130,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 | Setting | Description |
 |---------|-------------|
-| **AI Provider** | Choose between OpenAI or Anthropic Claude. |
+| **AI Provider** | Choose between OpenAI or Anthropic. |
 | **OpenAI/Anthropic API Key** | Your provider's API key. |
 | **Model** | The AI model to use (e.g., `gpt-5-nano` or `claude-haiku-4-5`). |
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |
@@ -142,7 +142,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 #### 🧠 Model Options
 
 All vision models should work, these small models seem to hit the sweetspot between quality & cost:
-- `claude-haiku-4-5` - For Claude: "The fastest model with near-frontier intelligence"
+- `claude-haiku-4-5` - For Anthropic: "The fastest model with near-frontier intelligence"
 - `gpt-5-nano` - For OpenAI: "Fastest, most cost-efficient version of GPT-5"
 
 To find out which models are capable of vision, check [the models page](https://platform.openai.com/docs/models), click into a model's detail page (e.g., [gpt-5-nano](https://platform.openai.com/docs/models/gpt-5-nano)) and look for "**Input**: Text, image" in the features columns at the top.

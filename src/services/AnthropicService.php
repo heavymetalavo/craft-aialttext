@@ -15,7 +15,7 @@ use heavymetalavo\craftaialttext\models\api\AnthropicResponse;
 /**
  * Anthropic API Service
  *
- * Handles API interactions with Anthropic's Claude to generate alt text via the Messages API.
+ * Handles API interactions with the Anthropic Messages API to generate alt text.
  */
 class AnthropicService extends ApiService
 {
@@ -27,15 +27,15 @@ class AnthropicService extends ApiService
     public function __construct()
     {
         parent::__construct();
-        $this->apiKey = App::parseEnv(AiAltText::getInstance()->getSettings()->claudeApiKey);
-        $this->model = App::parseEnv(AiAltText::getInstance()->getSettings()->claudeModel);
-        $this->detailLevel = AiAltText::getInstance()->getSettings()->claudeImageDetailLevel;
+        $this->apiKey = App::parseEnv(AiAltText::getInstance()->getSettings()->anthropicApiKey);
+        $this->model = App::parseEnv(AiAltText::getInstance()->getSettings()->anthropicModel);
+        $this->detailLevel = AiAltText::getInstance()->getSettings()->anthropicImageDetailLevel;
     }
 
 
 
     /**
-     * Generates alt text using Claude Messages API
+     * Generates alt text using the Anthropic Messages API
      */
     public function generateAltText(Asset $asset, ?int $siteId = null): string
     {
@@ -49,7 +49,7 @@ class AnthropicService extends ApiService
             default => 1000,
         };
 
-        // Claude Vision: max long edge based on detail level, max 5MB payload, max ~1600 tokens
+        // Anthropic Vision: max long edge based on detail level, max 5MB payload, max ~1600 tokens
         $transformParams = $this->getVisionTransformParams($asset, maxLongEdge: $targetDimension, maxFileSizeMb: 5, maxTokens: 1600);
         
         if (!empty($transformParams)) {
