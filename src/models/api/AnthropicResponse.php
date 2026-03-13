@@ -14,7 +14,7 @@ use Craft;
  */
 class AnthropicResponse extends Model
 {
-    public string $output_text = '';
+    public string $outputText = '';
     public ?array $content = null;
     public ?array $error = null;
     private ?array $rawData = null;
@@ -28,7 +28,7 @@ class AnthropicResponse extends Model
             $responseData = Json::decode($responseBody);
             $this->rawData = $responseData;
 
-            $this->output_text = '';
+            $this->outputText = '';
             $this->content = null;
             $this->error = null;
 
@@ -44,7 +44,7 @@ class AnthropicResponse extends Model
                 $this->content = $responseData['content'];
                 foreach ($responseData['content'] as $contentBlock) {
                     if (isset($contentBlock['type']) && $contentBlock['type'] === 'text') {
-                        $this->output_text = trim($contentBlock['text']);
+                        $this->outputText = trim($contentBlock['text']);
                         break;
                     }
                 }
@@ -87,7 +87,7 @@ class AnthropicResponse extends Model
     public function defineRules(): array
     {
         return [
-            ['output_text', 'string'],
+            ['outputText', 'string'],
             ['content', 'safe'],
             ['error', 'safe'],
         ];
@@ -114,7 +114,7 @@ class AnthropicResponse extends Model
      */
     public function getText(): string
     {
-        return $this->output_text;
+        return $this->outputText;
     }
 
     /**

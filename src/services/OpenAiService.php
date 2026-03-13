@@ -239,7 +239,7 @@ class OpenAiService extends ApiService
         }
 
         // If output is empty, log and return empty string
-        if (empty($response->output_text)) {
+        if (empty($response->outputText)) {
             Craft::warning('No alt text was generated for asset: ' . $asset->filename, __METHOD__);
             return '';
         }
