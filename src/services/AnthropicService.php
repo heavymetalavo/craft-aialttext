@@ -31,8 +31,6 @@ class AnthropicService extends ApiService
         $this->detailLevel = $plugin->getSettings()->anthropicImageDetailLevel;
     }
 
-
-
     /**
      * Generates alt text using the Anthropic Messages API
      */

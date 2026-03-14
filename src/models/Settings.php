@@ -123,7 +123,7 @@ class Settings extends Model
                 ['openAiImageInputDetailLevel'],
                 function($attribute) {
                     $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['low', 'high', ''], true)) {
+                    if (!in_array($val, ['low', 'high', 'original', 'auto', ''], true)) {
                         $this->addError($attribute, 'Invalid OpenAI Image Input Detail Level configured.');
                     }
                 }

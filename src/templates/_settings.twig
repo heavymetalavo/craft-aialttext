@@ -65,8 +65,8 @@
     suggestEnvVars: true,
 }) }}
 
-{{ forms.selectField({
-    label: 'Anthropic Image Detail Level'|t('app'),
+{{ forms.selectizeField({
+    label: 'Anthropic Image Detail Level'|t('aialttext'),
     id: 'anthropicImageDetailLevel',
     name: 'anthropicImageDetailLevel',
     instructions: "How large the image should be scaled before sending to Anthropic. Smaller images process faster and consume fewer tokens, but have less detail."|t("aialttext"),
@@ -76,6 +76,8 @@
         { label: 'Medium (1000px x 1000px)', value: 'medium' },
         { label: 'High (1568px x 1568px)', value: 'high' }
     ],
+    includeEnvVars: true,
+    allowedEnvValues: null,
     value: settings.anthropicImageDetailLevel,
     errors: settings.getErrors('anthropicImageDetailLevel')
 }) }}
@@ -109,15 +111,21 @@
     suggestEnvVars: true,
 }) }}
 
-{{ forms.autosuggestField({
-    label: 'Open AI Image Input Detail Level'|t('app'),
+{{ forms.selectizeField({
+    label: 'OpenAI Image Detail Level'|t('aialttext'),
     id: 'openAiImageInputDetailLevel',
     name: 'openAiImageInputDetailLevel',
     instructions: "Specify the [Image input detail level](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#specify-image-input-detail-level), `low` costs the least at 85 tokens."|t("aialttext"),
+    options: [
+        { label: 'Low — Fast, low-cost (512px x 512px)', value: 'low' },
+        { label: 'High — Standard high-fidelity understanding', value: 'high' },
+        { label: 'Original — Large, dense, spatially sensitive images (gpt-5.4+)', value: 'original' },
+        { label: 'Auto — Let the model choose', value: 'auto' }
+    ],
+    includeEnvVars: true,
+    allowedEnvValues: null,
     value: settings.openAiImageInputDetailLevel,
-    placeholder: 'low',
-    errors: settings.getErrors('openAiImageInputDetailLevel'),
-    suggestEnvVars: true,
+    errors: settings.getErrors('openAiImageInputDetailLevel')
 }) }}
 </div>
 

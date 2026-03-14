@@ -54,8 +54,8 @@ class OpenAiRequest extends Model
 
     public function validateDetail(): void
     {
-        if (!in_array($this->detail, ['auto', 'low', 'high'])) {
-            $this->addError('detail', 'Detail must be one of: auto, low, high');
+        if (!in_array($this->detail, ['low', 'high', 'original', 'auto'])) {
+            $this->addError('detail', 'Detail must be one of: low, high, original, auto');
         }
     }
 
