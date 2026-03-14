@@ -154,12 +154,13 @@ To find out which models are capable of vision, check [the models page](https://
 #### 🔍 Image detail options
 
 **OpenAI:**
-- `low` - Less detailed, faster and cheaper (default)
-- `high` - More detailed, slower and more expensive
-- `auto` - Let OpenAI decide
+- `low` - Fast, low-cost (512px x 512px) (default)
+- `high` - Standard high-fidelity understanding
+- `original` - Large, dense, spatially sensitive images (gpt-5.4+)
+- `auto` - Let the model choose
 
 **Anthropic:**
-- `very_low` - 300px x 300px
+- `veryLow` - 300px x 300px
 - `low` - 500px x 500px (recommended default)
 - `medium` - 1000px x 1000px
 - `high` - 1568px x 1568px
