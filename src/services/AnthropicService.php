@@ -82,10 +82,10 @@ class AnthropicService extends ApiService
                 'media_type' => $transformMimeType,
                 'data' => $base64Image,
             ];
-            return $this->sendRequest(null, $imageSource, $transformMimeType, $asset, $siteId);
+            $imageUrl = null;
         }
 
-        return $this->sendRequest($imageUrl, null, $transformMimeType, $asset, $siteId);
+        return $this->sendRequest($imageUrl, $imageSource, $transformMimeType, $asset, $siteId);
     }
 
     private function sendRequest(?string $imageUrl, ?array $base64ImageSource, string $mimeType, Asset $asset, ?int $siteId): string
