@@ -3,18 +3,14 @@
 namespace heavymetalavo\craftaialttext\services;
 
 use Craft;
+use Exception;
 use craft\base\Component;
 use craft\elements\Asset;
-use craft\errors\AssetException;
-use craft\errors\ImageTransformException;
-use craft\helpers\App;
-use craft\helpers\Json;
-use Exception;
-use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Exception\RequestException;
+use craft\errors\{AssetException, ImageTransformException};
+use craft\helpers\{App, Json};
+use GuzzleHttp\Exception\{GuzzleException, RequestException};
 use heavymetalavo\craftaialttext\AiAltText;
-use heavymetalavo\craftaialttext\models\api\OpenAiRequest;
-use heavymetalavo\craftaialttext\models\api\OpenAiResponse;
+use heavymetalavo\craftaialttext\models\api\{OpenAiRequest, OpenAiResponse};
 use yii\base\InvalidConfigException;
 
 /**
@@ -41,8 +37,9 @@ class OpenAiService extends ApiService
     public function __construct()
     {
         parent::__construct();
-        $this->apiKey = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiApiKey);
-        $this->model = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiModel);
+        $plugin = AiAltText::getInstance();
+        $this->apiKey = App::parseEnv($plugin->getSettings()->openAiApiKey);
+        $this->model = App::parseEnv($plugin->getSettings()->openAiModel);
     }
 
     /**
@@ -148,6 +145,7 @@ class OpenAiService extends ApiService
      */
     public function generateAltText(Asset $asset, ?int $siteId = null): string
     {
+        $plugin = AiAltText::getInstance();
         // Validate image support using the parent base service method
         $this->validateImageSupport($asset);
 
@@ -189,10 +187,10 @@ class OpenAiService extends ApiService
         $height = $asset->getHeight();
         $detail = null;
         if ($width > 512 || $height > 512) {
-            $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel) ?? 'low';
+            $detail = App::parseEnv($plugin->getSettings()->openAiImageInputDetailLevel) ?? 'low';
         }
         
-        $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
+        $prompt = App::parseEnv($plugin->getSettings()->prompt);
 
         // parse $prompt for {asset.param} and replace with $asset->param
         // make sure that if the string may contain "{asset.title}{asset.caption}" we only replace each occurrence, and do not capture "{asset.title}{asset.caption}"

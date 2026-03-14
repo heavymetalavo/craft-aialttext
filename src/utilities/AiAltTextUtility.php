@@ -4,7 +4,6 @@ namespace heavymetalavo\craftaialttext\utilities;
 use Craft;
 use craft\base\Utility;
 use craft\elements\Asset;
-use heavymetalavo\craftaialttext\AiAltText;
 
 /**
  * AI Alt Text Bulk Actions Utility

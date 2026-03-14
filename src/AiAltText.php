@@ -6,29 +6,24 @@ use Craft;
 use craft\base\Element;
 use craft\base\Plugin;
 use craft\elements\Asset;
-use craft\events\ModelEvent;
-use craft\events\RegisterElementActionsEvent;
-use craft\events\DefineMenuItemsEvent;
-use craft\web\View;
-use craft\web\UrlManager;
-use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
-use heavymetalavo\craftaialttext\services\AiAltTextService;
-use heavymetalavo\craftaialttext\models\Settings;
-use heavymetalavo\craftaialttext\utilities\AiAltTextUtility;
-use craft\services\Utilities;
-use craft\events\RegisterComponentTypesEvent;
-use yii\base\Event;
-use craft\events\RegisterUrlRulesEvent;
+use craft\events\{ModelEvent, RegisterElementActionsEvent, DefineMenuItemsEvent, RegisterComponentTypesEvent, RegisterUrlRulesEvent};
 use craft\helpers\Cp;
+use craft\services\Utilities;
+use craft\web\{View, UrlManager};
+use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
+use heavymetalavo\craftaialttext\models\Settings;
+use heavymetalavo\craftaialttext\services\{AiAltTextService, OpenAiService, AnthropicService};
+use heavymetalavo\craftaialttext\utilities\AiAltTextUtility;
+use yii\base\Event;
 
 /**
  * AI Alt Text Plugin
  *
- * A Craft CMS plugin that generates alt text for images using OpenAI's vision models.
- * This plugin provides functionality to automatically generate descriptive alt text
- * for images in the Craft CMS asset library.
+ * A Craft CMS plugin that generates alt text for images using AI vision models.
  *
  * @property AiAltTextService $aiAltTextService The service for generating alt text
+ * @property OpenAiService $openAiService
+ * @property AnthropicService $anthropicService
  * @property Settings $settings The plugin settings
  */
 class AiAltText extends Plugin
@@ -39,7 +34,11 @@ class AiAltText extends Plugin
     public static function config(): array
     {
         return [
-            'components' => ['aiAltTextService' => AiAltTextService::class],
+            'components' => [
+                'aiAltTextService' => AiAltTextService::class,
+                'openAiService' => OpenAiService::class,
+                'anthropicService' => AnthropicService::class,
+            ],
         ];
     }
 
@@ -50,9 +49,10 @@ class AiAltText extends Plugin
     {
         parent::init();
 
-        // Register the service
         $this->setComponents([
             'aiAltTextService' => AiAltTextService::class,
+            'openAiService' => OpenAiService::class,
+            'anthropicService' => AnthropicService::class,
         ]);
 
         // Register template path

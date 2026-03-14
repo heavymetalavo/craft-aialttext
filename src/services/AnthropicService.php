@@ -3,14 +3,12 @@
 namespace heavymetalavo\craftaialttext\services;
 
 use Craft;
+use Exception;
 use craft\base\Component;
 use craft\elements\Asset;
-use craft\helpers\App;
-use craft\helpers\Json;
-use Exception;
+use craft\helpers\{App, Json};
 use heavymetalavo\craftaialttext\AiAltText;
-use heavymetalavo\craftaialttext\models\api\AnthropicRequest;
-use heavymetalavo\craftaialttext\models\api\AnthropicResponse;
+use heavymetalavo\craftaialttext\models\api\{AnthropicRequest, AnthropicResponse};
 
 /**
  * Anthropic API Service
@@ -27,9 +25,10 @@ class AnthropicService extends ApiService
     public function __construct()
     {
         parent::__construct();
-        $this->apiKey = App::parseEnv(AiAltText::getInstance()->getSettings()->anthropicApiKey);
-        $this->model = App::parseEnv(AiAltText::getInstance()->getSettings()->anthropicModel);
-        $this->detailLevel = AiAltText::getInstance()->getSettings()->anthropicImageDetailLevel;
+        $plugin = AiAltText::getInstance();
+        $this->apiKey = App::parseEnv($plugin->getSettings()->anthropicApiKey);
+        $this->model = App::parseEnv($plugin->getSettings()->anthropicModel);
+        $this->detailLevel = $plugin->getSettings()->anthropicImageDetailLevel;
     }
 
 

@@ -3,41 +3,23 @@
 namespace heavymetalavo\craftaialttext\services;
 
 use Craft;
+use Exception;
 use craft\base\Component;
 use craft\elements\Asset;
+use craft\enums\MenuItemType;
+use craft\events\DefineMenuItemsEvent;
+use craft\helpers\App;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
-use Exception;
-use craft\events\DefineMenuItemsEvent;
-use craft\enums\MenuItemType;
-use craft\helpers\App;
 
 /**
  * AI Alt Text Service
  *
  * Main service class for generating alt text using AI.
- * This service coordinates between the OpenAI service and Craft CMS assets.
- *
- * @property OpenAiService $openAiService The OpenAI service instance
+ * This service coordinates between the provider services and Craft CMS assets.
  */
 class AiAltTextService extends Component
 {
-    private OpenAiService $openAiService;
-    private AnthropicService $anthropicService;
-
-
-    /**
-     * Constructor
-     *
-     * Initializes the service with the OpenAI service instance.
-     */
-    public function __construct()
-    {
-        parent::__construct();
-        $this->openAiService = new OpenAiService();
-
-        $this->anthropicService = new AnthropicService();
-    }
 
     /**
      * Creates a job for the given element
@@ -167,20 +149,21 @@ class AiAltTextService extends Component
         if ($asset->kind !== Asset::KIND_IMAGE) {
             throw new Exception('Asset must be an image');
         }
-
-        $provider = App::parseEnv(AiAltText::getInstance()->getSettings()->aiProvider);
+        
+        $plugin = AiAltText::getInstance();
+        $provider = App::parseEnv($plugin->getSettings()->aiProvider);
 
         if ($provider === 'anthropic') {
-            $altText = $this->anthropicService->generateAltText($asset, $siteId);
+            $altText = $plugin->anthropicService->generateAltText($asset, $siteId);
         } else {
-            $altText = $this->openAiService->generateAltText($asset, $siteId);
+            $altText = $plugin->openAiService->generateAltText($asset, $siteId);
         }
 
         if (empty($altText)) {
             throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
         }
 
-        $propagate = (bool) AiAltText::getInstance()->getSettings()->propagate;
+        $propagate = (bool) $plugin->getSettings()->propagate;
 
         // Bug Workaround: Pre-save blank alt text to prevent propagation across sites where setting is false.
         if (!$propagate) {
