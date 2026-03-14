@@ -5,15 +5,12 @@ namespace heavymetalavo\craftaialttext\services;
 use Craft;
 use craft\base\Component;
 use craft\elements\Asset;
-use craft\errors\AssetException;
-use craft\errors\ImageTransformException;
-use craft\helpers\App;
+use craft\errors\{AssetException, ImageTransformException};
+use craft\helpers\{App, Json};
 use Exception;
-use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\{GuzzleException, RequestException};
 use heavymetalavo\craftaialttext\AiAltText;
-use heavymetalavo\craftaialttext\models\api\OpenAiRequest;
-use heavymetalavo\craftaialttext\models\api\OpenAiResponse;
+use heavymetalavo\craftaialttext\models\api\{OpenAiRequest, OpenAiResponse};
 use yii\base\InvalidConfigException;
 
 /**
@@ -26,7 +23,7 @@ use yii\base\InvalidConfigException;
  * @property string $model The OpenAI model to use
  * @property string $baseUrl The base URL for OpenAI API requests
  */
-class OpenAiService extends Component
+class OpenAiService extends ApiService
 {
     private string $apiKey;
     private string $model;
@@ -40,8 +37,9 @@ class OpenAiService extends Component
     public function __construct()
     {
         parent::__construct();
-        $this->apiKey = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiApiKey);
-        $this->model = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiModel);
+        $plugin = AiAltText::getInstance();
+        $this->apiKey = App::parseEnv($plugin->getSettings()->openAiApiKey);
+        $this->model = App::parseEnv($plugin->getSettings()->openAiModel);
     }
 
     /**
@@ -56,15 +54,13 @@ class OpenAiService extends Component
      * @return OpenAiResponse The API response
      * @throws Exception|GuzzleException If the API call fails
      */
-    public function sendRequest(array $requestData): OpenAiResponse
+    private function sendRequest(array $requestData): OpenAiResponse
     {
-        $client = Craft::createGuzzleClient();
-
         try {
             // Log the request for debugging
-            Craft::info('OpenAI API request: ' . json_encode($requestData), __METHOD__);
+            Craft::info('OpenAI API request: ' . Json::encode($requestData), __METHOD__);
 
-            $response = $client->post($this->baseUrl . '/responses', [
+            $response = $this->client->post($this->baseUrl . '/responses', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type' => 'application/json',
@@ -89,7 +85,7 @@ class OpenAiService extends Component
 
             // Make sure the response model is valid
             if (!$responseModel->validate()) {
-                $errorMsg = 'Response validation failed: ' . json_encode($responseModel->getErrors());
+                $errorMsg = 'Response validation failed: ' . Json::encode($responseModel->getErrors());
                 Craft::warning($errorMsg, __METHOD__);
                 // Set error if not already set
                 if (!$responseModel->hasError()) {
@@ -127,64 +123,7 @@ class OpenAiService extends Component
         }
     }
 
-    /**
-     * Checks if a URL is accessible remotely
-     *
-     * @param string $url The URL to check
-     * @return bool Whether the URL is accessible
-     * @throws GuzzleException
-     */
-    private function isUrlAccessible(string $url): bool
-    {
-        try {
-            $client = Craft::createGuzzleClient();
-            $response = $client->head($url, [
-                'timeout' => 5,
-                'connect_timeout' => 5,
-                'allow_redirects' => true,
-            ]);
-            return $response->getStatusCode() === 200;
-        } catch (Exception $e) {
-            Craft::warning('URL accessibility check failed: ' . $e->getMessage(), __METHOD__);
-            return false;
-        }
-    }
 
-    /**
-     * Validates if the asset is an accepted image format and converts if needed
-     *
-     * @param Asset $asset The asset to validate
-     * @return bool Whether the asset is an accepted mimetype or was successfully converted
-     * @throws ImageTransformException
-     */
-    private function isValidImageFormat(Asset $asset): bool
-    {
-        $mimeType = strtolower($asset->getMimeType());
-
-        // Check for accepted MIME types
-        $acceptedMimeTypes = [
-            'image/png',
-            'image/jpeg',
-            'image/webp',
-            'image/gif'
-        ];
-
-        if (!in_array($mimeType, $acceptedMimeTypes)) {
-            Craft::warning('Asset has unsupported MIME type: ' . $mimeType . '. Will attempt to convert to JPEG.', __METHOD__);
-            return true; // We'll handle conversion in generateAltText
-        }
-
-        // For GIFs, check if they're animated
-        if ($mimeType === 'image/gif') {
-            $fileContents = $asset->getContents();
-            // Check for multiple image frames in GIF
-            if (substr_count($fileContents, "\x21\xF9\x04") > 1) {
-                return false;
-            }
-        }
-
-        return true;
-    }
 
     /**
      * Generates alt text for an asset using OpenAI's vision model
@@ -204,82 +143,25 @@ class OpenAiService extends Component
      * @throws InvalidConfigException
      * @throws Exception
      */
-    public function generateAltText(Asset $asset, int $siteId = null): string
+    public function generateAltText(Asset $asset, ?int $siteId = null): string
     {
-        // Validate image format first
-        if (!$this->isValidImageFormat($asset)) {
-            throw new Exception('Asset is not in a supported image format. Supported formats are: PNG, JPEG, WEBP, and non-animated GIF.');
+        $plugin = AiAltText::getInstance();
+        // Validate image support using the parent base service method
+        $this->validateImageSupport($asset);
+
+        // OpenAI Vision: max 2048px long edge (API handles short edge scaling internally), max 20MB payload
+        // Patch budget based on detail:high tiling — each 512px tile costs 170 tokens + 85 base
+        $transformParams = $this->getVisionTransformParams($asset, maxLongEdge: 2048, maxFileSizeMb: 20, maxPatches: 1536);
+
+        if (!empty($transformParams)) {
+            $asset->setTransform($transformParams);
         }
-
-        // Get original image dimensions
-        $width = $asset->getWidth();
-        $height = $asset->getHeight();
-
-        // Check if format needs to be converted
-        $acceptedMimeTypes = [
-            'image/png',
-            'image/jpeg',
-            'image/webp',
-            'image/gif',
-        ];
-        $assetMimeType = strtolower($asset->getMimeType());
-
-        // Check if the asset is an animated gif which OpenAI API does not support
-        if ($assetMimeType === 'image/gif') {
-            $fileContents = $asset->getContents();
-            // Check for multiple image frames in GIF
-            if (substr_count($fileContents, "\x21\xF9\x04") > 1) {
-                throw new Exception('Animated GIF detected, this is not supported.');
-            }
-        }
-        
-        // decide if we need to transform svgs
-        if (!Craft::$app->getConfig()->getGeneral()->transformSvgs && $assetMimeType === 'image/svg+xml') {
-            throw new Exception('SVGs are not supported by the OpenAI API and transformSvgs is disabled.');
-        }
-
-        // decide if we need to transform the image to become a jpeg
-        $needsFormatConversion = !in_array($assetMimeType, $acceptedMimeTypes);
-
-        // Set up transform parameters
-        $transformParams = [];
-
-        // Always convert format if needed, regardless of dimensions
-        if ($needsFormatConversion) {
-            // @todo check if webp is supported by the environment and use that and fall back to jpg
-            $transformParams['format'] = 'jpg';
-
-            // check the image is a svg and fallback to transform to a png for transparency support
-            if ($assetMimeType === 'image/svg+xml') {
-                // @todo use webp and fallback to png for transparent images where webp is not supported
-                $transformParams['format'] = 'png';
-            }
-        }
-
-        // If width is larger than height and width is larger than 2000px set transform params
-        if ($width >= $height && ($width > 2000 || $height > 768)) {
-            $transformParams['width'] = 2000;
-            $transformParams['height'] = 768;
-            $transformParams['mode'] = 'fit';
-        } elseif ($height >= $width && ($height > 2000 || $width > 768)) {
-            $transformParams['width'] = 768;
-            $transformParams['height'] = 2000;
-            $transformParams['mode'] = 'fit';
-        }
-        
-        // Very unlikely a 20MB file will be under 2000x768, but just in case lets set the quality to 75 to mitigate the risk of that scenario
-        if (empty($transformParams) && $asset->size >  20 * 1024 * 1024) {
-            Craft::info("$asset->filename is 20MB file detected setting transform quality to 75", __METHOD__);
-            $transformParams['quality'] = 75;
-        }
-
-        // Set the transform
-        $asset->setTransform($transformParams);
 
         // Check mime type of the transform:
         $transformMimeType = $asset->getMimeType($transformParams);
-        if (!in_array($transformMimeType, $acceptedMimeTypes)) {
-            Craft::warning("Asset transform has unsupported MIME type: $transformMimeType, continuing with source asset...", __METHOD__);
+        
+        if (!$this->isAcceptedMimeType($transformMimeType)) {
+            throw new Exception("Asset transform produced unsupported MIME type: $transformMimeType. Supported formats are: " . implode(', ', self::ACCEPTED_MIME_TYPES));
         }
         
         // Make sure that we do not get a "generate transform" url, but a real url with true
@@ -295,28 +177,20 @@ class OpenAiService extends Component
 
         // If no public URL is available or URL is not accessible, try to get the file contents and encode as base64
         if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            if ($needsFormatConversion) {
-                // See https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148
-                Craft::warning("Asset $asset->filename has no URL and an unsupported MIME type \"$assetMimeType\". A transform is required but retrieving the file contents for a transform is unsupported. Continuing with source asset file contents for base64 encoding just incase it is accepted...", __METHOD__);
-            }
-            if (!empty($transformParams)) {
-                Craft::warning("Asset $asset->filename has no URL and requires a transform, but retrieving the file contents for a transform is unsupported. Continuing with source asset file contents for base64 encoding just incase it is accepted...", __METHOD__);
-            }
-            $assetContents = $asset->getContents();
-
-            // Encode as base64 and create data URI
-            $base64Image = base64_encode($assetContents);
+            $base64Image = $this->getAssetBase64String($asset, $imageUrl, $transformParams);
             $imageUrl = "data:$transformMimeType;base64,$base64Image";
         }
 
         // Only set detail parameter for images larger than 512x512 pixels
         // OpenAI API doesn't accept detail parameter for smaller images
+        $width = $asset->getWidth();
+        $height = $asset->getHeight();
         $detail = null;
         if ($width > 512 || $height > 512) {
-            $detail = App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel) ?? 'low';
+            $detail = App::parseEnv($plugin->getSettings()->openAiImageInputDetailLevel) ?? 'low';
         }
         
-        $prompt = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
+        $prompt = App::parseEnv($plugin->getSettings()->prompt);
 
         // parse $prompt for {asset.param} and replace with $asset->param
         // make sure that if the string may contain "{asset.title}{asset.caption}" we only replace each occurrence, and do not capture "{asset.title}{asset.caption}"
@@ -328,15 +202,9 @@ class OpenAiService extends Component
         $site = Craft::$app->getSites()->getSiteById($siteId);
 
         // parse $prompt for {site.param} and replace with $site->param
-        // make sure that if the string may contain "{site.title}{site.caption}" we only replace each occurrence, and do not capture "{site.title}{site.caption}"
         $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
             return $site->{$matches[1]};
         }, $prompt);
-
-        // Make sure we have a valid prompt
-        if (empty($prompt)) {
-            $prompt = 'Describe the image provided, make it suitable for an alt text description (roughly 150 characters maximum). Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}';
-        }
 
         // Log asset info for debugging
         Craft::info('Generating alt text for asset: ' . $asset->filename . ' (' . $imageUrl . ')', __METHOD__);
@@ -354,7 +222,7 @@ class OpenAiService extends Component
 
         // Validate the request
         if (!$request->validate()) {
-            throw new Exception('Invalid request: ' . json_encode($request->getErrors()));
+            throw new Exception('Invalid request: ' . Json::encode($request->getErrors()));
         }
 
         // Convert to array explicitly to avoid potential object-to-array conversion issues
@@ -369,7 +237,7 @@ class OpenAiService extends Component
         }
 
         // If output is empty, log and return empty string
-        if (empty($response->output_text)) {
+        if (empty($response->outputText)) {
             Craft::warning('No alt text was generated for asset: ' . $asset->filename, __METHOD__);
             return '';
         }

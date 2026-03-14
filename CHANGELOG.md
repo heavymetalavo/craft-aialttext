@@ -1,5 +1,23 @@
 # Release Notes for AI Alt Text
 
+## UNRELEASED
+
+- Adding functionality to support a new AI Provider (Anthropic) via the Messages API
+- Adding new setting field to choose AI Provider (OpenAI or Anthropic)
+- Adding automatic image scaling for Anthropic to account for 5MB payload limits and pixel area token costs
+- Adding automatic image scaling for OpenAI to account for 20MB payload limits and patch budget constraints
+- Added support for new OpenAI detail levels `original` & `auto` option for OpenAI (gpt-5.4+ models)
+- Updated bulk actions table and buttons to be migrated to the CraftCMS Dashboard utilities area for improved performance and visibility
+- Updated shared logic for image transformation and base64 encoding across providers
+- Updated error handling for API request failures and asset accessibility checks
+- Updated settings page setup instructions & field instructions and placeholders to be more clear
+- Updated all use declartions to be grouped if possible
+- Updated plugin services to be registered as plugin components so we can access via the plugin instance rather than via instantiating each time we require them.
+- Updated all request/response model class property casing to use camelcase instead of snake case
+- Updated request models to no longer use a method to progressively build the payload on each setter
+- Fixed bug where alt text would propagate across sites despite propagate setting being disabled
+- Fixed TypeError in OpenAI error handling where a non-array error response would crash `parseResponse()`
+
 ## 1.6.2 - 2025-08-19
 
 - Updating default model to be `gpt-5-nano`

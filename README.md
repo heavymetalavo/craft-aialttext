@@ -1,6 +1,6 @@
 # 🤖 💬 AI Alt Text
   
-Generate alt text for CraftCMS Asset Images using OpenAI's API.
+Generate alt text for CraftCMS Asset Images using the Anthropic or OpenAI API.
 
 🚨 Due to recent news about OpenAI signing a deal with the Department of War - Additional AI Provider support for Anthropic is in the final testing stages, it is available with `composer require heavymetalavo/craft-aialttext:dev-feature/claude` for those who wish to try.
 
@@ -15,7 +15,7 @@ https://github.com/user-attachments/assets/0f7eb3e5-bf33-4f49-a8b8-6579a4c05f8b
 This plugin requires: 
 - Craft CMS 5.0.0 or later
 - PHP 8.2 or later
-- An OpenAI API key
+- An Anthropic API key or an OpenAI API key
 
 ## 📥 Installation
 
@@ -41,7 +41,16 @@ Then:
 ddev craft plugin/install ai-alt-text
 ```
 
-## 🤖 Setup OpenAI API Key
+## 🤖 Setup API Keys
+
+### Anthropic
+
+1. Visit [https://console.anthropic.com/](https://console.anthropic.com/) and [sign up](https://console.anthropic.com/).
+2. Navigate to **Settings → API Keys**.
+3. Create a new API key and save it to an environment variable (`.env`).
+4. Ensure you have credits in your account under **Billing**.
+
+### OpenAI
 
 1. Visit [https://platform.openai.com/](https://platform.openai.com/) and [sign up](https://platform.openai.com/signup) in the top-right.
 2. Revisit [the API platform home page](https://platform.openai.com/) again
@@ -121,22 +130,22 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 ### 📊 Settings overview
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| **OpenAI API Key** | Your OpenAI API key. You can get one from [OpenAI's API Platform](https://platform.openai.com/api-keys). | None (required) |
-| **Prompt** | The text prompt sent to the AI to generate alt text. Supports `{asset.property}` and `{site.property}` | See below |
-| **Open AI Model** | The OpenAI model to use for generating alt text. | `gpt-5-nano` |
-| **Open AI Image Input Detail Level** | How detailed the image analysis should be. | `low` |
-| **Propagate** | Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites. | `false` |
-| **Generate for new image assets (on upload)** | Whether to automatically generate alt text when new assets are created. | `false` |
-| **Save translated results for each site** | Whether to save translated results to an Asset's translatable alt text field for each site. | `false` |
+| Setting | Description |
+|---------|-------------|
+| **AI Provider** | Choose between OpenAI or Anthropic. |
+| **OpenAI/Anthropic API Key** | Your provider's API key. |
+| **Model** | The AI model to use (e.g., `gpt-5-nano` or `claude-haiku-4-5`). |
+| **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |
+| **Prompt** | The text prompt sent to the AI providers (example [below](#default-prompt)). Supports `{asset.property}` and `{site.property}` |
+| **Propagate** | Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites. |
+| **Generate for new image assets (on upload)** | Automatically generate alt text when new assets are created. |
+| **Save translated results for each site** | Save translated results to translatable fields for each site. |
 
 #### 🧠 Model Options
-Some models that support vision capabilities:
-- `gpt-5-nano` - Fast, most affordable small model for focused tasks (default)
-- `gpt-4.1-nano` - Fast, affordable small model for focused tasks
-- `gpt-4o` - Fast, intelligent, flexible GPT model
-- `o1` - High-intelligence reasoning model
+
+All vision models should work, these small models seem to hit the sweetspot between quality & cost:
+- `claude-haiku-4-5` - For Anthropic: "The fastest model with near-frontier intelligence"
+- `gpt-5-nano` - For OpenAI: "Fastest, most cost-efficient version of GPT-5"
 
 To find out which models are capable of vision, check [the models page](https://platform.openai.com/docs/models), click into a model's detail page (e.g., [gpt-5-nano](https://platform.openai.com/docs/models/gpt-5-nano)) and look for "**Input**: Text, image" in the features columns at the top.
 
@@ -145,11 +154,20 @@ To find out which models are capable of vision, check [the models page](https://
 > Describe the image provided, make it suitable for an alt text description (roughly 150 characters maximum). Consider transparency within the image if supported by the file type, e.g. don't suggest it has a dark background if it is transparent. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. When describing a person do not assume their gender. Output in {site.language}
 
 #### 🔍 Image detail options
-- `low` - Less detailed, faster and cheaper (default to protect against unexpected costs)
-- `high` - More detailed, slower and more expensive (higher resolution analysis)
-- `auto` - Let OpenAI decide
 
-For more information about these settings, refer to the [OpenAI API documentation](https://platform.openai.com/docs/guides/images).
+**OpenAI:**
+- `low` - Fast, low-cost (512px x 512px) (default)
+- `high` - Standard high-fidelity understanding
+- `original` - Large, dense, spatially sensitive images (gpt-5.4+)
+- `auto` - Let the model choose
+
+**Anthropic:**
+- `veryLow` - 300px x 300px
+- `low` - 500px x 500px (recommended default)
+- `medium` - 1000px x 1000px
+- `high` - 1568px x 1568px
+
+For more information, refer to the [OpenAI](https://platform.openai.com/docs/guides/images) and [Anthropic](https://docs.anthropic.com/en/docs/build-with-claude/vision) documentation.
 
 ## 🏷️ Field requirements
 
@@ -163,35 +181,25 @@ To add this field:
 5. Save changes to the volume
 6. Update your templates to use the new `alt` field
 
-## Limitations
+### Provider-Specific Limits
 
-- The OpenAI API has [image input requirements](https://platform.openai.com/docs/guides/images-vision?api-mode=responses#image-input-requirements) which have changed in the past month (2025-05), however these requirements don't appear to be enforced, e.g. sending a base64 image above required image dimensions will be accepted by the API.
+- **Automatic Scaling**: The plugin automatically detects when an image exceeds provider limits and applies transforms (resizing or quality reduction) before sending the payload.
+- **Supported file types**: Both AI providers support: `png`, `jpeg`, `jpg`, `webp`, `gif` (non-animated)
+- **SVG Support**: SVGs are rasterized to PNG (preserving transparency) before being sent to the AI (where transformSvgs is enabled).
+- **Animated GIFs**: Only the first frame is processed.
+- **Private Assets**: Assets on private volumes without public URLs will be sent as base64 encoded strings. Assets which require transform before being base64 encoded are not currently supported by CraftCMS.
+- **Servd/Cloud**: Support for specialized asset bundles (like Servd) depends on the environment's ability to handle raster transforms.
+- **Consider AI Provider level boundaries**: e.g. OpenAI: "No watermarks or logos - No NSFW content - Clear enough for a human to understand"
+
+## Oddities, Logic & Limitations
+
+- The OpenAI API has [image input requirements](https://platform.openai.com/docs/guides/images-vision?api-mode=responses#image-input-requirements) which over the lifespan of this plugin have changed without notice, the requirements are not always enforced, e.g. base64 encoded images above the required image dimensions have been accepted by the API.
 - Craft CMS uses the [Imagine library](https://github.com/php-imagine/Imagine) for image processing, which can only transform [select image formats](https://github.com/php-imagine/Imagine/blob/develop/src/Image/Format.php#L14-L32). Support for these formats may vary depending on what ImageMagick drivers are available in your environment. If a source image is in a supported format, the plugin will generate a transform in one of the supported file types to send to the OpenAI API.
 - Where an unsupported file type is requested the plugin will attempt an image transform to a jpg to be sent instead
-- The plugin checks a file's mimetype to see if it's valid, [a filename which contains the wrong extension could return the wrong file type until Craft v5.8.0 is released](https://github.com/craftcms/cms/issues/17246#issuecomment-2873706369)
+- The plugin checks a file's mimetype to see if it's valid, or if it needs a format conversion before sending to the API
 - If an asset's dimensions are larger than the dimensions required by the API an image transform is sent instead
 - If an asset has no URL (private) and requires a transform (e.g. if the original asset is an unsupported mime type, or, the dimensions are too large) the plugin [cannot retrieve the transform's file contents](https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148) to send a base64 encoded version of the image to the OpenAI API.
 - Where an alternative image transformer is used, e.g. when an application is hosted on [Servd](https://servd.host) and assets are processed through their asset platform this may not support svg -> raster transforms
-
-### Supported file types	
-
-- PNG (.png)
-- JPEG (.jpeg and .jpg)
-- WEBP (.webp)
-- Non-animated GIF (.gif)
-
-### Size limits	
-
-- Up to 20MB per image
-- Low-resolution: 512px x 512px
-- High-resolution: 768px (short side) x 2000px (long side)
-
-### Other requirements	
-
-- No watermarks or logos
-- No text
-- No NSFW content
-- Clear enough for a human to understand
 
 ## 🛠️ Troubleshooting
 
@@ -213,7 +221,7 @@ If you are concerned about unexpected charges we recommend:
 
 ### 📈 Example usage statistics
 
-When testing using the default settings (`gpt-4o-mini` model, `low` detail level):
+When testing with OpenAI using the default settings (`gpt-4o-mini` model, `low` detail level):
 
 | Metric | Value |
 |--------|-------|
