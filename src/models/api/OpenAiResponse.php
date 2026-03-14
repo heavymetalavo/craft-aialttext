@@ -2,10 +2,10 @@
 
 namespace heavymetalavo\craftaialttext\models\api;
 
+use Craft;
 use craft\base\Model;
 use craft\helpers\Json;
 use Exception;
-use Craft;
 
 /**
  * OpenAI Response Model

@@ -3,11 +3,11 @@
 namespace heavymetalavo\craftaialttext\services;
 
 use Craft;
-use Exception;
 use craft\base\Component;
 use craft\elements\Asset;
 use craft\errors\{AssetException, ImageTransformException};
 use craft\helpers\{App, Json};
+use Exception;
 use GuzzleHttp\Exception\{GuzzleException, RequestException};
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\api\{OpenAiRequest, OpenAiResponse};

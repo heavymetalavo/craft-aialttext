@@ -111,7 +111,7 @@ class Settings extends Model
                 ['anthropicImageDetailLevel'],
                 function($attribute) {
                     $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['very_low', 'low', 'medium', 'high', ''], true)) {
+                    if (!in_array($val, ['veryLow', 'low', 'medium', 'high', ''], true)) {
                         $this->addError($attribute, 'Invalid Anthropic Image Detail Level configured.');
                     }
                 }

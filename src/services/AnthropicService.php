@@ -3,10 +3,10 @@
 namespace heavymetalavo\craftaialttext\services;
 
 use Craft;
-use Exception;
 use craft\base\Component;
 use craft\elements\Asset;
 use craft\helpers\{App, Json};
+use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\api\{AnthropicRequest, AnthropicResponse};
 
@@ -39,7 +39,7 @@ class AnthropicService extends ApiService
         $this->validateImageSupport($asset);
 
         $targetDimension = match ($this->detailLevel) {
-            'very_low' => 300,
+            'veryLow' => 300,
             'low' => 500,
             'medium' => 1000,
             'high' => 1568,

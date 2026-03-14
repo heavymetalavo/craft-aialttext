@@ -3,12 +3,12 @@
 namespace heavymetalavo\craftaialttext\services;
 
 use Craft;
-use Exception;
 use craft\base\Component;
 use craft\elements\Asset;
 use craft\enums\MenuItemType;
 use craft\events\DefineMenuItemsEvent;
 use craft\helpers\App;
+use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
 
