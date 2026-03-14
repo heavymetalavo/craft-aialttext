@@ -41,7 +41,9 @@
     errors: settings.getErrors("aiProvider")
 }) }}
 
+
 <hr />
+
 
 <div id="settings-provider-anthropic">
     <h3>Anthropic Settings</h3>
@@ -119,7 +121,7 @@
         label: 'OpenAI Image Detail Level'|t('aialttext'),
         id: 'openAiImageInputDetailLevel',
         name: 'openAiImageInputDetailLevel',
-        instructions: "Controls the [detail level](https://developers.openai.com/api/docs/guides/images-vision#choose-an-image-detail-level) used when OpenAI is processing the image."|t("aialttext"),
+        instructions: "Controls the [detail level](https://developers.openai.com/api/docs/guides/images-vision#choose-an-image-detail-level) OpenAI uses to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest."|t("aialttext"),
         options: [
             { label: 'Low - Fast, low-cost (512px x 512px)', value: 'low' },
             { label: 'High - Standard high-fidelity understanding', value: 'high' },
