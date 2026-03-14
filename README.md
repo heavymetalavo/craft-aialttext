@@ -2,7 +2,7 @@
   
 Generate alt text for CraftCMS Asset Images using OpenAI's API.
 
-🚨 Due to recent news about OpenAI signing a deal with the Department of War - Claude support is coming soon (hopefully 13th March 2026).
+🚨 Due to recent news about OpenAI signing a deal with the Department of War - Additional AI Provider support for Anthropic is in the final testing stages, it is available with `composer require heavymetalavo/craft-aialttext:dev-feature/claude` for those who wish to try.
 
 [Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft5) | [GitHub Repository](https://github.com/heavymetalavo/craft-aialttext)
 
