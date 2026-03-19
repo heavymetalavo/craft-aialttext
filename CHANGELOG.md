@@ -2,7 +2,7 @@
 
 ## UNRELEASED
 
-- Adding functionality to support a new AI Provider (Anthropic) via the Messages API
+- Adding functionality to support a new AI Provider (Anthropic)
 - Adding new setting field to choose AI Provider (OpenAI or Anthropic)
 - Adding automatic image scaling for Anthropic to account for 5MB payload limits and pixel area token costs
 - Adding automatic image scaling for OpenAI to account for 20MB payload limits and patch budget constraints
@@ -16,6 +16,7 @@
 - Updated all request/response model class property casing to use camelcase instead of snake case
 - Updated request models to no longer use a method to progressively build the payload on each setter
 - Updated default prompt in readme and settings to be more concise and direct for intended purpose, to not assuming gender, and to avoid random prefixes.
+- Updated `generateForNewAssets` setting to be true by default
 - Fixed bug where alt text would propagate across sites despite propagate setting being disabled
 - Fixed TypeError in OpenAI error handling where a non-array error response would crash `parseResponse()`
 
