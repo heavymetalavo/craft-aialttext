@@ -15,6 +15,7 @@
 - Updated plugin services to be registered as plugin components so we can access via the plugin instance rather than via instantiating each time we require them.
 - Updated all request/response model class property casing to use camelcase instead of snake case
 - Updated request models to no longer use a method to progressively build the payload on each setter
+- Updated default prompt in readme and settings to be more concise and direct for intended purpose, to not assuming gender, and to avoid random prefixes.
 - Fixed bug where alt text would propagate across sites despite propagate setting being disabled
 - Fixed TypeError in OpenAI error handling where a non-array error response would crash `parseResponse()`
 
