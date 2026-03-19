@@ -3,6 +3,7 @@
 namespace heavymetalavo\craftaialttext\models;
 
 use craft\base\Model;
+use craft\helpers\App;
 
 /**
  * Plugin Settings Model
@@ -16,12 +17,35 @@ use craft\base\Model;
  * @property string $prompt The prompt template for generating alt text
  * @property string $openAiImageInputDetailLevel The detail level for image analysis
  * @property bool $propagate Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
- * @property bool $saveTranslatedResultsToEachSite Whether to save the translated result to each Site's Asset's translatable alt text field
  * @property string $translationPromptAppendage The prompt suffix for translated results
  * @property bool $generateForNewAssets Whether to generate alt text for new assets automatically
+ * @property string $aiProvider The API provider to use ('openai', 'anthropic', or 'gemini')
+ * @property string $anthropicApiKey The Anthropic API key
+ * @property string $anthropicModel The Anthropic Model
+ * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
  */
 class Settings extends Model
 {
+    /**
+     * @var string The API provider to use
+     */
+    public string $aiProvider = '';
+
+    /**
+     * @var string The Anthropic API key
+     */
+    public string $anthropicApiKey = '';
+
+    /**
+     * @var string The Anthropic model to use
+     */
+    public string $anthropicModel = '';
+
+    /**
+     * @var string The Anthropic image detail level
+     */
+    public string $anthropicImageDetailLevel = 'low';
+
     /**
      * @var string The OpenAI API key
      */
@@ -30,12 +54,12 @@ class Settings extends Model
     /**
      * @var string The OpenAI model to use, must have vision capabilities
      */
-    public string $openAiModel = 'gpt-5-nano';
+    public string $openAiModel = '';
 
     /**
      * @var string The prompt template for generating alt text
      */
-    public string $prompt = 'Describe the image provided, make it suitable for an alt text description (roughly 150 characters maximum). Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. When describing a person do not assume their gender. Output in {site.language}';
+    public string $prompt = 'Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. "#", "alt text:", "An image of", "A photo of"). Do not wrap the output in quotes. Output in the language: {site.language}';
 
     /**
      * @var string The detail level for image analysis
@@ -60,7 +84,7 @@ class Settings extends Model
     /**
      * @var bool Whether to generate alt text for new assets automatically
      */
-    public bool $generateForNewAssets = false;
+    public bool $generateForNewAssets = true;
 
     /**
      * @inheritdoc
@@ -68,12 +92,41 @@ class Settings extends Model
     public function defineRules(): array
     {
         return [
-            [['openAiApiKey', 'openAiModel', 'prompt'], 'required'],
+            [['aiProvider', 'prompt'], 'required'],
+            [
+                ['aiProvider'],
+                function($attribute) {
+                    $val = App::parseEnv($this->$attribute);
+                    if (!in_array($val, ['openai', 'anthropic'], true)) {
+                        $this->addError($attribute, 'Invalid AI Provider configured.');
+                    }
+                }
+            ],
             ['openAiApiKey', 'string'],
             ['openAiModel', 'string'],
+            ['anthropicApiKey', 'string'],
+            ['anthropicModel', 'string'],
+            [
+                ['anthropicImageDetailLevel'],
+                function($attribute) {
+                    $val = App::parseEnv($this->$attribute);
+                    if (!in_array($val, ['low', 'medium', 'high', ''], true)) {
+                        $this->addError($attribute, 'Invalid Anthropic Image Detail Level configured.');
+                    }
+                }
+            ],
+
             ['prompt', 'string'],
             ['openAiImageInputDetailLevel', 'string'],
-            ['openAiImageInputDetailLevel', 'in', 'range' => ['low', 'high']],
+            [
+                ['openAiImageInputDetailLevel'],
+                function($attribute) {
+                    $val = App::parseEnv($this->$attribute);
+                    if (!in_array($val, ['low', 'high', 'original', 'auto', ''], true)) {
+                        $this->addError($attribute, 'Invalid OpenAI Image Input Detail Level configured.');
+                    }
+                }
+            ],
             ['propagate', 'boolean'],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],

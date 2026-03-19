@@ -5,22 +5,18 @@ namespace heavymetalavo\craftaialttext\models\api;
 use craft\base\Model;
 
 /**
- * OpenAI Request Model
+ * Anthropic Request Model
  *
- * Represents a request to the OpenAI Responses API for vision analysis.
+ * Represents a request to the Anthropic Messages API.
  */
-class OpenAiRequest extends Model
+class AnthropicRequest extends Model
 {
     public string $model = '';
+    public int $maxTokens = 1024;
 
     private string $prompt = '';
-    private string $imageUrl = '';
-    private string $detail = 'low';
-
-    public function getDetail(): string
-    {
-        return $this->detail;
-    }
+    private ?string $imageUrl = null;
+    private ?array $imageSource = null;
 
     public function setPrompt(string $prompt): self
     {
@@ -34,9 +30,12 @@ class OpenAiRequest extends Model
         return $this;
     }
 
-    public function setDetail(string $detail): self
+    /**
+     * Sets the image source content for the request (e.g., base64 data and mime type)
+     */
+    public function setImageSource(array $imageSource): self
     {
-        $this->detail = $detail;
+        $this->imageSource = $imageSource;
         return $this;
     }
 
@@ -46,17 +45,10 @@ class OpenAiRequest extends Model
     public function defineRules(): array
     {
         return [
-            ['model', 'required'],
+            [['model', 'maxTokens'], 'required'],
             ['model', 'string'],
-            ['model', 'validateDetail'],
+            ['maxTokens', 'integer'],
         ];
-    }
-
-    public function validateDetail(): void
-    {
-        if (!in_array($this->detail, ['low', 'high', 'original', 'auto'])) {
-            $this->addError('detail', 'Detail must be one of: low, high, original, auto');
-        }
     }
 
     /**
@@ -66,24 +58,32 @@ class OpenAiRequest extends Model
     {
         $content = [];
 
-        if (!empty($this->prompt)) {
-            $content[] = [
-                'type' => 'input_text',
-                'text' => $this->prompt,
+        $source = $this->imageSource;
+        if (!$source && $this->imageUrl) {
+            $source = [
+                'type' => 'url',
+                'url' => $this->imageUrl,
             ];
         }
 
-        if (!empty($this->imageUrl)) {
+        if ($source) {
             $content[] = [
-                'type' => 'input_image',
-                'image_url' => $this->imageUrl,
-                'detail' => $this->detail,
+                'type' => 'image',
+                'source' => $source,
+            ];
+        }
+
+        if (!empty($this->prompt)) {
+            $content[] = [
+                'type' => 'text',
+                'text' => $this->prompt,
             ];
         }
 
         return [
             'model' => $this->model,
-            'input' => [
+            'max_tokens' => $this->maxTokens,
+            'messages' => [
                 [
                     'role' => 'user',
                     'content' => $content,

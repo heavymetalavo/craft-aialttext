@@ -7,11 +7,11 @@
 <p>Lots of info in <a target="_blank" href="https://github.com/heavymetalavo/craft-aialttext">the plugin docs</a>, but a short summary;
 <ol>
     <li>Check the plugin settings are suitable for your project (and your API key is added)</li>
-    <li>Ensure your volumes have the native `alt` field assigned to the field layout</li>
-    <li>Ensure your templates are updated to use the `alt` field, you could consider a fallback `asset.alt ?: asset.title` if that what was used before</li>
+    <li>Ensure your volumes have <a href="https://docs.craftcms.com/api/v5/craft-fieldlayoutelements-assets-altfield.html#altfield" target="_blank">the native alt field</a> assigned to the field layout</li>
+    <li><p>Ensure your templates are updated to use the <code>alt</code> field, you could consider a fallback <code>asset.alt ?: asset.title</code> if that what was used before</p></li>
     <li>Then generate some AI Alt text by performing one of the following actions:
         <ol>
-            <li>Triggering a bulk action in the bulk actions table</li>
+            <li>Triggering a bulk action in the <a href="{{ cpUrl('utilities/ai-alt-text-bulk-actions') }}">bulk actions utility</a></li>
             <li>For individual or a group of specific assets find them in the <strong>Assets</strong> manager section</a> clicking the checkbox on a row, clicking the cog icon to reveal the Element actions menu and select <strong>Generate AI Alt Text</strong></li>
             <li>When viewing a single asset's page, open the action menu and select <strong>Generate AI Alt Text</strong></li>
             <li>Upload a new asset (if the upload setting is enabled)</li>
@@ -20,104 +20,138 @@
     <li>The plugin will queue jobs to generate alt text for each selected asset</li>
 </ol>
 
-<hr />
-
-<h2>Bulk actions</h2>
-
-<p>Generate alt text for all assets, the <strong>Save translated results for each site</strong> setting will be ignored to perform the requested action.</p>
-
-<table class="data fullwidth">
-    <thead>
-        <tr>
-            <th>Site</th>
-            <th>Total Assets</th>
-            <th>With Alt Text</th>
-            <th>Without Alt Text</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr class="totalcount">
-            <td><strong>{% if sites|length > 1 %} All sites {% else %} {{ (sites|first).name }} {% endif %}</strong></td>
-            <td>{{ totalAssetsWithAltTextForAllSites + totalAssetsWithoutAltTextForAllSites }}</td>
-            <td>{{ totalAssetsWithAltTextForAllSites }}</td>
-            <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
-            <td>
-                <div class="buttons">
-                    <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets') }}" class="btn small submit">Generate all</a>
-                    <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text') }}" class="btn small submit">Generate missing</a>
-                </div>
-            </td>
-        </tr>
-        {% if sites|length > 1 %}
-            {% for site in sites %}
-            <tr>
-                <td>{{ site.name }}</td>
-                <td>{{ siteAltTextCounts[site.id].total }}</td>
-                <td>{{ siteAltTextCounts[site.id].with }}</td>
-                <td>{{ siteAltTextCounts[site.id].without }}</td>
-                <td>
-                    <div class="buttons">
-                        <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets', {siteId: site.id}) }}" class="btn small submit">Generate all</a>
-                        <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text', {siteId: site.id}) }}" class="btn small submit">Generate missing</a>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        {% endif %}
-    </tbody>
-</table>
 
 <hr />
+
 
 <h2 id="settings">Settings</h2>
 
-{{ forms.autosuggestField({
-    label: "OpenAI API Key"|t("aialttext"),
-    instructions: "The API key from your Open AI account"|t("aialttext"),
-    id: "openAiApiKey",
-    name: "openAiApiKey",
-    suggestEnvVars: true,
-    value: settings.openAiApiKey,
-    errors: settings.getErrors("openAiApiKey"),
+{{ forms.selectizeField({
+    label: "AI Provider"|t("aialttext"),
+    instructions: "Choose which AI service to use for generating alt text"|t("aialttext"),
+    id: "aiProvider",
+    name: "aiProvider",
+    options: [
+        { label: 'Anthropic', value: 'anthropic' },
+        { label: 'OpenAI', value: 'openai' }
+    ],
+    includeEnvVars: true,
+    allowedEnvValues: null,
+    value: settings.aiProvider,
+    errors: settings.getErrors("aiProvider")
 }) }}
+
+
+<hr />
+
+
+<div id="settings-provider-anthropic">
+    <h3>Anthropic Settings</h3>
+
+    {{ forms.autosuggestField({
+        label: "Anthropic API Key"|t("aialttext"),
+        instructions: "The API key from your [Anthropic Console account](https://console.anthropic.com/)"|t("aialttext"),
+        id: "anthropicApiKey",
+        name: "anthropicApiKey",
+        placeholder: '$ANTHROPIC_API_KEY',
+        suggestEnvVars: true,
+        value: settings.anthropicApiKey,
+        errors: settings.getErrors("anthropicApiKey"),
+    }) }}
+
+    {{ forms.autosuggestField({
+        label: 'Anthropic Model'|t('aialttext'),
+        id: 'anthropicModel',
+        name: 'anthropicModel',
+        instructions: "The Anthropic model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-haiku-4-5`."|t("aialttext"),
+        value: settings.anthropicModel,
+        placeholder: 'claude-haiku-4-5',
+        errors: settings.getErrors('anthropicModel'),
+        suggestEnvVars: true,
+    }) }}
+
+    {{ forms.selectizeField({
+        label: 'Anthropic Image Detail Level'|t('aialttext'),
+        id: 'anthropicImageDetailLevel',
+        name: 'anthropicImageDetailLevel',
+        instructions: "Pre-scale the image to reduce [token cost and latency](https://platform.claude.com/docs/en/build-with-claude/vision#evaluate-image-size)."|t("aialttext"),
+        options: [
+            { label: 'Low (500px x 500px)', value: 'low' },
+            { label: 'Medium (1000px x 1000px)', value: 'medium' },
+            { label: 'High (1568px x 1568px)', value: 'high' }
+        ],
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        value: settings.anthropicImageDetailLevel,
+        errors: settings.getErrors('anthropicImageDetailLevel')
+    }) }}
+</div>
+
+
+<hr />
+
+
+<div id="settings-provider-openai">
+    <h3>OpenAI Settings</h3>
+
+    {{ forms.autosuggestField({
+        label: "OpenAI API Key"|t("aialttext"),
+        instructions: "The API key from your Open AI account"|t("aialttext"),
+        id: "openAiApiKey",
+        name: "openAiApiKey",
+        placeholder: '$OPENAI_API_KEY',
+        suggestEnvVars: true,
+        value: settings.openAiApiKey,
+        errors: settings.getErrors("openAiApiKey"),
+    }) }}
+
+    {{ forms.autosuggestField({
+        label: 'Open AI Model'|t('app'),
+        id: 'openAiModel',
+        name: 'openAiModel',
+        instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models) E.g., `gpt-5-nano`."|t("aialttext"),
+        value: settings.openAiModel,
+        placeholder: 'gpt-5-nano',
+        errors: settings.getErrors('openAiModel'),
+        suggestEnvVars: true,
+    }) }}
+
+    {{ forms.selectizeField({
+        label: 'OpenAI Image Detail Level'|t('aialttext'),
+        id: 'openAiImageInputDetailLevel',
+        name: 'openAiImageInputDetailLevel',
+        instructions: "Controls the [detail level](https://developers.openai.com/api/docs/guides/images-vision#choose-an-image-detail-level) OpenAI uses to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest."|t("aialttext"),
+        options: [
+            { label: 'Low - Fast, low-cost (512px x 512px)', value: 'low' },
+            { label: 'High - Standard high-fidelity understanding', value: 'high' },
+            { label: 'Original - Large, dense, spatially sensitive images (gpt-5.4+)', value: 'original' },
+            { label: 'Auto - Let the model choose', value: 'auto' }
+        ],
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        value: settings.openAiImageInputDetailLevel,
+        errors: settings.getErrors('openAiImageInputDetailLevel')
+    }) }}
+</div>
+
+
+<hr />
+
 
 {{ forms.textareaField({
     label: 'Prompt'|t('app'),
     id: 'prompt',
     name: 'prompt',
-    instructions: "The text prompt which will be sent to OpenAI with the image to generate the response, supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`"|t("aialttext"),
+    instructions: "The text prompt which will be sent to the AI provider with the image to generate the response, supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`, checkout [the readme](https://github.com/heavymetalavo/craft-aialttext?tab=readme-ov-file#-default-prompt) for the most up to date suggestion prompt template.`"|t("aialttext"),
     value: settings.prompt,
-    placeholder: "Describe the image provided, make it suitable for an alt text description (roughly 150 characters maximum). Consider transparency within the image if supported by the file type, e.g. don't suggest it has a dark background if it is transparent. Do not add a prefix of any kind (e.g. alt text: AI content) so the value is suitable for the alt text attribute value of the image. Output in {site.language}",
+    placeholder: "Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. \"#\", \"alt text:\", \"An image of\", \"A photo of\"). Do not wrap the output in quotes. Output in the language: {site.language}",
     errors: settings.getErrors('prompt'),
 }) }}
 
-{{ forms.autosuggestField({
-    label: 'Open AI Model'|t('app'),
-    id: 'openAiModel',
-    name: 'openAiModel',
-    instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models)"|t("aialttext"),
-    value: settings.openAiModel,
-    placeholder: 'gpt-5-nano',
-    errors: settings.getErrors('openAiModel'),
-    suggestEnvVars: true,
-}) }}
-
-{{ forms.autosuggestField({
-    label: 'Open AI Image Input Detail Level'|t('app'),
-    id: 'openAiImageInputDetailLevel',
-    name: 'openAiImageInputDetailLevel',
-    instructions: "Specify the [Image input detail level](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#specify-image-input-detail-level), `low` costs the least at 85 tokens. Please read about [Image input requirements](https://platform.openai.com/docs/guides/images#image-input-requirements), [limitations](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#limitations) and [calculating costs & cost calculation examples](https://platform.openai.com/docs/guides/images?api-mode=responses&format=url#calculating-costs) in the OpenAI platform docs for more."|t("aialttext"),
-    value: settings.openAiImageInputDetailLevel,
-    placeholder: 'low',
-    errors: settings.getErrors('openAiImageInputDetailLevel'),
-    suggestEnvVars: true,
-}) }}
-
 {{ forms.lightswitchField({
-    label: 'propagate'|t('aialttext'),
+    label: 'Propagate'|t('aialttext'),
     id: 'propagate',
-    name: ' ',
+    name: 'propagate',
     instructions: "Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites."|t("aialttext"),
     on: settings.propagate,
     errors: settings.getErrors('propagate'),
@@ -140,3 +174,7 @@
     on: settings.saveTranslatedResultsToEachSite,
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}
+
+
+
+

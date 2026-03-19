@@ -3,11 +3,10 @@
 namespace heavymetalavo\craftaialttext\controllers;
 
 use Craft;
-use craft\web\Controller;
 use craft\elements\Asset;
-use yii\web\Response;
+use craft\web\Controller;
 use heavymetalavo\craftaialttext\AiAltText;
-use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
+use yii\web\Response;
 
 /**
  * Generate Controller
@@ -75,7 +74,8 @@ class GenerateController extends Controller
         $totalCount = 0;
         $processedCount = 0;
         $queuedCount = 0;
-        $settings = AiAltText::getInstance()->getSettings();
+        $plugin = AiAltText::getInstance();
+        $settings = $plugin->getSettings();
         
         // Check if a specific site ID was provided
         $siteId = $this->request->getParam('siteId');
@@ -87,7 +87,7 @@ class GenerateController extends Controller
                 Craft::$app->getSession()->setError(
                     Craft::t('ai-alt-text', 'Invalid site ID: {siteId}', ['siteId' => $siteId])
                 );
-                return $this->redirect('settings/plugins/ai-alt-text');
+                return $this->redirect('utilities/ai-alt-text-bulk-actions');
             }
         } else {
             // Otherwise process all sites
@@ -100,10 +100,7 @@ class GenerateController extends Controller
                 $assets = Asset::find()
                     ->kind(Asset::KIND_IMAGE)
                     ->siteId($site->id)
-                    ->andWhere(['or', 
-                        ['alt' => null],
-                        ['alt' => '']
-                    ])
+                    ->hasAlt(false)
                     ->count();
                 
                 $totalCount += $assets;
@@ -126,10 +123,7 @@ class GenerateController extends Controller
                     $assets = Asset::find()
                         ->kind(Asset::KIND_IMAGE)
                         ->siteId($site->id)
-                        ->andWhere(['or', 
-                            ['alt' => null],
-                            ['alt' => '']
-                        ])
+                        ->hasAlt(false)
                         ->offset($offset)
                         ->limit($limit)
                         ->all();
@@ -156,7 +150,7 @@ class GenerateController extends Controller
                             Craft::info('Queuing alt text generation for asset: ' . $asset->id . ' (' . $asset->filename . ') in site ' . $site->name, __METHOD__);
                             
                             // Create a job for the asset
-                            AiAltText::getInstance()->aiAltTextService->createJob($asset, false, $site->id, false, true, true);
+                            $plugin->aiAltTextService->createJob($asset, false, $site->id, false, true, true);
                             $queuedCount++;
                         } catch (\Exception $e) {
                             Craft::error('Error queuing job for asset ' . $asset->id . ': ' . $e->getMessage(), __METHOD__);
@@ -191,7 +185,7 @@ class GenerateController extends Controller
             }
             
             // Redirect back to settings page
-            return $this->redirect('settings/plugins/ai-alt-text');
+            return $this->redirect('utilities/ai-alt-text-bulk-actions');
         } catch (\Exception $e) {
             Craft::error('Error queueing alt text generation for assets without alt text: ' . $e->getMessage(), __METHOD__);
             
@@ -199,7 +193,7 @@ class GenerateController extends Controller
                 Craft::t('ai-alt-text', 'Error: {message}', ['message' => $e->getMessage()])
             );
             
-            return $this->redirect('settings/plugins/ai-alt-text');
+            return $this->redirect('utilities/ai-alt-text-bulk-actions');
         }
     }
 
@@ -216,7 +210,8 @@ class GenerateController extends Controller
         $totalCount = 0;
         $processedCount = 0;
         $queuedCount = 0;
-        $settings = AiAltText::getInstance()->getSettings();
+        $plugin = AiAltText::getInstance();
+        $settings = $plugin->getSettings();
         
         // Check if a specific site ID was provided
         $siteId = $this->request->getParam('siteId');
@@ -228,7 +223,7 @@ class GenerateController extends Controller
                 Craft::$app->getSession()->setError(
                     Craft::t('ai-alt-text', 'Invalid site ID: {siteId}', ['siteId' => $siteId])
                 );
-                return $this->redirect('settings/plugins/ai-alt-text');
+                return $this->redirect('utilities/ai-alt-text-bulk-actions');
             }
         } else {
             // Otherwise process all sites
@@ -283,7 +278,7 @@ class GenerateController extends Controller
                             Craft::info('Queuing alt text generation for asset: ' . $asset->id . ' (' . $asset->filename . ') in site ' . $site->name, __METHOD__);
                             
                             // Set force regeneration to true to regenerate all assets
-                            AiAltText::getInstance()->aiAltTextService->createJob($asset, false, $site->id, false, true, true);
+                            $plugin->aiAltTextService->createJob($asset, false, $site->id, false, true, true);
                             $queuedCount++;
                         } catch (\Exception $e) {
                             Craft::error('Error queuing job for asset ' . $asset->id . ': ' . $e->getMessage(), __METHOD__);
@@ -318,7 +313,7 @@ class GenerateController extends Controller
             }
             
             // Redirect back to settings page
-            return $this->redirect('settings/plugins/ai-alt-text');
+            return $this->redirect('utilities/ai-alt-text-bulk-actions');
         } catch (\Exception $e) {
             Craft::error('Error queueing alt text generation for all assets: ' . $e->getMessage(), __METHOD__);
             
@@ -326,7 +321,7 @@ class GenerateController extends Controller
                 Craft::t('ai-alt-text', 'Error: {message}', ['message' => $e->getMessage()])
             );
             
-            return $this->redirect('settings/plugins/ai-alt-text');
+            return $this->redirect('utilities/ai-alt-text-bulk-actions');
         }
     }
 }
