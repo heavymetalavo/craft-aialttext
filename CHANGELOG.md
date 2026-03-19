@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## UNRELEASED
+## 1.7.0 - 2026-03-19
 
 - Adding functionality to support a new AI Provider (Anthropic)
 - Adding new setting field to choose AI Provider (OpenAI or Anthropic)
