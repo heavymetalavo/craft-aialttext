@@ -22,7 +22,7 @@ use craft\helpers\App;
  * @property string $aiProvider The API provider to use ('openai', 'anthropic', or 'gemini')
  * @property string $anthropicApiKey The Anthropic API key
  * @property string $anthropicModel The Anthropic Model
- * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('very_low', 'low', 'medium', 'high')
+ * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
  */
 class Settings extends Model
 {
@@ -110,7 +110,7 @@ class Settings extends Model
                 ['anthropicImageDetailLevel'],
                 function($attribute) {
                     $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['veryLow', 'low', 'medium', 'high', ''], true)) {
+                    if (!in_array($val, ['low', 'medium', 'high', ''], true)) {
                         $this->addError($attribute, 'Invalid Anthropic Image Detail Level configured.');
                     }
                 }

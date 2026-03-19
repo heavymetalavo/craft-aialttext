@@ -39,7 +39,6 @@ class AnthropicService extends ApiService
         $this->validateImageSupport($asset);
 
         $targetDimension = match ($this->detailLevel) {
-            'veryLow' => 300,
             'low' => 500,
             'medium' => 1000,
             'high' => 1568,

@@ -160,7 +160,6 @@ To find out which models are capable of vision, check [the models page](https://
 - `auto` - Let the model choose
 
 **Anthropic:**
-- `veryLow` - 300px x 300px
 - `low` - 500px x 500px (recommended default)
 - `medium` - 1000px x 1000px
 - `high` - 1568px x 1568px
