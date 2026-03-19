@@ -44,8 +44,7 @@ class Settings extends Model
     /**
      * @var string The Anthropic image detail level
      */
-    public string $anthropicImageDetailLevel = '';
-
+    public string $anthropicImageDetailLevel = 'low';
 
     /**
      * @var string The OpenAI API key
@@ -70,7 +69,7 @@ class Settings extends Model
      * - high: More detailed analysis on higher quality image, more expensive
      * - auto: let the model decide
      */
-    public string $openAiImageInputDetailLevel = '';
+    public string $openAiImageInputDetailLevel = 'low';
 
     /**
      * @var bool Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
@@ -85,7 +84,7 @@ class Settings extends Model
     /**
      * @var bool Whether to generate alt text for new assets automatically
      */
-    public bool $generateForNewAssets = false;
+    public bool $generateForNewAssets = true;
 
     /**
      * @inheritdoc
