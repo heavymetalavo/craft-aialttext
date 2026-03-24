@@ -36,7 +36,7 @@ abstract class ApiService extends Component
     public function __construct($config = [])
     {
         parent::__construct($config);
-        $this->client = Craft::createGuzzleClient(['timeout' => 10]);
+        $this->client = Craft::createGuzzleClient(['timeout' => 30]);
     }
     /**
      * Required implementation for child services to generate their specific payloads.
@@ -68,8 +68,8 @@ abstract class ApiService extends Component
     {
         try {
             $response = $this->client->head($url, [
-                'timeout' => 5,
-                'connect_timeout' => 5,
+                'timeout' => 30,
+                'connect_timeout' => 30,
                 'allow_redirects' => true,
             ]);
             return $response->getStatusCode() === 200;

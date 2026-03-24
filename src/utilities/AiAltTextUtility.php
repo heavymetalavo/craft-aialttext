@@ -4,6 +4,7 @@ namespace heavymetalavo\craftaialttext\utilities;
 use Craft;
 use craft\base\Utility;
 use craft\elements\Asset;
+use Exception;
 
 /**
  * AI Alt Text Bulk Actions Utility
@@ -77,7 +78,7 @@ class AiAltTextUtility extends Utility
                 
                 $totalAssetsWithAltTextForAllSites += $withAltCount;
                 $totalAssetsWithoutAltTextForAllSites += $withoutAltCount;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Craft::error("Error counting assets for site {$site->name}: " . $e->getMessage(), __METHOD__);
             }
         }

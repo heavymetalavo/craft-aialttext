@@ -5,6 +5,7 @@ namespace heavymetalavo\craftaialttext\controllers;
 use Craft;
 use craft\elements\Asset;
 use craft\web\Controller;
+use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use yii\web\Response;
 
@@ -51,7 +52,7 @@ class GenerateController extends Controller
                 'success' => true,
                 'message' => Craft::t('ai-alt-text', 'Alt text generation has been queued'),
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Craft::error('Error queueing alt text generation: ' . $e->getMessage(), __METHOD__);
 
             return $this->asJson([
@@ -152,7 +153,7 @@ class GenerateController extends Controller
                             // Create a job for the asset
                             $plugin->aiAltTextService->createJob($asset, false, $site->id, false, true, true);
                             $queuedCount++;
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             Craft::error('Error queuing job for asset ' . $asset->id . ': ' . $e->getMessage(), __METHOD__);
                         }
                     }
@@ -186,7 +187,7 @@ class GenerateController extends Controller
             
             // Redirect back to settings page
             return $this->redirect('utilities/ai-alt-text-bulk-actions');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Craft::error('Error queueing alt text generation for assets without alt text: ' . $e->getMessage(), __METHOD__);
             
             Craft::$app->getSession()->setError(
@@ -280,7 +281,7 @@ class GenerateController extends Controller
                             // Set force regeneration to true to regenerate all assets
                             $plugin->aiAltTextService->createJob($asset, false, $site->id, false, true, true);
                             $queuedCount++;
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             Craft::error('Error queuing job for asset ' . $asset->id . ': ' . $e->getMessage(), __METHOD__);
                         }
                     }
@@ -314,7 +315,7 @@ class GenerateController extends Controller
             
             // Redirect back to settings page
             return $this->redirect('utilities/ai-alt-text-bulk-actions');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Craft::error('Error queueing alt text generation for all assets: ' . $e->getMessage(), __METHOD__);
             
             Craft::$app->getSession()->setError(

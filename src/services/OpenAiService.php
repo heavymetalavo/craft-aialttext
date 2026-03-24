@@ -28,6 +28,7 @@ class OpenAiService extends ApiService
     private string $apiKey;
     private string $model;
     private string $baseUrl = 'https://api.openai.com/v1';
+    private bool $hasFallbackRan = false;
 
     /**
      * Constructor
@@ -109,7 +110,7 @@ class OpenAiService extends ApiService
                     $errorMsg = 'OpenAI API error: ' . $errorData['error']['message'];
                     Craft::error('OpenAI API error: ' . $responseBody, __METHOD__);
 
-                    $errorResponse->setError($errorMsg);
+                    $errorResponse->setError($errorMsg, $errorData['error']);
                     return $errorResponse;
                 }
             }
@@ -149,9 +150,9 @@ class OpenAiService extends ApiService
         // Validate image support using the parent base service method
         $this->validateImageSupport($asset);
 
-        // OpenAI Vision: max 2048px long edge (API handles short edge scaling internally), max 20MB payload
+        // OpenAI Vision: max 2048px long edge (API handles short edge scaling internally), max 512MB payload, max 1536 patches
         // Patch budget based on detail:high tiling — each 512px tile costs 170 tokens + 85 base
-        $transformParams = $this->getVisionTransformParams($asset, maxLongEdge: 2048, maxFileSizeMb: 20, maxPatches: 1536);
+        $transformParams = $this->getVisionTransformParams($asset, maxLongEdge: 2048, maxFileSizeMb: 512, maxPatches: 1536);
 
         if (!empty($transformParams)) {
             $asset->setTransform($transformParams);
@@ -236,6 +237,16 @@ class OpenAiService extends ApiService
 
         // Check for errors from the API
         if ($response->hasError()) {
+            $errorDetails = $response->error['details'] ?? null;
+            $isBase64 = strpos($imageUrl, 'data:') === 0;
+
+            if ($errorDetails && isset($errorDetails['type']) && $errorDetails['type'] === 'invalid_request_error' && !$this->hasFallbackRan && !$isBase64) {
+                $this->hasFallbackRan = true;
+                Craft::warning('Can access the asset URL, but the provider could not, forcing base64 fallback', __METHOD__);
+                $asset->getVolume()->getFs()->hasUrls = false;
+                return $this->generateAltText($asset, $siteId);
+            }
+
             throw new Exception($response->getErrorMessage());
         }
 

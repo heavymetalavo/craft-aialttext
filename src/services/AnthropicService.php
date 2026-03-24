@@ -7,6 +7,7 @@ use craft\base\Component;
 use craft\elements\Asset;
 use craft\helpers\{App, Json};
 use Exception;
+use GuzzleHttp\Exception\RequestException;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\api\{AnthropicRequest, AnthropicResponse};
 
@@ -139,7 +140,7 @@ class AnthropicService extends ApiService
             }
 
             return $responseModel->getText();
-        } catch (\GuzzleHttp\Exception\RequestException $e) {
+        } catch (RequestException $e) {
             $errorResponse = $e->hasResponse() ? (string)$e->getResponse()->getBody() : $e->getMessage();
             Craft::error("Anthropic API Error: " . $errorResponse, __METHOD__);
             
