@@ -145,7 +145,7 @@ class AnthropicService extends ApiService
             
             $responseModel = new AnthropicResponse();
             if ($responseModel->parseResponse($errorResponse) && $responseModel->hasError()) {
-                throw new Exception("Anthropic API request failed pares response: " . $responseModel->getErrorMessage());
+                throw new Exception("Anthropic API request failed parsed response: " . $responseModel->getErrorMessage());
             }
 
             // Try a fallback where if we have accessed the image before but the provider cannot access it, we can try again with the base64 encoded contents
