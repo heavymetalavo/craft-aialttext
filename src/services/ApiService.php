@@ -5,6 +5,7 @@ namespace heavymetalavo\craftaialttext\services;
 use Craft;
 use craft\base\Component;
 use craft\elements\Asset;
+use craft\helpers\UrlHelper;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -43,9 +44,24 @@ abstract class ApiService extends Component
     abstract public function generateAltText(Asset $asset, ?int $siteId = null): string;
 
     /**
+     * Turns root-relative asset URLs into absolute URLs for Guzzle and provider APIs; leaves absolute URLs unchanged.
+     */
+    protected function resolveAssetUrl(Asset $asset, string $url): string
+    {
+        if (UrlHelper::isRootRelativeUrl($url)) {
+            return UrlHelper::siteUrl($url, null, null, $asset->siteId);
+        }
+        if (UrlHelper::isProtocolRelativeUrl($url)) {
+            return UrlHelper::urlWithScheme($url, 'https');
+        }
+
+        return $url;
+    }
+
+    /**
      * Checks if a URL is accessible remotely.
      *
-     * @param string $url The URL to check
+     * @param string $url The URL to check (already resolved for HTTP if needed)
      * @return bool Whether the URL is accessible
      */
     protected function isUrlAccessible(string $url): bool
@@ -133,6 +149,7 @@ abstract class ApiService extends Component
     {
         // Always try to fetch the transformed or public URL using Guzzle to get the resized contents
         if (!empty($imageUrl)) {
+            $imageUrl = $this->resolveAssetUrl($asset, $imageUrl);
             try {
                 $response = $this->client->get($imageUrl);
                 if ($response->getStatusCode() === 200) {
@@ -143,9 +160,9 @@ abstract class ApiService extends Component
                 Craft::warning('Failed to download image URL for Base64 conversion: ' . $e->getMessage(), __METHOD__);
             }
         }
-
+        
         if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            
+            Craft::warning('No image URL or asset contents found, falling back to original asset contents', __METHOD__);
             if ($this->needsFormatConversion($asset)) {
                 $assetMimeType = strtolower($asset->getMimeType());
                 // See https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148

@@ -21,6 +21,7 @@ class AnthropicService extends ApiService
     private string $model;
     private string $detailLevel;
     private string $baseUrl = 'https://api.anthropic.com/v1/messages';
+    private bool $hasFallbackRan = false;
 
     public function __construct()
     {
@@ -61,11 +62,14 @@ class AnthropicService extends ApiService
         
         $imageUrl = $asset->getUrl($transformParams, true);
 
-        // If we have a URL, check if it's accessible remotely
+        // If we have a URL, check if it's accessible remotely (resolve root-relative URLs to the site base; leave absolute URLs as-is)
         if (!empty($imageUrl)) {
-            if (!$this->isUrlAccessible($imageUrl)) {
+            $resolvedUrl = $this->resolveAssetUrl($asset, $imageUrl);
+            if (!$this->isUrlAccessible($resolvedUrl)) {
                 Craft::warning('Asset URL is not accessible remotely: ' . $imageUrl, __METHOD__);
                 $imageUrl = null; // Reset to null to trigger base64 encoding
+            } else {
+                $imageUrl = $resolvedUrl;
             }
         }
 
@@ -89,7 +93,7 @@ class AnthropicService extends ApiService
     {
         try {
             // Log the request intent for debugging
-            Craft::info('Anthropic API request initiated for asset: ' . $asset->filename, __METHOD__);
+            Craft::info('Anthropic API request initiated for asset: ' . $asset->filename . ' with image URL: ' . $imageUrl, __METHOD__);
 
             $promptTemplate = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
@@ -141,9 +145,19 @@ class AnthropicService extends ApiService
             
             $responseModel = new AnthropicResponse();
             if ($responseModel->parseResponse($errorResponse) && $responseModel->hasError()) {
-                throw new Exception("Anthropic API request failed: " . $responseModel->getErrorMessage());
+                throw new Exception("Anthropic API request failed pares response: " . $responseModel->getErrorMessage());
             }
-            throw new Exception("Anthropic API request failed: " . $errorResponse);
+
+            // Try a fallback where if we have accessed the image before but the provider cannot access it, we can try again with the base64 encoded contents
+            $decodedErrorResponse = Json::decode($errorResponse);
+            if ($decodedErrorResponse['error']['type'] === 'invalid_request_error' && !$this->hasFallbackRan && !$base64ImageSource) {
+                $this->hasFallbackRan = true;
+                Craft::warning('Can access the asset URL, but the provider could not, forcing base64 fallback', __METHOD__);
+                $asset->getVolume()->getFs()->hasUrls = false;
+                return $this->generateAltText($asset, $siteId);
+            }
+
+            throw new Exception("Anthropic API request failed error response: " . $errorResponse);
         }
     }
 }

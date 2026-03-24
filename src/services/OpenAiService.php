@@ -167,11 +167,14 @@ class OpenAiService extends ApiService
         // Make sure that we do not get a "generate transform" url, but a real url with true
         $imageUrl = $asset->getUrl($transformParams, true);
 
-        // If we have a URL, check if it's accessible remotely
+        // If we have a URL, check if it's accessible remotely (resolve root-relative URLs to the site base; leave absolute URLs as-is)
         if (!empty($imageUrl)) {
-            if (!$this->isUrlAccessible($imageUrl)) {
+            $resolvedUrl = $this->resolveAssetUrl($asset, $imageUrl);
+            if (!$this->isUrlAccessible($resolvedUrl)) {
                 Craft::warning('Asset URL is not accessible remotely: ' . $imageUrl, __METHOD__);
                 $imageUrl = null; // Reset to null to trigger base64 encoding
+            } else {
+                $imageUrl = $resolvedUrl;
             }
         }
 
