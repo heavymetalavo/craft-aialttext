@@ -28,6 +28,7 @@ class OpenAiService extends ApiService
     private string $apiKey;
     private string $model;
     private string $baseUrl = 'https://api.openai.com/v1';
+    private bool $hasFallbackRan = false;
 
     /**
      * Constructor
@@ -109,7 +110,7 @@ class OpenAiService extends ApiService
                     $errorMsg = 'OpenAI API error: ' . $errorData['error']['message'];
                     Craft::error('OpenAI API error: ' . $responseBody, __METHOD__);
 
-                    $errorResponse->setError($errorMsg);
+                    $errorResponse->setError($errorMsg, $errorData['error']);
                     return $errorResponse;
                 }
             }
@@ -149,9 +150,9 @@ class OpenAiService extends ApiService
         // Validate image support using the parent base service method
         $this->validateImageSupport($asset);
 
-        // OpenAI Vision: max 2048px long edge (API handles short edge scaling internally), max 20MB payload
+        // OpenAI Vision: max 2048px long edge (API handles short edge scaling internally), max 512MB payload, max 1536 patches
         // Patch budget based on detail:high tiling — each 512px tile costs 170 tokens + 85 base
-        $transformParams = $this->getVisionTransformParams($asset, maxLongEdge: 2048, maxFileSizeMb: 20, maxPatches: 1536);
+        $transformParams = $this->getVisionTransformParams($asset, maxLongEdge: 2048, maxFileSizeMb: 512, maxPatches: 1536);
 
         if (!empty($transformParams)) {
             $asset->setTransform($transformParams);
@@ -167,18 +168,20 @@ class OpenAiService extends ApiService
         // Make sure that we do not get a "generate transform" url, but a real url with true
         $imageUrl = $asset->getUrl($transformParams, true);
 
-        // If we have a URL, check if it's accessible remotely
+        // If we have a URL, check if it's accessible remotely (resolve root-relative URLs to the site base; leave absolute URLs as-is)
         if (!empty($imageUrl)) {
-            if (!$this->isUrlAccessible($imageUrl)) {
-                Craft::warning('Asset URL is not accessible remotely: ' . $imageUrl, __METHOD__);
-                $imageUrl = null; // Reset to null to trigger base64 encoding
+            $imageUrl = $this->resolveAssetUrl($asset, $imageUrl);
+            
+            if (!$this->forceBase64 && !$this->isUrlAccessible($imageUrl)) {
+                Craft::warning('Asset URL is not accessible locally: ' . $imageUrl, __METHOD__);
+                $this->forceBase64 = true;
             }
         }
 
-        // If no public URL is available or URL is not accessible, try to get the file contents and encode as base64
-        if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
+        // If no public URL is available, or URL is not accessible locally, or base64 is forced
+        if ($this->forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
             $base64Image = $this->getAssetBase64String($asset, $imageUrl, $transformParams);
-            $imageUrl = "data:$transformMimeType;base64,$base64Image";
+            $imageUrl = "data:$transformMimeType;base64,$base64Image"; // Replace URL with data string
         }
 
         // Only set detail parameter for images larger than 512x512 pixels
@@ -233,6 +236,16 @@ class OpenAiService extends ApiService
 
         // Check for errors from the API
         if ($response->hasError()) {
+            $errorDetails = $response->error['details'] ?? null;
+            $isBase64 = strpos($imageUrl, 'data:') === 0;
+
+            if ($errorDetails && isset($errorDetails['type']) && $errorDetails['type'] === 'invalid_request_error' && !$this->hasFallbackRan && !$isBase64) {
+                $this->hasFallbackRan = true;
+                $this->forceBase64 = true;
+                Craft::warning('Can access the asset URL, but the provider could not, forcing base64 fallback', __METHOD__);
+                return $this->generateAltText($asset, $siteId);
+            }
+
             throw new Exception($response->getErrorMessage());
         }
 

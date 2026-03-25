@@ -6,6 +6,7 @@ use Craft;
 use craft\console\Controller;
 use craft\elements\Asset;
 use craft\helpers\Console;
+use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use yii\console\ExitCode;
 use yii\helpers\BaseConsole;
@@ -98,7 +99,7 @@ class GenerateController extends Controller
             
             return ExitCode::OK;
             
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->failure("Error queueing alt text generation: {$e->getMessage()}");
             return ExitCode::SOFTWARE;
         }
@@ -367,7 +368,7 @@ class GenerateController extends Controller
                             // Free memory
                             unset($asset);
                             
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             $this->failure("Error processing asset {$assetId}: {$e->getMessage()}");
                         }
                         
@@ -399,7 +400,7 @@ class GenerateController extends Controller
             
             return ExitCode::OK;
             
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Console::endProgress();
             $this->failure("\nError: {$e->getMessage()}");
             return ExitCode::SOFTWARE;

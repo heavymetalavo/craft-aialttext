@@ -5,6 +5,7 @@ namespace heavymetalavo\craftaialttext\services;
 use Craft;
 use craft\base\Component;
 use craft\elements\Asset;
+use craft\helpers\UrlHelper;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -32,10 +33,15 @@ abstract class ApiService extends Component
      */
     protected Client $client;
 
+    /**
+     * @var bool Forces the use of base64 encoding even if the asset has a URL (useful for fallback when provider fails to download from URL)
+     */
+    protected bool $forceBase64 = false;
+
     public function __construct($config = [])
     {
         parent::__construct($config);
-        $this->client = Craft::createGuzzleClient(['timeout' => 10]);
+        $this->client = Craft::createGuzzleClient(['timeout' => 30]);
     }
     /**
      * Required implementation for child services to generate their specific payloads.
@@ -43,17 +49,36 @@ abstract class ApiService extends Component
     abstract public function generateAltText(Asset $asset, ?int $siteId = null): string;
 
     /**
+     * Turns root-relative asset URLs into absolute URLs for Guzzle and provider APIs; leaves absolute URLs unchanged.
+     */
+    protected function resolveAssetUrl(Asset $asset, string $url): string
+    {
+        // Convert `//bucket.s3.com/img.jpg` to `https://bucket.s3.com/img.jpg`
+        if (UrlHelper::isProtocolRelativeUrl($url)) {
+            return UrlHelper::urlWithScheme($url, 'https');
+        }
+
+        // Catch both root-relative (`/imgs/file.jpg`) and normal relative (`imgs/file.jpg`) local volume paths
+        // and convert them to absolute URLs via the Craft Site URL. (`domain.com/imgs/file.jpg`)
+        if (!UrlHelper::isAbsoluteUrl($url)) {
+            return UrlHelper::siteUrl($url, null, null, $asset->siteId);
+        }
+
+        return $url;
+    }
+
+    /**
      * Checks if a URL is accessible remotely.
      *
-     * @param string $url The URL to check
+     * @param string $url The URL to check (already resolved for HTTP if needed)
      * @return bool Whether the URL is accessible
      */
     protected function isUrlAccessible(string $url): bool
     {
         try {
             $response = $this->client->head($url, [
-                'timeout' => 5,
-                'connect_timeout' => 5,
+                'timeout' => 30,
+                'connect_timeout' => 30,
                 'allow_redirects' => true,
             ]);
             return $response->getStatusCode() === 200;
@@ -133,6 +158,7 @@ abstract class ApiService extends Component
     {
         // Always try to fetch the transformed or public URL using Guzzle to get the resized contents
         if (!empty($imageUrl)) {
+            $imageUrl = $this->resolveAssetUrl($asset, $imageUrl);
             try {
                 $response = $this->client->get($imageUrl);
                 if ($response->getStatusCode() === 200) {
@@ -143,9 +169,9 @@ abstract class ApiService extends Component
                 Craft::warning('Failed to download image URL for Base64 conversion: ' . $e->getMessage(), __METHOD__);
             }
         }
-
+        
         if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            
+            Craft::warning('No image URL or asset contents found, falling back to original asset contents', __METHOD__);
             if ($this->needsFormatConversion($asset)) {
                 $assetMimeType = strtolower($asset->getMimeType());
                 // See https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148
