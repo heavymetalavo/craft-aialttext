@@ -3,7 +3,7 @@
 ## 1.7.1 - 2026-03-24
 
 - Adding a fallback for OpenAI and Anthropic when the image URL is reachable from Craft but unreachable from the provider: a fallback attempt sends the image as base64 instead for round 2 🥊
-- Fixing issue for local volumes where image urls could be send as root-relative URLs, now converts to absolute site URLs before sending to AI Providers
+- Fixing issue for local volumes where image urls could be sent to AI providers as relative URLs, now converts to absolute site URLs before making a request.
 - Updating the OpenAI vision `maxFileSizeMb` threshold from 20MB to 512MB to align with new API limit.
 - Updating HTTP client timeouts to 30 seconds to support processing larger images.
 - Replacing inline fully qualified class names with `use` declarations

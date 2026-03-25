@@ -65,26 +65,25 @@ class AnthropicService extends ApiService
 
         // If we have a URL, check if it's accessible remotely (resolve root-relative URLs to the site base; leave absolute URLs as-is)
         if (!empty($imageUrl)) {
-            $resolvedUrl = $this->resolveAssetUrl($asset, $imageUrl);
-            if (!$this->isUrlAccessible($resolvedUrl)) {
-                Craft::warning('Asset URL is not accessible remotely: ' . $imageUrl, __METHOD__);
-                $imageUrl = null; // Reset to null to trigger base64 encoding
-            } else {
-                $imageUrl = $resolvedUrl;
+            $imageUrl = $this->resolveAssetUrl($asset, $imageUrl);
+            
+            if (!$this->forceBase64 && !$this->isUrlAccessible($imageUrl)) {
+                Craft::warning('Asset URL is not accessible locally: ' . $imageUrl, __METHOD__);
+                $this->forceBase64 = true;
             }
         }
 
         $imageSource = null;
 
-        // If no public URL is available or URL is not accessible, fall back to base64 encoding
-        if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
+        // If no public URL is available, or URL is not accessible locally, or base64 is forced
+        if ($this->forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
             $base64Image = $this->getAssetBase64String($asset, $imageUrl, $transformParams);
             $imageSource = [
                 'type' => 'base64',
                 'media_type' => $transformMimeType,
                 'data' => $base64Image,
             ];
-            $imageUrl = null;
+            $imageUrl = null; // Clear URL so it's not sent in the payload
         }
 
         return $this->sendRequest($imageUrl, $imageSource, $transformMimeType, $asset, $siteId);
@@ -153,8 +152,8 @@ class AnthropicService extends ApiService
             $decodedErrorResponse = Json::decode($errorResponse);
             if ($decodedErrorResponse['error']['type'] === 'invalid_request_error' && !$this->hasFallbackRan && !$base64ImageSource) {
                 $this->hasFallbackRan = true;
+                $this->forceBase64 = true;
                 Craft::warning('Can access the asset URL, but the provider could not, forcing base64 fallback', __METHOD__);
-                $asset->getVolume()->getFs()->hasUrls = false;
                 return $this->generateAltText($asset, $siteId);
             }
 

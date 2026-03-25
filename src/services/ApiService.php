@@ -33,6 +33,11 @@ abstract class ApiService extends Component
      */
     protected Client $client;
 
+    /**
+     * @var bool Forces the use of base64 encoding even if the asset has a URL (useful for fallback when provider fails to download from URL)
+     */
+    protected bool $forceBase64 = false;
+
     public function __construct($config = [])
     {
         parent::__construct($config);
@@ -48,11 +53,15 @@ abstract class ApiService extends Component
      */
     protected function resolveAssetUrl(Asset $asset, string $url): string
     {
-        if (UrlHelper::isRootRelativeUrl($url)) {
-            return UrlHelper::siteUrl($url, null, null, $asset->siteId);
-        }
+        // Convert `//bucket.s3.com/img.jpg` to `https://bucket.s3.com/img.jpg`
         if (UrlHelper::isProtocolRelativeUrl($url)) {
             return UrlHelper::urlWithScheme($url, 'https');
+        }
+
+        // Catch both root-relative (`/imgs/file.jpg`) and normal relative (`imgs/file.jpg`) local volume paths
+        // and convert them to absolute URLs via the Craft Site URL. (`domain.com/imgs/file.jpg`)
+        if (!UrlHelper::isAbsoluteUrl($url)) {
+            return UrlHelper::siteUrl($url, null, null, $asset->siteId);
         }
 
         return $url;
