@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## UNRELEASESD
+## 1.8.0 - 2026-05-04
 
 - Adding new settings field for managing OpenAI reasoning model effort value
 - Updating OpenAI API request payload to include reasoning effort value (where reasoning model is used, e.g. `gpt-5*` or `o*`)

@@ -136,9 +136,11 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **OpenAI/Anthropic API Key** | Your provider's API key. |
 | **Model** | The AI model to use (e.g., `gpt-5-nano` or `claude-haiku-4-5`). |
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |
+| **OpenAI Reasoning Effort**| The reasoning effort level for OpenAI reasoning models. |
 | **Prompt** | The text prompt sent to the AI providers (example [below](#default-prompt)). Supports `{asset.property}` and `{site.property}` |
 | **Propagate** | Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites. |
 | **Generate for new image assets (on upload)** | Automatically generate alt text when new assets are created. |
+| **Process SVGs** | Attempt to generate alt text for SVG files when they are uploaded or batched processed. |
 | **Save translated results for each site** | Save translated results to translatable fields for each site. |
 
 #### 🧠 Model Options
@@ -165,6 +167,16 @@ To find out which models are capable of vision, check [the models page](https://
 - `low` - 500px x 500px (recommended default)
 - `medium` - 1000px x 1000px
 - `high` - 1568px x 1568px
+
+#### 🧠 OpenAI Reasoning Effort options
+
+Controls how much time the model spends "thinking" before generating a response (only applicable to OpenAI reasoning models like `o*` (e.g. `o1`) and `gpt-5*`).
+- `none`
+- `minimal`
+- `low`
+- `medium`
+- `high`
+- `xhigh`
 
 For more information, refer to the [OpenAI](https://platform.openai.com/docs/guides/images) and [Anthropic](https://docs.anthropic.com/en/docs/build-with-claude/vision) documentation.
 
