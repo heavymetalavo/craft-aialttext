@@ -40,7 +40,7 @@ class GenerateAiAltText extends BaseJob
 
             // Log the result
             if (!empty($altText)) {
-                Craft::debug("Successfully generated alt text for asset $this->assetId: " . $altText, __METHOD__);
+                Craft::info("Successfully generated alt text for asset $this->assetId: " . $altText, __METHOD__);
             } else {
                 Craft::warning("Failed to generate alt text for asset $this->assetId", __METHOD__);
                 // Set the description to indicate failure

@@ -224,7 +224,7 @@ class OpenAiService extends ApiService
         }, $prompt);
 
         // Log asset info for debugging
-        Craft::debug('Generating alt text for asset: ' . $asset->filename . ' (' . $imageUrl . ')', __METHOD__);
+        Craft::info('Generating alt text for asset: ' . $asset->filename . ' (' . $imageUrl . ')', __METHOD__);
 
         // Create and populate the request model
         $request = new OpenAiRequest();
