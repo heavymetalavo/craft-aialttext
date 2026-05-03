@@ -9,6 +9,7 @@ use craft\helpers\UrlHelper;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use heavymetalavo\craftaialttext\AiAltText;
 
 /**
  * Base API Service
@@ -95,15 +96,27 @@ abstract class ApiService extends Component
      * @param bool $allowSvgs Whether the endpoint natively supports SVGs or relies on Craft's SVG transform pipeline
      * @throws Exception If the asset format is invalid or fundamentally unsupported
      */
-    protected function validateImageSupport(Asset $asset, bool $allowSvgs = false): void
+    protected function validateImageSupport(Asset $asset, bool $allowSvgs = false): bool
     {
         $mimeType = strtolower($asset->getMimeType());
 
         if ($mimeType === 'image/svg+xml') {
-            if (!$allowSvgs && !Craft::$app->getConfig()->getGeneral()->transformSvgs) {
-                throw new Exception("SVGs are not natively supported by this API provider and Craft's `transformSvgs` explicitly disables fallback rasterization.");
+            if (!AiAltText::getInstance()->getSettings()->processSvgs) {
+                Craft::info("Skipping SVG asset (processSvgs disabled): $asset->filename", __METHOD__);
+                return false;
+            }
+
+            if (!$allowSvgs) {
+                if (!Craft::$app->getConfig()->getGeneral()->transformSvgs) {
+                    Craft::warning("SVG asset $asset->filename requires transformSvgs to be enabled in Craft general config to be processed; skipping.", __METHOD__);
+                    return false;
+                }
+                
+                Craft::debug("SVG asset $asset->filename is not natively supported by the provider, will attempt transformation.", __METHOD__);
             }
         }
+        
+        return true;
     }
 
     /**

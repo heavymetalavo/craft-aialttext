@@ -1,5 +1,10 @@
 # Release Notes for AI Alt Text
 
+## UNRELEASED
+
+- Added a new `processSvgs` setting which now serves as the primary control for whether SVG assets are processed by the plugin. This logic is now decoupled from Craft's global `transformSvgs` setting.
+- Updated error handling to gracefully skip SVGs when `processSvgs` is `false` and complete queue jobs successfully instead of throwing exceptions.
+
 ## 1.7.1 - 2026-03-25
 
 - Adding a fallback for OpenAI and Anthropic when the image URL is reachable from Craft but unreachable from the provider: a fallback attempt sends the image as base64 instead for round 2 🥊

@@ -167,6 +167,15 @@
 }) }}
 
 {{ forms.lightswitchField({
+    label: 'Process SVGs'|t('aialttext'),
+    id: 'processSvgs',
+    name: 'processSvgs',
+    instructions: "Attempt to generate alt text for SVG files when they are uploaded or batched processed. This requires Craft's global `transformSvgs` setting to be enabled."|t("aialttext"),
+    on: settings.processSvgs,
+    errors: settings.getErrors('processSvgs'),
+}) }}
+
+{{ forms.lightswitchField({
     label: 'Save translated results for each site'|t('aialttext'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',

@@ -148,7 +148,9 @@ class OpenAiService extends ApiService
     {
         $plugin = AiAltText::getInstance();
         // Validate image support using the parent base service method
-        $this->validateImageSupport($asset);
+        if (!$this->validateImageSupport($asset)) {
+            return '';
+        }
 
         // OpenAI Vision: max 2048px long edge (API handles short edge scaling internally), max 512MB payload, max 1536 patches
         // Patch budget based on detail:high tiling — each 512px tile costs 170 tokens + 85 base

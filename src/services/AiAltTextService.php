@@ -23,12 +23,13 @@ class AiAltTextService extends Component
 
     /**
      * Creates a job for the given element
-     * 
+     *
      * @param Asset $asset The asset to create a job for
      * @param bool $saveCurrentSiteOffQueue Whether to process the current site off queue
      * @param int|null $currentSiteId The current site ID
      * @param bool $skipExistingJobCheck Whether to skip the check for existing jobs (useful for bulk operations)
      * @param bool $forceRegeneration Whether to force regeneration even if alt text exists
+     * @throws Exception
      */
     public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $forceRegeneration = false, $skipSaveTranslatedResultsToEachSiteSetting = false): void
     {
