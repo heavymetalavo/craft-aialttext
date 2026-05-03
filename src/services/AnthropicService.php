@@ -35,10 +35,13 @@ class AnthropicService extends ApiService
 
     /**
      * Generates alt text using the Anthropic Messages API
+     * @throws Exception
      */
     public function generateAltText(Asset $asset, ?int $siteId = null): string
     {
-        $this->validateImageSupport($asset);
+        if (!$this->validateImageSupport($asset)) {
+            return '';
+        }
 
         $targetDimension = match ($this->detailLevel) {
             'low' => 500,
@@ -89,6 +92,9 @@ class AnthropicService extends ApiService
         return $this->sendRequest($imageUrl, $imageSource, $transformMimeType, $asset, $siteId);
     }
 
+    /**
+     * @throws Exception
+     */
     private function sendRequest(?string $imageUrl, ?array $base64ImageSource, string $mimeType, Asset $asset, ?int $siteId): string
     {
         try {

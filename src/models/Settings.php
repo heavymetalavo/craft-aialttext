@@ -95,6 +95,11 @@ class Settings extends Model
     public bool $generateForNewAssets = true;
 
     /**
+     * @var bool Whether to attempt generating alt text for SVG files
+     */
+    public bool $processSvgs = false;
+
+    /**
      * @inheritdoc
      */
     public function defineRules(): array
@@ -148,6 +153,7 @@ class Settings extends Model
             ['propagate', 'boolean'],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
+            ['processSvgs', 'boolean'],
         ];
     }
 }
