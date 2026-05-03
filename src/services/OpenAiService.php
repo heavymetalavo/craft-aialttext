@@ -57,10 +57,13 @@ class OpenAiService extends ApiService
      */
     private function sendRequest(array $requestData): OpenAiResponse
     {
+        $requestStartedAt = null;
+
         try {
             // Log the request for debugging
-            Craft::info('OpenAI API request: ' . Json::encode($requestData), __METHOD__);
+            Craft::debug('OpenAI API request: ' . Json::encode($requestData), __METHOD__);
 
+            $requestStartedAt = microtime(true);
             $response = $this->client->post($this->baseUrl . '/responses', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->apiKey,
@@ -70,8 +73,12 @@ class OpenAiService extends ApiService
             ]);
 
             $responseBody = (string)$response->getBody();
+            Craft::debug(sprintf(
+                'OpenAI API request took %.3fs',
+                microtime(true) - $requestStartedAt
+            ), __METHOD__);
             // Log the raw response for debugging
-            Craft::info('OpenAI API raw response: ' . $responseBody, __METHOD__);
+            Craft::debug('OpenAI API raw response: ' . $responseBody, __METHOD__);
 
             // Create response model and parse the response
             $responseModel = new OpenAiResponse();
@@ -97,6 +104,13 @@ class OpenAiService extends ApiService
             return $responseModel;
 
         } catch (Exception $e) {
+            if ($requestStartedAt !== null) {
+                Craft::debug(sprintf(
+                    'OpenAI API request failed after %.3fs',
+                    microtime(true) - $requestStartedAt
+                ), __METHOD__);
+            }
+
             $errorResponse = new OpenAiResponse();
 
             // Check if this is a Guzzle exception with a response
@@ -218,7 +232,8 @@ class OpenAiService extends ApiService
         $request = new OpenAiRequest();
         $request->model = $this->model;
         $request->setPrompt($prompt)
-            ->setImageUrl($imageUrl);
+            ->setImageUrl($imageUrl)
+            ->setReasoningEffort((string) App::parseEnv($plugin->getSettings()->openAiReasoningEffort));
             
         // Only set detail if the image is large enough
         if ($detail !== null) {

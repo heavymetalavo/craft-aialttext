@@ -3,6 +3,8 @@
 namespace heavymetalavo\craftaialttext\models\api;
 
 use craft\base\Model;
+use craft\helpers\Json;
+use Craft;
 
 /**
  * OpenAI Request Model
@@ -16,10 +18,17 @@ class OpenAiRequest extends Model
     private string $prompt = '';
     private string $imageUrl = '';
     private string $detail = 'low';
+    private string $reasoningEffort = 'minimal';
 
     public function getDetail(): string
     {
         return $this->detail;
+    }
+
+    public function setReasoningEffort(string $reasoningEffort): self
+    {
+        $this->reasoningEffort = $reasoningEffort;
+        return $this;
     }
 
     public function setPrompt(string $prompt): self
@@ -81,7 +90,8 @@ class OpenAiRequest extends Model
             ];
         }
 
-        return [
+
+        $payload = [
             'model' => $this->model,
             'input' => [
                 [
@@ -90,5 +100,16 @@ class OpenAiRequest extends Model
                 ],
             ],
         ];
+
+        if ($this->isReasoningModel()) {
+            $payload['reasoning']['effort'] = $this->reasoningEffort;
+        }
+
+        return $payload;
+    }
+
+    private function isReasoningModel(): bool
+    {
+        return str_starts_with($this->model, 'gpt-5') || str_starts_with($this->model, 'o');
     }
 }

@@ -132,6 +132,25 @@
         value: settings.openAiImageInputDetailLevel,
         errors: settings.getErrors('openAiImageInputDetailLevel')
     }) }}
+
+    {{ forms.selectizeField({
+        label: 'OpenAI Reasoning Effort'|t('aialttext'),
+        id: 'openAiReasoningEffort',
+        name: 'openAiReasoningEffort',
+        instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage."|t("aialttext"),
+        options: [
+            { label: 'None', value: 'none' },
+            { label: 'Minimal', value: 'minimal' },
+            { label: 'Low', value: 'low' },
+            { label: 'Medium', value: 'medium' },
+            { label: 'High', value: 'high' },
+            { label: 'Extra High', value: 'xhigh' }
+        ],
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        value: settings.openAiReasoningEffort,
+        errors: settings.getErrors('openAiReasoningEffort')
+    }) }}
 </div>
 
 

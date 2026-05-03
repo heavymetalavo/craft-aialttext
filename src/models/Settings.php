@@ -23,6 +23,7 @@ use craft\helpers\App;
  * @property string $anthropicApiKey The Anthropic API key
  * @property string $anthropicModel The Anthropic Model
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
+ * @property string $openAiReasoningEffort The reasoning effort level for OpenAI models
  */
 class Settings extends Model
 {
@@ -70,6 +71,13 @@ class Settings extends Model
      * - auto: let the model decide
      */
     public string $openAiImageInputDetailLevel = 'low';
+
+    /**
+     * @var string The reasoning effort level for OpenAI reasoning models
+     *
+     * Options: none, minimal, low, medium, high, xhigh
+     */
+    public string $openAiReasoningEffort = 'minimal';
 
     /**
      * @var bool Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
@@ -129,6 +137,16 @@ class Settings extends Model
                     $val = App::parseEnv($this->$attribute);
                     if (!in_array($val, ['low', 'high', 'original', 'auto', ''], true)) {
                         $this->addError($attribute, 'Invalid OpenAI Image Input Detail Level configured.');
+                    }
+                }
+            ],
+            ['openAiReasoningEffort', 'string'],
+            [
+                ['openAiReasoningEffort'],
+                function($attribute) {
+                    $val = App::parseEnv($this->$attribute);
+                    if (!in_array($val, ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], true)) {
+                        $this->addError($attribute, 'Invalid OpenAI Reasoning Effort configured.');
                     }
                 }
             ],

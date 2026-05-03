@@ -1,7 +1,10 @@
 # Release Notes for AI Alt Text
 
-## UNRELEASED
+## UNRELEASESD
 
+- Adding new settings field for managing OpenAI reasoning model effort value
+- Updating OpenAI API request payload to include reasoning effort value (where reasoning model is used, e.g. `gpt-5*` or `o*`)
+- Updating info level logs to debug level to reduce logging noise
 - Added a new `processSvgs` setting which now serves as the primary control for whether SVG assets are processed by the plugin. This logic is now decoupled from Craft's global `transformSvgs` setting.
 - Updated error handling to gracefully skip SVGs when `processSvgs` is `false` and complete queue jobs successfully instead of throwing exceptions.
 
