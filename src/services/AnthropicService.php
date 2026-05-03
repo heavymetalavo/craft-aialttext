@@ -93,7 +93,7 @@ class AnthropicService extends ApiService
     {
         try {
             // Log the request intent for debugging
-            Craft::info('Anthropic API request initiated for asset: ' . $asset->filename . ' with image URL: ' . $imageUrl, __METHOD__);
+            Craft::debug('Anthropic API request initiated for asset: ' . $asset->filename . ' with image URL: ' . $imageUrl, __METHOD__);
 
             $promptTemplate = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 

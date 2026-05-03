@@ -180,7 +180,7 @@ class AiAltTextService extends Component
             throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
         }
 
-        Craft::info('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
+        Craft::debug('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
         return $altText;
     }
 

@@ -112,7 +112,7 @@ class GenerateController extends Controller
             // Now process each site's assets
             foreach ($sites as $site) {
                 // Process each site
-                Craft::info('Processing assets for site: ' . $site->name . ' (ID: ' . $site->id . ')', __METHOD__);
+                Craft::debug('Processing assets for site: ' . $site->name . ' (ID: ' . $site->id . ')', __METHOD__);
                 
                 // Find all image assets without alt text for this site
                 // Process in batches to avoid memory issues
@@ -137,18 +137,18 @@ class GenerateController extends Controller
                         continue;
                     }
                     
-                    Craft::info("Processing batch of {$batchSize} assets for site {$site->name} (offset: {$offset})", __METHOD__);
+                    Craft::debug("Processing batch of {$batchSize} assets for site {$site->name} (offset: {$offset})", __METHOD__);
                     
                     foreach ($assets as $asset) {
                         // Double-check that the asset doesn't have alt text (just in case)
                         if (!empty($asset->alt)) {
-                            Craft::info('Skipping asset ' . $asset->id . ' because it already has alt text: ' . $asset->alt, __METHOD__);
+                            Craft::debug('Skipping asset ' . $asset->id . ' because it already has alt text: ' . $asset->alt, __METHOD__);
                             continue;
                         }
                         
                         try {
                             // Log which asset we're queuing
-                            Craft::info('Queuing alt text generation for asset: ' . $asset->id . ' (' . $asset->filename . ') in site ' . $site->name, __METHOD__);
+                            Craft::debug('Queuing alt text generation for asset: ' . $asset->id . ' (' . $asset->filename . ') in site ' . $site->name, __METHOD__);
                             
                             // Create a job for the asset
                             $plugin->aiAltTextService->createJob($asset, false, $site->id, false, true, true);
@@ -247,7 +247,7 @@ class GenerateController extends Controller
             // Now process each site's assets
             foreach ($sites as $site) {
                 // Process each site
-                Craft::info('Processing all assets for site: ' . $site->name . ' (ID: ' . $site->id . ')', __METHOD__);
+                Craft::debug('Processing all assets for site: ' . $site->name . ' (ID: ' . $site->id . ')', __METHOD__);
                 
                 // Find all image assets for this site
                 // Process in batches to avoid memory issues
@@ -271,12 +271,12 @@ class GenerateController extends Controller
                         continue;
                     }
                     
-                    Craft::info("Processing batch of {$batchSize} assets for site {$site->name} (offset: {$offset})", __METHOD__);
+                    Craft::debug("Processing batch of {$batchSize} assets for site {$site->name} (offset: {$offset})", __METHOD__);
                     
                     foreach ($assets as $asset) {
                         try {
                             // Log which asset we're queuing
-                            Craft::info('Queuing alt text generation for asset: ' . $asset->id . ' (' . $asset->filename . ') in site ' . $site->name, __METHOD__);
+                            Craft::debug('Queuing alt text generation for asset: ' . $asset->id . ' (' . $asset->filename . ') in site ' . $site->name, __METHOD__);
                             
                             // Set force regeneration to true to regenerate all assets
                             $plugin->aiAltTextService->createJob($asset, false, $site->id, false, true, true);
