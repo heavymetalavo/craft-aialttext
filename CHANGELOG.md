@@ -1,5 +1,11 @@
 # Release Notes for AI Alt Text
 
+## UNRELEASESD
+
+- Adding new settings field for managing OpenAI reasoning model effort value
+- Updating OpenAI API request payload to include reasoning effort value (where reasoning model is used, e.g. `gpt-5*` or `o*`)
+- Updating info level logs to debug level to reduce logging noise
+
 ## 1.7.1 - 2026-03-25
 
 - Adding a fallback for OpenAI and Anthropic when the image URL is reachable from Craft but unreachable from the provider: a fallback attempt sends the image as base64 instead for round 2 🥊

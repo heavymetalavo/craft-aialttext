@@ -70,7 +70,7 @@ abstract class ApiService extends Component
     /**
      * Checks if a URL is accessible remotely.
      *
-     * @param string $url The URL to check (already resolved for HTTP if needed)
+     * @param string $url The URL to check
      * @return bool Whether the URL is accessible
      */
     protected function isUrlAccessible(string $url): bool
@@ -277,7 +277,7 @@ abstract class ApiService extends Component
         
         // If the file exceeds the provider's max payload and no other transform has been set, reduce quality
         if (empty($transformParams) && $asset->size > $maxFileSizeMb * 1024 * 1024) {
-            Craft::info("{$asset->filename} is larger than {$maxFileSizeMb}MB, setting transform quality to 75", __METHOD__);
+            Craft::debug("{$asset->filename} is larger than {$maxFileSizeMb}MB, setting transform quality to 75", __METHOD__);
             $transformParams['quality'] = 75;
         }
         
