@@ -230,7 +230,8 @@ class OpenAiService extends ApiService
         $request = new OpenAiRequest();
         $request->model = $this->model;
         $request->setPrompt($prompt)
-            ->setImageUrl($imageUrl);
+            ->setImageUrl($imageUrl)
+            ->setReasoningEffort((string) App::parseEnv($plugin->getSettings()->openAiReasoningEffort));
             
         // Only set detail if the image is large enough
         if ($detail !== null) {

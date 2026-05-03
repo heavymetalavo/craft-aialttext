@@ -18,10 +18,17 @@ class OpenAiRequest extends Model
     private string $prompt = '';
     private string $imageUrl = '';
     private string $detail = 'low';
+    private string $reasoningEffort = 'minimal';
 
     public function getDetail(): string
     {
         return $this->detail;
+    }
+
+    public function setReasoningEffort(string $reasoningEffort): self
+    {
+        $this->reasoningEffort = $reasoningEffort;
+        return $this;
     }
 
     public function setPrompt(string $prompt): self
@@ -95,7 +102,7 @@ class OpenAiRequest extends Model
         ];
 
         if ($this->isReasoningModel()) {
-            $payload['reasoning']['effort'] = 'minimal';
+            $payload['reasoning']['effort'] = $this->reasoningEffort;
         }
 
         return $payload;
