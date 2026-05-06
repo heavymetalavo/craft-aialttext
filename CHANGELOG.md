@@ -1,5 +1,9 @@
 # Release Notes for AI Alt Text
 
+## UNRELEASED
+- Fixed a bug where processing SVGs is now consistently enforced regardless of how alt text generation is triggered (upload event, bulk action, element action menu, or console command).
+- Fixed a bug where SVG assets that are not publicly accessible to an AI provider and are sent in a fallback request as base64 could send the original SVG file contents instead of a rasterised version.
+
 ## 1.8.0 - 2026-05-04
 
 - Adding new settings field for managing OpenAI reasoning model effort value

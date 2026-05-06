@@ -98,7 +98,7 @@ abstract class ApiService extends Component
      */
     protected function validateImageSupport(Asset $asset, bool $allowSvgs = false): bool
     {
-        $mimeType = strtolower($asset->getMimeType());
+        $mimeType = $asset->getMimeType();
 
         if ($mimeType === 'image/svg+xml') {
             if (!AiAltText::getInstance()->getSettings()->processSvgs) {
@@ -127,7 +127,7 @@ abstract class ApiService extends Component
      */
     protected function isAnimatedGif(Asset $asset): bool
     {
-        $mimeType = strtolower($asset->getMimeType());
+        $mimeType = $asset->getMimeType();
         if ($mimeType !== 'image/gif') {
             return false;
         }
@@ -144,7 +144,7 @@ abstract class ApiService extends Component
      */
     protected function isAcceptedMimeType(string $mimeType): bool
     {
-        return in_array(strtolower($mimeType), self::ACCEPTED_MIME_TYPES);
+        return in_array($mimeType, self::ACCEPTED_MIME_TYPES);
     }
 
     /**
@@ -159,43 +159,40 @@ abstract class ApiService extends Component
     }
 
     /**
-     * Downloads an asset or transform URL via Guzzle and returns its base64 encoded string.
-     * Falls back to returning the original asset contents as base64 if the URL cannot be fetched.
+     * Downloads the asset's (possibly transformed) URL via Guzzle and returns its base64 encoded string.
+     * Falls back to the original asset file contents if the URL cannot be fetched.
+     *
+     * Note: passes null (not []) to getUrl() when $transformParams is empty so that any transform
+     * previously applied via setTransform() is respected. Passing [] would clear the active transform
+     * and return the original file URL instead.
      *
      * @param Asset $asset The original asset
-     * @param string|null $imageUrl The target URL (often a temporary transformed URL)
-     * @param array $transformParams The params applied, used for log context
+     * @param array $transformParams Transform params to pass to getUrl(), or empty to use active transform
      * @return string The base64 encoded data
      */
-    protected function getAssetBase64String(Asset $asset, ?string $imageUrl, array $transformParams = []): string
+    protected function getAssetBase64String(Asset $asset, array $transformParams = []): string
     {
-        // Always try to fetch the transformed or public URL using Guzzle to get the resized contents
+        $imageUrl = $asset->getUrl(!empty($transformParams) ? $transformParams : null, true);
+
         if (!empty($imageUrl)) {
             $imageUrl = $this->resolveAssetUrl($asset, $imageUrl);
             try {
                 $response = $this->client->get($imageUrl);
                 if ($response->getStatusCode() === 200) {
-                    $assetContents = (string)$response->getBody();
-                    return base64_encode($assetContents);
+                    return base64_encode((string)$response->getBody());
                 }
             } catch (Exception|GuzzleException $e) {
                 Craft::warning('Failed to download image URL for Base64 conversion: ' . $e->getMessage(), __METHOD__);
             }
         }
-        
+
         if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            Craft::warning('No image URL or asset contents found, falling back to original asset contents', __METHOD__);
             if ($this->needsFormatConversion($asset)) {
-                $assetMimeType = strtolower($asset->getMimeType());
+                $assetMimeType = $asset->getMimeType();
                 // See https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148
                 Craft::warning("Asset {$asset->filename} has no URL and an unsupported MIME type \"$assetMimeType\". A transform is required but retrieving the file contents for a transform is unsupported. Continuing with source asset file contents for base64 encoding just incase it is accepted...", __METHOD__);
             }
-            
-            if (!empty($transformParams)) {
-                Craft::warning("Asset {$asset->filename} has no URL and requires a transform, but retrieving the file contents for a transform is unsupported. Continuing with source asset file contents for base64 encoding just incase it is accepted...", __METHOD__);
-            }
         } else {
-            // URL existed but Guzzle still failed to download it for encoding
             Craft::warning("API Request: Download failed for image {$asset->filename}. Using original, un-scaled asset file contents for base64 encoding.", __METHOD__);
         }
 
@@ -215,12 +212,12 @@ abstract class ApiService extends Component
      */
     protected function getVisionTransformParams(Asset $asset, ?int $maxLongEdge = null, int $maxFileSizeMb = 20, ?int $maxPatches = null, ?int $maxTokens = null): array
     {
-        $assetMimeType = strtolower($asset->getMimeType());
+        $isSvg = AiAltText::getInstance()->aiAltTextService->isSvg($asset);
         
         // Set up transform parameters
         $transformParams = [];
         
-        // decide if we need to transform the image to become a jpeg
+        // Decide if we need to convert the image to a different format
         $needsFormatConversion = $this->needsFormatConversion($asset);
         
         // Always convert format if needed, regardless of dimensions
@@ -229,7 +226,7 @@ abstract class ApiService extends Component
             $transformParams['format'] = 'jpg';
             
             // check the image is a svg and fallback to transform to a png for transparency support
-            if ($assetMimeType === 'image/svg+xml') {
+            if ($isSvg) {
                 // @todo use webp and fallback to png for transparent images where webp is not supported
                 $transformParams['format'] = 'png';
             }
@@ -301,4 +298,5 @@ abstract class ApiService extends Component
 
         return $transformParams;
     }
+
 }

@@ -108,19 +108,15 @@ class AiAltText extends Plugin
                 $asset = $event->sender;
 
                 // Only process new assets that are images and if the setting is enabled
-                $isSvg = strtolower($asset->getMimeType()) === 'image/svg+xml';
-                $processSvgs = $this->getSettings()->processSvgs;
-
                 if (
                     $event->isNew
                     && $asset->kind === Asset::KIND_IMAGE
                     && $this->getSettings()->generateForNewAssets
-                    && (!$isSvg || $processSvgs)
                 ) {
                     // Save current site ID
                     $currentSite = Cp::requestedSite();
                     // Pass current site ID to create a job
-                    AiAltText::getInstance()->aiAltTextService->createJob($asset, false, $currentSite->id);
+                    $this->aiAltTextService->createJob($asset, false, $currentSite->id);
                 }
             }
         );

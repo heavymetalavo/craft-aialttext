@@ -79,6 +79,12 @@ class AiAltTextService extends Component
             return;
         }
 
+        // Skip SVG assets if SVG processing is disabled
+        if ($this->isSvg($asset) && !AiAltText::getInstance()->getSettings()->processSvgs) {
+            Craft::debug("Skipping alt text generation for SVG asset {$asset->id} because SVG processing is disabled.", __METHOD__);
+            return;
+        }
+
         // Get the $saveTranslatedResultsToEachSite setting value
         $saveTranslatedResultsToEachSite = $skipSaveTranslatedResultsToEachSiteSetting ? false : AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
 
@@ -152,6 +158,7 @@ class AiAltTextService extends Component
         }
         
         $plugin = AiAltText::getInstance();
+
         $provider = App::parseEnv($plugin->getSettings()->aiProvider);
 
         if ($provider === 'anthropic') {
@@ -183,6 +190,17 @@ class AiAltTextService extends Component
 
         Craft::info('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
         return $altText;
+    }
+
+    /**
+     * Determines if an asset is an SVG file.
+     *
+     * @param Asset $asset
+     * @return bool
+     */
+    public function isSvg(Asset $asset): bool
+    {
+        return $asset->getMimeType() === 'image/svg+xml';
     }
 
     /**

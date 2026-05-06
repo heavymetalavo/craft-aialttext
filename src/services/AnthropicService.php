@@ -57,11 +57,11 @@ class AnthropicService extends ApiService
             $asset->setTransform($transformParams);
         }
 
-        // Output mime-type
-        $transformMimeType = $asset->getMimeType($transformParams);
+        // After setTransform(), getMimeType() reflects the output format of the transform
+        $mimeType = $asset->getMimeType();
         
-        if (!$this->isAcceptedMimeType($transformMimeType)) {
-            throw new Exception("Asset transform produced unsupported MIME type: $transformMimeType. Supported formats are: " . implode(', ', self::ACCEPTED_MIME_TYPES));
+        if (!$this->isAcceptedMimeType($mimeType)) {
+            throw new Exception("Asset transform produced unsupported MIME type: $mimeType. Supported formats are: " . implode(', ', self::ACCEPTED_MIME_TYPES));
         }
         
         $imageUrl = $asset->getUrl($transformParams, true);
@@ -80,16 +80,16 @@ class AnthropicService extends ApiService
 
         // If no public URL is available, or URL is not accessible locally, or base64 is forced
         if ($this->forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            $base64Image = $this->getAssetBase64String($asset, $imageUrl, $transformParams);
+            $base64Image = $this->getAssetBase64String($asset, $transformParams);
             $imageSource = [
                 'type' => 'base64',
-                'media_type' => $transformMimeType,
+                'media_type' => $mimeType,
                 'data' => $base64Image,
             ];
             $imageUrl = null; // Clear URL so it's not sent in the payload
         }
 
-        return $this->sendRequest($imageUrl, $imageSource, $transformMimeType, $asset, $siteId);
+        return $this->sendRequest($imageUrl, $imageSource, $mimeType, $asset, $siteId);
     }
 
     /**

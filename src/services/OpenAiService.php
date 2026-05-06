@@ -174,11 +174,11 @@ class OpenAiService extends ApiService
             $asset->setTransform($transformParams);
         }
 
-        // Check mime type of the transform:
-        $transformMimeType = $asset->getMimeType($transformParams);
+        // After setTransform(), getMimeType() reflects the output format of the transform
+        $mimeType = $asset->getMimeType();
         
-        if (!$this->isAcceptedMimeType($transformMimeType)) {
-            throw new Exception("Asset transform produced unsupported MIME type: $transformMimeType. Supported formats are: " . implode(', ', self::ACCEPTED_MIME_TYPES));
+        if (!$this->isAcceptedMimeType($mimeType)) {
+            throw new Exception("Asset transform produced unsupported MIME type: $mimeType. Supported formats are: " . implode(', ', self::ACCEPTED_MIME_TYPES));
         }
         
         // Make sure that we do not get a "generate transform" url, but a real url with true
@@ -196,8 +196,8 @@ class OpenAiService extends ApiService
 
         // If no public URL is available, or URL is not accessible locally, or base64 is forced
         if ($this->forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            $base64Image = $this->getAssetBase64String($asset, $imageUrl, $transformParams);
-            $imageUrl = "data:$transformMimeType;base64,$base64Image"; // Replace URL with data string
+            $base64Image = $this->getAssetBase64String($asset, $transformParams);
+            $imageUrl = "data:$mimeType;base64,$base64Image"; // Replace URL with data string
         }
 
         // Only set detail parameter for images larger than 512x512 pixels
