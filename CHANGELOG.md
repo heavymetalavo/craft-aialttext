@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## UNRELEASED
+## 1.8.1 - 2026-05-06
 - Fixed a bug where processing SVGs is now consistently enforced regardless of how alt text generation is triggered (upload event, bulk action, element action menu, or console command).
 - Fixed a bug where SVG assets that are not publicly accessible to an AI provider and are sent in a fallback request as base64 could send the original SVG file contents instead of a rasterised version.
 
