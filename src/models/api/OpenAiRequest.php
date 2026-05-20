@@ -2,16 +2,14 @@
 
 namespace heavymetalavo\craftaialttext\models\api;
 
-use craft\base\Model;
-use craft\helpers\Json;
-use Craft;
+use CraftCms\Cms\Component\Component;
 
 /**
  * OpenAI Request Model
  *
  * Represents a request to the OpenAI Responses API for vision analysis.
  */
-class OpenAiRequest extends Model
+class OpenAiRequest extends Component
 {
     public string $model = '';
 
@@ -52,24 +50,22 @@ class OpenAiRequest extends Model
     /**
      * @inheritdoc
      */
-    public function defineRules(): array
+    public function getRules(): array
     {
-        return [
-            ['model', 'required'],
-            ['model', 'string'],
-            ['model', 'validateDetail'],
-        ];
+        return array_merge(parent::getRules(), [
+            'model' => ['required', 'string'],
+        ]);
     }
 
     public function validateDetail(): void
     {
         if (!in_array($this->detail, ['low', 'high', 'original', 'auto'])) {
-            $this->addError('detail', 'Detail must be one of: low, high, original, auto');
+            $this->errors()->add('detail', 'Detail must be one of: low, high, original, auto');
         }
     }
 
     /**
-     * @inheritdoc
+     * Build the JSON payload for the OpenAI Responses API.
      */
     public function toArray(array $fields = [], array $expand = [], $recursive = true): array
     {
@@ -89,7 +85,6 @@ class OpenAiRequest extends Model
                 'detail' => $this->detail,
             ];
         }
-
 
         $payload = [
             'model' => $this->model,

@@ -2,15 +2,18 @@
 
 namespace heavymetalavo\craftaialttext\services;
 
-use Craft;
-use craft\base\Component;
-use craft\elements\Asset;
-use craft\enums\MenuItemType;
-use craft\events\DefineMenuItemsEvent;
-use craft\helpers\App;
+use CraftCms\Cms\Asset\Elements\Asset;
+use CraftCms\Cms\Asset\Enums\FileKind;
+use CraftCms\Cms\Element\Enums\MenuItemType;
+use CraftCms\Cms\Element\Events\ElementActionMenuItemsResolving;
+use CraftCms\Cms\Support\Facades\{Elements, HtmlStack, InputNamespace, Sites};
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
+use Illuminate\Container\Attributes\Singleton;
+use Illuminate\Support\Facades\Log;
+
+use function CraftCms\Cms\t;
 
 /**
  * AI Alt Text Service
@@ -18,132 +21,90 @@ use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
  * Main service class for generating alt text using AI.
  * This service coordinates between the provider services and Craft CMS assets.
  */
-class AiAltTextService extends Component
+#[Singleton]
+class AiAltTextService
 {
-
     /**
-     * Creates a job for the given element
+     * Creates a queued job for the given asset.
      *
      * @param Asset $asset The asset to create a job for
-     * @param bool $saveCurrentSiteOffQueue Whether to process the current site off queue
-     * @param int|null $currentSiteId The current site ID
-     * @param bool $skipExistingJobCheck Whether to skip the check for existing jobs (useful for bulk operations)
+     * @param bool $saveCurrentSiteOffQueue Whether to process the current site synchronously before queuing
+     * @param int|null $currentSiteId The site ID to target
+     * @param bool $skipExistingJobCheck Unused — duplicate prevention is handled by WithoutOverlapping in the job
      * @param bool $forceRegeneration Whether to force regeneration even if alt text exists
+     * @param bool $skipSaveTranslatedResultsToEachSiteSetting Skip the multi-site translation setting
      * @throws Exception
      */
     public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $forceRegeneration = false, $skipSaveTranslatedResultsToEachSiteSetting = false): void
     {
-        $queue = Craft::$app->getQueue();
-
         $assetSiteId = $currentSiteId ?? $asset->siteId;
 
-        // Check if there's already a job for this element
-        if (!$skipExistingJobCheck) {
-            $existingJobs = $queue->getJobInfo();
-            $hasExistingJob = false;
-            foreach ($existingJobs as $job) {
-                // Only skip if both asset ID AND site ID match an existing job
-                if (isset($job['description'])
-                    && str_contains($job['description'], "ID: $asset->id")
-                    && str_contains($job['description'], "Site: $assetSiteId")
-                    && $job['status'] !== 4) {
-                    $hasExistingJob = true;
-                    break;
-                }
-            }
-
-            $hasPlusOneSite = count(Craft::$app->getSites()->getAllSites()) > 1;
-
-            if ($hasExistingJob) {
-                $message = Craft::t('ai-alt-text', "$asset->filename (ID: $asset->id" . ($hasPlusOneSite ? ", Site: $assetSiteId" : "") . ") is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again.");
-                
-                // Only use session in web context
-                if (Craft::$app->getRequest()->getIsConsoleRequest()) {
-                    Craft::info($message, __METHOD__);
-                } else {
-                    Craft::$app->getSession()->setNotice($message);
-                }
-                return;
-            }
-        }
-
-        if ($asset->kind !== Asset::KIND_IMAGE) {
-            $message = Craft::t('ai-alt-text', "$asset->filename (ID: $asset->id) is not an image");
-            
-            // Only use session in web context
-            if (Craft::$app->getRequest()->getIsConsoleRequest()) {
-                Craft::info($message, __METHOD__);
+        if ($asset->kind !== FileKind::Image->value) {
+            $message = t('{filename} (ID: {id}) is not an image', ['filename' => $asset->filename, 'id' => $asset->id], 'ai-alt-text');
+            if (app()->runningInConsole()) {
+                Log::info($message);
             } else {
-                Craft::$app->getSession()->setNotice($message);
+                session()->flash('cp-notification-notice', [$message, ['icon' => 'info', 'iconLabel' => t('Notice')]]);
             }
             return;
         }
 
         // Skip SVG assets if SVG processing is disabled
-        if ($this->isSvg($asset) && !AiAltText::getInstance()->getSettings()->processSvgs) {
-            Craft::debug("Skipping alt text generation for SVG asset {$asset->id} because SVG processing is disabled.", __METHOD__);
+        if ($this->isSvg($asset) && !AiAltText::settings()->processSvgs) {
+            Log::debug("Skipping alt text generation for SVG asset {$asset->id} because SVG processing is disabled.");
             return;
         }
 
-        // Get the $saveTranslatedResultsToEachSite setting value
-        $saveTranslatedResultsToEachSite = $skipSaveTranslatedResultsToEachSiteSetting ? false : AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
+        $saveTranslatedResultsToEachSite = $skipSaveTranslatedResultsToEachSiteSetting
+            ? false
+            : AiAltText::settings()->saveTranslatedResultsToEachSite;
 
-        // Check if we need to save the current site off queue
         if ($saveCurrentSiteOffQueue) {
             $this->generateAltText($asset, $assetSiteId, $forceRegeneration);
-    
+
             if (!$saveTranslatedResultsToEachSite) {
                 return;
             }
         }
 
-        $sites = Craft::$app->getSites()->getAllSites();
-        $hasPlusOneSite = count($sites) > 1;
+        $sites = Sites::getAllSites();
+        $hasPlusOneSite = $sites->count() > 1;
 
-        // Save the current site on queue
-        $queue->push(new GenerateAiAltTextJob([
-            'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
+        dispatch(new GenerateAiAltTextJob(
+            assetId: $asset->id,
+            siteId: $assetSiteId,
+            forceRegeneration: $forceRegeneration,
+            description: t('Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
                 'filename' => $asset->filename,
                 'id' => $asset->id,
                 'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $assetSiteId" : "",
-            ]),
-            'assetId' => $asset->id,
-            'siteId' => $assetSiteId,
-            'forceRegeneration' => $forceRegeneration,
-        ]));
+            ], 'ai-alt-text'),
+        ));
 
-        // return early if we're not saving translated results to each site
         if (!$saveTranslatedResultsToEachSite) {
             return;
         }
 
-        // If we're saving results to each site and translated results for each site, we need to queue a job for each site
         foreach ($sites as $site) {
-            // Skip the current site
             if ($saveCurrentSiteOffQueue && $site->id === $assetSiteId) {
                 continue;
             }
 
-            $queue->push(new GenerateAiAltTextJob([
-                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
+            dispatch(new GenerateAiAltTextJob(
+                assetId: $asset->id,
+                siteId: $site->id,
+                forceRegeneration: $forceRegeneration,
+                description: t('Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
                     'filename' => $asset->filename,
                     'id' => $asset->id,
-                    'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $site->id" : "",
-                ]),
-                'assetId' => $asset->id,
-                'siteId' => $site->id,
-                'forceRegeneration' => $forceRegeneration,
-            ]));
+                    'siteMessageSuffix' => $hasPlusOneSite ? ", Site: {$site->id}" : "",
+                ], 'ai-alt-text'),
+            ));
         }
     }
 
     /**
-     * Generates alt text for an asset using AI.
-     *
-     * This method:
-     * - Validates the asset
-     * - Generates alt text using the OpenAI service
-     * - Returns the generated alt text
+     * Generates alt text for an asset using AI, then saves it to the asset.
      *
      * @param Asset $asset The asset to generate alt text for
      * @param int|null $siteId The site ID
@@ -153,50 +114,45 @@ class AiAltTextService extends Component
      */
     public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceRegeneration = false): string
     {
-        if ($asset->kind !== Asset::KIND_IMAGE) {
+        if ($asset->kind !== FileKind::Image->value) {
             throw new Exception('Asset must be an image');
         }
-        
-        $plugin = AiAltText::getInstance();
 
-        $provider = App::parseEnv($plugin->getSettings()->aiProvider);
+        $provider = \CraftCms\Cms\Support\Env::parse(AiAltText::settings()->aiProvider);
 
         if ($provider === 'anthropic') {
-            $altText = $plugin->anthropicService->generateAltText($asset, $siteId);
+            $altText = app(AnthropicService::class)->generateAltText($asset, $siteId);
         } else {
-            $altText = $plugin->openAiService->generateAltText($asset, $siteId);
+            $altText = app(OpenAiService::class)->generateAltText($asset, $siteId);
         }
 
         if (empty($altText)) {
             throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
         }
 
-        $propagate = (bool) $plugin->getSettings()->propagate;
+        $propagate = (bool) AiAltText::settings()->propagate;
 
-        // Bug Workaround: Pre-save blank alt text to prevent propagation across sites where setting is false.
+        // Bug workaround: pre-save blank alt text to prevent propagation across sites when setting is false
         if (!$propagate) {
             $asset->alt = '';
-            Craft::debug("Performing preliminary save for asset {$asset->id} to establish site rows before setting alt text.", __METHOD__);
-            Craft::$app->elements->saveElement($asset, true, false);
+            Log::debug("Performing preliminary save for asset {$asset->id} to establish site rows before setting alt text.");
+            Elements::saveElement($asset, true, false);
         }
 
         $asset->alt = $altText;
-        
-        Craft::info("Saving AI alt text for asset {$asset->id} with propagate=" . ($propagate ? 'true' : 'false'), __METHOD__);
-        
-        if (!Craft::$app->elements->saveElement($asset, true, $propagate)) {
+
+        Log::info("Saving AI alt text for asset {$asset->id} with propagate=" . ($propagate ? 'true' : 'false'));
+
+        if (!Elements::saveElement($asset, true, $propagate)) {
             throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
         }
 
-        Craft::info('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
+        Log::info('Successfully saved alt text for asset: ' . $asset->filename);
         return $altText;
     }
 
     /**
      * Determines if an asset is an SVG file.
-     *
-     * @param Asset $asset
-     * @return bool
      */
     public function isSvg(Asset $asset): bool
     {
@@ -204,37 +160,29 @@ class AiAltTextService extends Component
     }
 
     /**
-     * Handles the definition of action menu items for assets.
-     *
-     * This method adds a "Generate AI Alt Text" action to the dropdown menu
-     * for image assets.
-     *
-     * @param DefineMenuItemsEvent $event The event containing the menu items
+     * Adds a "Generate AI Alt Text" button to the per-asset action dropdown menu.
      */
-    public function handleAssetActionMenuItems(DefineMenuItemsEvent $event): void
+    public function handleAssetActionMenuItems(ElementActionMenuItemsResolving $event): void
     {
-        /** @var Asset $asset */
-        $asset = $event->sender;
-        $view = Craft::$app->getView();
+        $asset = $event->element;
 
-        // Check if this is an image asset
-        if ($asset->kind === 'image') {
-            // Add the "Generate AI Alt Text" action to the dropdown
-            $customActionId = sprintf('action-generate-ai-alt-%s', mt_rand());
-            $event->items[] = [
-                'type' => MenuItemType::Button,
-                'id' => $customActionId,
-                'icon' => 'language', // Use a relevant icon
-                'label' => Craft::t('ai-alt-text', 'Generate AI Alt Text'),
-            ];
+        if (!$asset instanceof Asset || $asset->kind !== 'image') {
+            return;
+        }
 
-            // Register the JavaScript for the action
-            $view->registerJsWithVars(fn($id, $assetId, $siteId) => <<<JS
+        $customActionId = sprintf('action-generate-ai-alt-%s', mt_rand());
+
+        $event->items[] = [
+            'type' => MenuItemType::Button,
+            'id' => $customActionId,
+            'icon' => 'language',
+            'label' => t('Generate AI Alt Text', category: 'ai-alt-text'),
+        ];
+
+        HtmlStack::jsWithVars(fn ($id, $assetId, $siteId) => <<<JS
 $('#' + $id).on('activate', () => {
-  // Show a loading spinner in the UI
   Craft.cp.displayNotice(Craft.t('ai-alt-text', 'Queueing AI alt text generation...'));
-  
-  // Make an AJAX request to your controller action
+
   Craft.sendActionRequest('POST', 'ai-alt-text/generate/single-asset', {
     data: {
       assetId: $assetId,
@@ -243,17 +191,13 @@ $('#' + $id).on('activate', () => {
   })
   .then((response) => {
     if (response.data.success) {
-        Craft.cp.displayNotice(Craft.t('ai-alt-text', response.data.message));
-      
-      // Refresh the elements in the current view if possible
+      Craft.cp.displayNotice(Craft.t('ai-alt-text', response.data.message));
+
       if (Craft.cp.elementIndex) {
         Craft.cp.elementIndex.updateElements();
         return;
-      } 
-      
-      // @todo find a way to update the visible content in the element editor
+      }
 
-      // Refresh the single asset page, check if current url contains "assets/edit"
       if (window.location.href.includes("assets/edit")) {
         window.location.reload();
       }
@@ -263,16 +207,14 @@ $('#' + $id).on('activate', () => {
   })
   .catch((error) => {
     console.log('catch', JSON.stringify(error));
-    Craft.cp.displayError(Craft.t('ai-alt-text', 'Failed to queue alt text generation: ') + 
+    Craft.cp.displayError(Craft.t('ai-alt-text', 'Failed to queue alt text generation: ') +
       (error?.message || 'Unknown error'));
   });
 });
 JS, [
-                $view->namespaceInputId($customActionId),
-                $asset->id,
-                $asset->siteId,
-            ]);
-        }
+            InputNamespace::namespaceId($customActionId),
+            $asset->id,
+            $asset->siteId,
+        ]);
     }
-
 }

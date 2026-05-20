@@ -2,20 +2,23 @@
 
 namespace heavymetalavo\craftaialttext\services;
 
-use Craft;
-use craft\base\Component;
-use craft\elements\Asset;
-use craft\helpers\{App, Json};
+use CraftCms\Cms\Asset\Elements\Asset;
+use CraftCms\Cms\Support\Env;
+use CraftCms\Cms\Support\Facades\Sites;
+use CraftCms\Cms\Support\Json;
 use Exception;
 use GuzzleHttp\Exception\RequestException;
-use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\api\{AnthropicRequest, AnthropicResponse};
+use Illuminate\Container\Attributes\Singleton;
+use heavymetalavo\craftaialttext\AiAltText;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Anthropic API Service
  *
  * Handles API interactions with the Anthropic Messages API to generate alt text.
  */
+#[Singleton]
 class AnthropicService extends ApiService
 {
     private string $apiKey;
@@ -27,14 +30,15 @@ class AnthropicService extends ApiService
     public function __construct()
     {
         parent::__construct();
-        $plugin = AiAltText::getInstance();
-        $this->apiKey = App::parseEnv($plugin->getSettings()->anthropicApiKey);
-        $this->model = App::parseEnv($plugin->getSettings()->anthropicModel);
-        $this->detailLevel = $plugin->getSettings()->anthropicImageDetailLevel;
+        $settings = AiAltText::settings();
+        $this->apiKey = Env::parse($settings->anthropicApiKey);
+        $this->model = Env::parse($settings->anthropicModel);
+        $this->detailLevel = $settings->anthropicImageDetailLevel;
     }
 
     /**
-     * Generates alt text using the Anthropic Messages API
+     * Generates alt text using the Anthropic Messages API.
+     *
      * @throws Exception
      */
     public function generateAltText(Asset $asset, ?int $siteId = null): string
@@ -52,33 +56,30 @@ class AnthropicService extends ApiService
 
         // Anthropic Vision: max long edge based on detail level, max 5MB payload, max ~1600 tokens
         $transformParams = $this->getVisionTransformParams($asset, maxLongEdge: $targetDimension, maxFileSizeMb: 5, maxTokens: 1600);
-        
+
         if (!empty($transformParams)) {
             $asset->setTransform($transformParams);
         }
 
-        // After setTransform(), getMimeType() reflects the output format of the transform
         $mimeType = $asset->getMimeType();
-        
+
         if (!$this->isAcceptedMimeType($mimeType)) {
             throw new Exception("Asset transform produced unsupported MIME type: $mimeType. Supported formats are: " . implode(', ', self::ACCEPTED_MIME_TYPES));
         }
-        
+
         $imageUrl = $asset->getUrl($transformParams, true);
 
-        // If we have a URL, check if it's accessible remotely (resolve root-relative URLs to the site base; leave absolute URLs as-is)
         if (!empty($imageUrl)) {
             $imageUrl = $this->resolveAssetUrl($asset, $imageUrl);
-            
+
             if (!$this->forceBase64 && !$this->isUrlAccessible($imageUrl)) {
-                Craft::warning('Asset URL is not accessible locally: ' . $imageUrl, __METHOD__);
+                Log::warning('Asset URL is not accessible locally: ' . $imageUrl);
                 $this->forceBase64 = true;
             }
         }
 
         $imageSource = null;
 
-        // If no public URL is available, or URL is not accessible locally, or base64 is forced
         if ($this->forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
             $base64Image = $this->getAssetBase64String($asset, $transformParams);
             $imageSource = [
@@ -86,7 +87,7 @@ class AnthropicService extends ApiService
                 'media_type' => $mimeType,
                 'data' => $base64Image,
             ];
-            $imageUrl = null; // Clear URL so it's not sent in the payload
+            $imageUrl = null;
         }
 
         return $this->sendRequest($imageUrl, $imageSource, $mimeType, $asset, $siteId);
@@ -98,16 +99,15 @@ class AnthropicService extends ApiService
     private function sendRequest(?string $imageUrl, ?array $base64ImageSource, string $mimeType, Asset $asset, ?int $siteId): string
     {
         try {
-            // Log the request intent for debugging
-            Craft::info('Anthropic API request initiated for asset: ' . $asset->filename . ' with image URL: ' . $imageUrl, __METHOD__);
+            Log::info('Anthropic API request initiated for asset: ' . $asset->filename . ' with image URL: ' . $imageUrl);
 
-            $promptTemplate = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
+            $promptTemplate = Env::parse(AiAltText::settings()->prompt);
 
             $prompt = preg_replace_callback('/{asset\.(.*?)}/', function ($matches) use ($asset) {
                 return $asset->{$matches[1]};
             }, $promptTemplate);
 
-            $site = Craft::$app->getSites()->getSiteById($siteId);
+            $site = Sites::getSiteById($siteId);
             $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
                 return $site->{$matches[1]};
             }, $prompt);
@@ -122,10 +122,9 @@ class AnthropicService extends ApiService
             }
 
             if (!$requestModel->validate()) {
-                throw new Exception("Invalid Anthropic request: " . Json::encode($requestModel->getErrors()));
+                throw new Exception("Invalid Anthropic request: " . Json::encode($requestModel->errors()->toArray()));
             }
 
-            // Convert explicit request structure to array for the JSON payload
             $requestArray = $requestModel->toArray();
 
             $response = $this->client->post($this->baseUrl, [
@@ -138,28 +137,28 @@ class AnthropicService extends ApiService
             ]);
 
             $responseBody = (string)$response->getBody();
-            
+
             $responseModel = new AnthropicResponse();
             if (!$responseModel->parseResponse($responseBody)) {
                 throw new Exception("Anthropic API returned error: " . $responseModel->getErrorMessage());
             }
 
             return $responseModel->getText();
+
         } catch (RequestException $e) {
             $errorResponse = $e->hasResponse() ? (string)$e->getResponse()->getBody() : $e->getMessage();
-            Craft::error("Anthropic API Error: " . $errorResponse, __METHOD__);
-            
+            Log::error("Anthropic API Error: " . $errorResponse);
+
             $responseModel = new AnthropicResponse();
             if ($responseModel->parseResponse($errorResponse) && $responseModel->hasError()) {
                 throw new Exception("Anthropic API request failed parsed response: " . $responseModel->getErrorMessage());
             }
 
-            // Try a fallback where if we have accessed the image before but the provider cannot access it, we can try again with the base64 encoded contents
             $decodedErrorResponse = Json::decode($errorResponse);
-            if ($decodedErrorResponse['error']['type'] === 'invalid_request_error' && !$this->hasFallbackRan && !$base64ImageSource) {
+            if (isset($decodedErrorResponse['error']['type']) && $decodedErrorResponse['error']['type'] === 'invalid_request_error' && !$this->hasFallbackRan && !$base64ImageSource) {
                 $this->hasFallbackRan = true;
                 $this->forceBase64 = true;
-                Craft::warning('Can access the asset URL, but the provider could not, forcing base64 fallback', __METHOD__);
+                Log::warning('Can access the asset URL, but the provider could not, forcing base64 fallback');
                 return $this->generateAltText($asset, $siteId);
             }
 

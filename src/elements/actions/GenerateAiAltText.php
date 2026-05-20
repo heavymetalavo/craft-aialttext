@@ -2,12 +2,15 @@
 
 namespace heavymetalavo\craftaialttext\elements\actions;
 
-use Craft;
-use craft\base\ElementAction;
-use craft\elements\Asset;
-use craft\elements\db\ElementQueryInterface;
-use heavymetalavo\craftaialttext\AiAltText;
-use yii\base\InvalidConfigException;
+use CraftCms\Cms\Asset\Elements\Asset;
+use CraftCms\Cms\Element\Actions\ElementAction;
+use CraftCms\Cms\Element\Queries\Contracts\ElementQueryInterface;
+use CraftCms\Cms\Support\Facades\HtmlStack;
+use CraftCms\Cms\Support\Facades\InputNamespace;
+use heavymetalavo\craftaialttext\services\AiAltTextService;
+use Illuminate\Support\Facades\Auth;
+
+use function CraftCms\Cms\t;
 
 /**
  * Generate Alt Text element action
@@ -21,17 +24,17 @@ class GenerateAiAltText extends ElementAction
 
     public static function displayName(): string
     {
-        return Craft::t('ai-alt-text', 'Generate AI Alt Text');
+        return t('Generate AI Alt Text', category: 'ai-alt-text');
     }
 
     public function getTriggerLabel(): string
     {
-        return Craft::t('ai-alt-text', 'Generate AI Alt Text');
+        return t('Generate AI Alt Text', category: 'ai-alt-text');
     }
 
     public function getTriggerHtml(): ?string
     {
-        Craft::$app->getView()->registerJsWithVars(fn($type) => <<<JS
+        HtmlStack::jsWithVars(fn ($type) => <<<JS
             (() => {
                 new Craft.ElementActionTrigger({
                     type: $type,
@@ -53,10 +56,10 @@ class GenerateAiAltText extends ElementAction
 
     public function performAction(ElementQueryInterface $query): bool
     {
-        $user = Craft::$app->getUser()->getIdentity();
+        $user = Auth::user();
 
         if (!$user) {
-            throw new InvalidConfigException('User not logged in');
+            throw new \LogicException('User not logged in');
         }
 
         foreach ($query->all() as $asset) {
@@ -64,11 +67,8 @@ class GenerateAiAltText extends ElementAction
                 continue;
             }
 
-            // Set the current site id on asset
             $asset = Asset::find()->id($asset->id)->siteId($query->siteId)->one();
-
-            // Create a job for the asset
-            AiAltText::getInstance()->aiAltTextService->createJob($asset, true);
+            app(AiAltTextService::class)->createJob($asset, true);
         }
 
         return true;

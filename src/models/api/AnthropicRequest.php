@@ -2,14 +2,14 @@
 
 namespace heavymetalavo\craftaialttext\models\api;
 
-use craft\base\Model;
+use CraftCms\Cms\Component\Component;
 
 /**
  * Anthropic Request Model
  *
  * Represents a request to the Anthropic Messages API.
  */
-class AnthropicRequest extends Model
+class AnthropicRequest extends Component
 {
     public string $model = '';
     public int $maxTokens = 1024;
@@ -42,17 +42,16 @@ class AnthropicRequest extends Model
     /**
      * @inheritdoc
      */
-    public function defineRules(): array
+    public function getRules(): array
     {
-        return [
-            [['model', 'maxTokens'], 'required'],
-            ['model', 'string'],
-            ['maxTokens', 'integer'],
-        ];
+        return array_merge(parent::getRules(), [
+            'model' => ['required', 'string'],
+            'maxTokens' => ['required', 'integer'],
+        ]);
     }
 
     /**
-     * @inheritdoc
+     * Build the JSON payload for the Anthropic Messages API.
      */
     public function toArray(array $fields = [], array $expand = [], $recursive = true): array
     {

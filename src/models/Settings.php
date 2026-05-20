@@ -2,30 +2,27 @@
 
 namespace heavymetalavo\craftaialttext\models;
 
-use craft\base\Model;
-use craft\helpers\App;
+use CraftCms\Cms\Plugin\PluginSettings;
+use CraftCms\Cms\Support\Env;
 
 /**
  * Plugin Settings Model
  *
  * Defines the settings for the Ai Alt Text plugin.
- * This model handles the configuration options for OpenAI API integration
- * and alt text generation preferences.
  *
  * @property string $openAiApiKey The OpenAI API key
- * @property string $openAiModel The OpenAI model to use (e.g., 'gpt-4', 'gpt-4-vision-preview', 'gpt-4-mini')
+ * @property string $openAiModel The OpenAI model to use (must have vision capabilities)
  * @property string $prompt The prompt template for generating alt text
  * @property string $openAiImageInputDetailLevel The detail level for image analysis
- * @property bool $propagate Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
- * @property string $translationPromptAppendage The prompt suffix for translated results
+ * @property bool $propagate Whether the asset should be saved across all of its supported sites
  * @property bool $generateForNewAssets Whether to generate alt text for new assets automatically
- * @property string $aiProvider The API provider to use ('openai', 'anthropic', or 'gemini')
+ * @property string $aiProvider The API provider to use ('openai' or 'anthropic')
  * @property string $anthropicApiKey The Anthropic API key
  * @property string $anthropicModel The Anthropic Model
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
- * @property string $openAiReasoningEffort The reasoning effort level for OpenAI models
+ * @property string $openAiReasoningEffort The reasoning effort level for OpenAI reasoning models
  */
-class Settings extends Model
+class Settings extends PluginSettings
 {
     /**
      * @var string The API provider to use
@@ -80,7 +77,7 @@ class Settings extends Model
     public string $openAiReasoningEffort = 'minimal';
 
     /**
-     * @var bool Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
+     * @var bool Whether the asset should be saved across all of its supported sites
      */
     public bool $propagate = false;
 
@@ -100,60 +97,66 @@ class Settings extends Model
     public bool $processSvgs = false;
 
     /**
+     * Returns errors for an attribute or all attributes, compatible with Craft 5 template helpers.
+     *
+     * @param string|null $attribute Attribute name, or null for all errors
+     * @return array
+     */
+    public function getErrors(?string $attribute = null): array
+    {
+        if ($attribute !== null) {
+            return $this->errors()->get($attribute) ?? [];
+        }
+        return $this->errors()->toArray();
+    }
+
+    /**
      * @inheritdoc
      */
-    public function defineRules(): array
+    public function getRules(): array
     {
-        return [
-            [['aiProvider', 'prompt'], 'required'],
-            [
-                ['aiProvider'],
-                function($attribute) {
-                    $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['openai', 'anthropic'], true)) {
-                        $this->addError($attribute, 'Invalid AI Provider configured.');
+        return array_merge(parent::getRules(), [
+            'aiProvider' => [
+                'required',
+                function ($attribute, $value, $fail) {
+                    if (!in_array(Env::parse($value), ['openai', 'anthropic'], true)) {
+                        $fail('Invalid AI Provider configured.');
                     }
-                }
+                },
             ],
-            ['openAiApiKey', 'string'],
-            ['openAiModel', 'string'],
-            ['anthropicApiKey', 'string'],
-            ['anthropicModel', 'string'],
-            [
-                ['anthropicImageDetailLevel'],
-                function($attribute) {
-                    $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['low', 'medium', 'high', ''], true)) {
-                        $this->addError($attribute, 'Invalid Anthropic Image Detail Level configured.');
+            'prompt' => ['required', 'string'],
+            'openAiApiKey' => ['nullable', 'string'],
+            'openAiModel' => ['nullable', 'string'],
+            'anthropicApiKey' => ['nullable', 'string'],
+            'anthropicModel' => ['nullable', 'string'],
+            'anthropicImageDetailLevel' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if (!in_array(Env::parse($value), ['low', 'medium', 'high', ''], true)) {
+                        $fail('Invalid Anthropic Image Detail Level configured.');
                     }
-                }
+                },
             ],
-
-            ['prompt', 'string'],
-            ['openAiImageInputDetailLevel', 'string'],
-            [
-                ['openAiImageInputDetailLevel'],
-                function($attribute) {
-                    $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['low', 'high', 'original', 'auto', ''], true)) {
-                        $this->addError($attribute, 'Invalid OpenAI Image Input Detail Level configured.');
+            'openAiImageInputDetailLevel' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if (!in_array(Env::parse($value), ['low', 'high', 'original', 'auto', ''], true)) {
+                        $fail('Invalid OpenAI Image Input Detail Level configured.');
                     }
-                }
+                },
             ],
-            ['openAiReasoningEffort', 'string'],
-            [
-                ['openAiReasoningEffort'],
-                function($attribute) {
-                    $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], true)) {
-                        $this->addError($attribute, 'Invalid OpenAI Reasoning Effort configured.');
+            'openAiReasoningEffort' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if (!in_array(Env::parse($value), ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], true)) {
+                        $fail('Invalid OpenAI Reasoning Effort configured.');
                     }
-                }
+                },
             ],
-            ['propagate', 'boolean'],
-            ['saveTranslatedResultsToEachSite', 'boolean'],
-            ['generateForNewAssets', 'boolean'],
-            ['processSvgs', 'boolean'],
-        ];
+            'propagate' => ['boolean'],
+            'saveTranslatedResultsToEachSite' => ['boolean'],
+            'generateForNewAssets' => ['boolean'],
+            'processSvgs' => ['boolean'],
+        ]);
     }
 }
