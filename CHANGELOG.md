@@ -1,5 +1,9 @@
 # Release Notes for AI Alt Text
 
+## 1.9.0 - 2026-06-01
+- Added support for AVIF, HEIC & HEIF file types, which are converted to PNG before being sent to the AI provider. Conversion occurs depending on the image driver's ability to process those file types. Unsupported assets are skipped gracefully.
+- Fixed a bug where the base64 fallback request would use parameters from an already-transformed asset, causing format conversion to be skipped and the original (unsupported) MIME type to be sent on the retry.
+
 ## 1.8.1 - 2026-05-06
 - Fixed a bug where processing SVGs is now consistently enforced regardless of how alt text generation is triggered (upload event, bulk action, element action menu, or console command).
 - Fixed a bug where SVG assets that are not publicly accessible to an AI provider and are sent in a fallback request as base64 could send the original SVG file contents instead of a rasterised version.

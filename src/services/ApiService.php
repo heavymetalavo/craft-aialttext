@@ -115,6 +115,18 @@ abstract class ApiService extends Component
                 Craft::debug("SVG asset $asset->filename is not natively supported by the provider, will attempt transformation.", __METHOD__);
             }
         }
+
+        $images = Craft::$app->getImages();
+
+        if ($mimeType === 'image/avif' && !$images->getSupportsAvif()) {
+            Craft::warning("AVIF asset $asset->filename cannot be processed: the image driver does not support AVIF; skipping.", __METHOD__);
+            return false;
+        }
+
+        if (in_array($mimeType, ['image/heic', 'image/heif'], true) && !$images->getSupportsHeic()) {
+            Craft::warning("HEIC asset $asset->filename cannot be processed: the image driver does not support HEIC/HEIF; skipping.", __METHOD__);
+            return false;
+        }
         
         return true;
     }
@@ -212,7 +224,14 @@ abstract class ApiService extends Component
      */
     protected function getVisionTransformParams(Asset $asset, ?int $maxLongEdge = null, int $maxFileSizeMb = 20, ?int $maxPatches = null, ?int $maxTokens = null): array
     {
-        $isSvg = AiAltText::getInstance()->aiAltTextService->isSvg($asset);
+        // Clear any transform applied by a previous attempt (the base64 fallback re-runs
+        // generateAltText with the same asset) so format and dimension detection below always
+        // read the original source asset rather than an already-transformed state.
+        $asset->setTransform(null);
+
+        $aiAltTextService = AiAltText::getInstance()->aiAltTextService;
+        // SVG, AVIF and HEIC can carry transparency, so convert those to PNG to preserve it
+        $preferPng = $aiAltTextService->isSvg($asset) || $aiAltTextService->isAvif($asset) || $aiAltTextService->isHeic($asset);
         
         // Set up transform parameters
         $transformParams = [];
@@ -222,14 +241,7 @@ abstract class ApiService extends Component
         
         // Always convert format if needed, regardless of dimensions
         if ($needsFormatConversion) {
-            // @todo check if webp is supported by the environment and use that and fall back to jpg
-            $transformParams['format'] = 'jpg';
-            
-            // check the image is a svg and fallback to transform to a png for transparency support
-            if ($isSvg) {
-                // @todo use webp and fallback to png for transparent images where webp is not supported
-                $transformParams['format'] = 'png';
-            }
+            $transformParams['format'] = $preferPng ? 'png' : 'jpg';
         }
         
         // Animated GIFs need to be converted to a static format (extracts first frame)
