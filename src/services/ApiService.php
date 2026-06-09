@@ -69,27 +69,6 @@ abstract class ApiService extends Component
     }
 
     /**
-     * Checks if a URL is accessible remotely.
-     *
-     * @param string $url The URL to check
-     * @return bool Whether the URL is accessible
-     */
-    protected function isUrlAccessible(string $url): bool
-    {
-        try {
-            $response = $this->client->head($url, [
-                'timeout' => 30,
-                'connect_timeout' => 30,
-                'allow_redirects' => true,
-            ]);
-            return $response->getStatusCode() === 200;
-        } catch (Exception $e) {
-            Craft::warning('URL accessibility check failed: ' . $e->getMessage(), __METHOD__);
-            return false;
-        }
-    }
-
-    /**
      * Validates if the asset is an accepted image format natively.
      *
      * @param Asset $asset The asset to validate
@@ -198,15 +177,15 @@ abstract class ApiService extends Component
             }
         }
 
-        if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            if ($this->needsFormatConversion($asset)) {
-                $assetMimeType = $asset->getMimeType();
-                // See https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148
-                Craft::warning("Asset {$asset->filename} has no URL and an unsupported MIME type \"$assetMimeType\". A transform is required but retrieving the file contents for a transform is unsupported. Continuing with source asset file contents for base64 encoding just incase it is accepted...", __METHOD__);
-            }
-        } else {
-            Craft::warning("API Request: Download failed for image {$asset->filename}. Using original, un-scaled asset file contents for base64 encoding.", __METHOD__);
+        // Reset the transform so the asset reports the original MIME type before
+        // falling back to source bytes.
+        $asset->setTransform(null);
+        $originalMimeType = $asset->getMimeType();
+        if (!$this->isAcceptedMimeType($originalMimeType)) {
+            throw new Exception("Cannot generate alt text: the transformed image could not be downloaded, and the original format \"$originalMimeType\" is not supported natively by the AI provider.");
         }
+
+        Craft::warning("Asset {$asset->filename} has no publicly available URL and an unsupported MIME type \"$originalMimeType\". A transform is required but retrieving the file contents for a transform is unsupported. Continuing with source asset file contents for base64 encoding.", __METHOD__);
 
         return base64_encode($asset->getContents());
     }

@@ -66,19 +66,14 @@ class AnthropicService extends ApiService
         
         $imageUrl = $asset->getUrl($transformParams, true);
 
-        // If we have a URL, check if it's accessible remotely (resolve root-relative URLs to the site base; leave absolute URLs as-is)
+        // If we have a URL, resolve root-relative URLs to the site base; leave absolute URLs as-is
         if (!empty($imageUrl)) {
             $imageUrl = $this->resolveAssetUrl($asset, $imageUrl);
-            
-            if (!$this->forceBase64 && !$this->isUrlAccessible($imageUrl)) {
-                Craft::warning('Asset URL is not accessible locally: ' . $imageUrl, __METHOD__);
-                $this->forceBase64 = true;
-            }
         }
 
         $imageSource = null;
 
-        // If no public URL is available, or URL is not accessible locally, or base64 is forced
+        // If no public URL is available, or base64 is forced
         if ($this->forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
             $base64Image = $this->getAssetBase64String($asset, $transformParams);
             $imageSource = [
