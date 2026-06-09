@@ -50,22 +50,42 @@ abstract class ApiService extends Component
     abstract public function generateAltText(Asset $asset, ?int $siteId = null): string;
 
     /**
-     * Turns root-relative asset URLs into absolute URLs for Guzzle and provider APIs; leaves absolute URLs unchanged.
+     * Resolves an asset URL to an absolute URL for Guzzle and provider APIs.
+     *
+     * Return examples:
+     * - `https://cdn.example.com/image.jpg` remains `https://cdn.example.com/image.jpg`
+     * - `//cdn.example.com/image.jpg` becomes `https://cdn.example.com/image.jpg`
+     * - `/local/image.jpg` becomes `https://example.com/local/image.jpg` (even when the asset's site base URL includes `/en/`
+     * - `local/image.jpg` becomes `https://example.com/en/local/image.jpg` when the asset's site base URL includes `/en/`
      */
     protected function resolveAssetUrl(Asset $asset, string $url): string
     {
-        // Convert `//bucket.s3.com/img.jpg` to `https://bucket.s3.com/img.jpg`
+        // Force protocol-relative URLs to use https
         if (UrlHelper::isProtocolRelativeUrl($url)) {
+            Craft::warning("Protocol-relative URL detected: $url", __METHOD__);
             return UrlHelper::urlWithScheme($url, 'https');
         }
 
-        // Catch both root-relative (`/imgs/file.jpg`) and normal relative (`imgs/file.jpg`) local volume paths
-        // and convert them to absolute URLs via the Craft Site URL. (`domain.com/imgs/file.jpg`)
-        if (!UrlHelper::isAbsoluteUrl($url)) {
-            return UrlHelper::siteUrl($url, null, null, $asset->siteId);
+        // Return absolute URLs unchanged
+        if (UrlHelper::isAbsoluteUrl($url)) {
+            return $url;
         }
 
-        return $url;
+        // Root-relative volume URLs are relative to the domain origin, not to a path-based site URL. e.g. `/local/image.jpg` becomes `https://example.com/local/image.jpg` (even when the asset's site base URL includes `/en/`)
+        if (UrlHelper::isRootRelativeUrl($url)) {
+            $site = Craft::$app->getSites()->getSiteById($asset->siteId);
+            $siteBaseUrl = $site?->getBaseUrl() ?: UrlHelper::baseSiteUrl();
+            $hostInfo = UrlHelper::hostInfo($siteBaseUrl);
+            Craft::warning("Host info: $hostInfo", __METHOD__);
+            Craft::warning("URL: " . rtrim($hostInfo, '/') . $url, __METHOD__);
+
+            return rtrim($hostInfo, '/') . $url;
+        }
+
+        Craft::warning("Normal relative URL detected: $url", __METHOD__);
+
+        // Normal relative URLs are resolved against the asset's site base URL.
+        return UrlHelper::siteUrl($url, null, null, $asset->siteId);
     }
 
     /**

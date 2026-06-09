@@ -1,8 +1,9 @@
 # Release Notes for AI Alt Text
 
 ## UNRELEASED
-- Removed the plugin-level preflight check before sending a request with an image URL to an AI provider. A CDN (e.g. TwicPics) could reject the preflight request from the plugin, but legitamately be available and accepted by an AI provider.
-- Updated base64 fallback behavior so original source file contents are only sent when their MIME type is accepted by the AI provider.
+- Removed the plugin-level preflight check before sending a request with an image URL to an AI provider. A CDN (e.g. TwicPics) could reject the preflight request from the plugin despite the file being publicly available and accepted by an AI provider.
+- Updated base64 fallback behavior so original asset file contents are only sent when their MIME type is accepted by the AI provider.
+-  Fixed a bug where root-relative local asset URLs could include a multi-site path segment, resulting in URLs like `domain.com/en/local/image.jpg` instead of `domain.com/local/image.jpg`.
 
 ## 1.9.0 - 2026-06-01
 - Added support for AVIF, HEIC & HEIF file types, which are converted to PNG before being sent to the AI provider. Conversion occurs depending on the image driver's ability to process those file types. Unsupported assets are skipped gracefully.
