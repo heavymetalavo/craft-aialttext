@@ -182,7 +182,7 @@ abstract class ApiService extends Component
         $asset->setTransform(null);
         $originalMimeType = $asset->getMimeType();
         if (!$this->isAcceptedMimeType($originalMimeType)) {
-            throw new Exception("Cannot generate alt text: the transformed image could not be downloaded, and the original format \"$originalMimeType\" is not supported natively by the AI provider.");
+            throw new Exception("Cannot generate alt text for {$asset->filename}: The transform or asset is not publicly available, or the image transfom could not be downloaded, and the original format \"$originalMimeType\" is not supported natively by the AI provider.");
         }
 
         Craft::warning("Asset {$asset->filename} has no publicly available URL and an unsupported MIME type \"$originalMimeType\". A transform is required but retrieving the file contents for a transform is unsupported. Continuing with source asset file contents for base64 encoding.", __METHOD__);
