@@ -62,7 +62,6 @@ abstract class ApiService extends Component
     {
         // Force protocol-relative URLs to use https
         if (UrlHelper::isProtocolRelativeUrl($url)) {
-            Craft::warning("Protocol-relative URL detected: $url", __METHOD__);
             return UrlHelper::urlWithScheme($url, 'https');
         }
 
@@ -76,13 +75,9 @@ abstract class ApiService extends Component
             $site = Craft::$app->getSites()->getSiteById($asset->siteId);
             $siteBaseUrl = $site?->getBaseUrl() ?: UrlHelper::baseSiteUrl();
             $hostInfo = UrlHelper::hostInfo($siteBaseUrl);
-            Craft::warning("Host info: $hostInfo", __METHOD__);
-            Craft::warning("URL: " . rtrim($hostInfo, '/') . $url, __METHOD__);
 
             return rtrim($hostInfo, '/') . $url;
         }
-
-        Craft::warning("Normal relative URL detected: $url", __METHOD__);
 
         // Normal relative URLs are resolved against the asset's site base URL.
         return UrlHelper::siteUrl($url, null, null, $asset->siteId);
