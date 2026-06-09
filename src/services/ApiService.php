@@ -50,43 +50,37 @@ abstract class ApiService extends Component
     abstract public function generateAltText(Asset $asset, ?int $siteId = null): string;
 
     /**
-     * Turns root-relative asset URLs into absolute URLs for Guzzle and provider APIs; leaves absolute URLs unchanged.
+     * Resolves an asset URL to an absolute URL for Guzzle and provider APIs.
+     *
+     * Return examples:
+     * - `https://cdn.example.com/image.jpg` remains `https://cdn.example.com/image.jpg`
+     * - `//cdn.example.com/image.jpg` becomes `https://cdn.example.com/image.jpg`
+     * - `/local/image.jpg` becomes `https://example.com/local/image.jpg` (even when the asset's site base URL includes `/en/`
+     * - `local/image.jpg` becomes `https://example.com/en/local/image.jpg` when the asset's site base URL includes `/en/`
      */
     protected function resolveAssetUrl(Asset $asset, string $url): string
     {
-        // Convert `//bucket.s3.com/img.jpg` to `https://bucket.s3.com/img.jpg`
+        // Force protocol-relative URLs to use https
         if (UrlHelper::isProtocolRelativeUrl($url)) {
             return UrlHelper::urlWithScheme($url, 'https');
         }
 
-        // Catch both root-relative (`/imgs/file.jpg`) and normal relative (`imgs/file.jpg`) local volume paths
-        // and convert them to absolute URLs via the Craft Site URL. (`domain.com/imgs/file.jpg`)
-        if (!UrlHelper::isAbsoluteUrl($url)) {
-            return UrlHelper::siteUrl($url, null, null, $asset->siteId);
+        // Return absolute URLs unchanged
+        if (UrlHelper::isAbsoluteUrl($url)) {
+            return $url;
         }
 
-        return $url;
-    }
+        // Root-relative volume URLs are relative to the domain origin, not to a path-based site URL. e.g. `/local/image.jpg` becomes `https://example.com/local/image.jpg` (even when the asset's site base URL includes `/en/`)
+        if (UrlHelper::isRootRelativeUrl($url)) {
+            $site = Craft::$app->getSites()->getSiteById($asset->siteId);
+            $siteBaseUrl = $site?->getBaseUrl() ?: UrlHelper::baseSiteUrl();
+            $hostInfo = UrlHelper::hostInfo($siteBaseUrl);
 
-    /**
-     * Checks if a URL is accessible remotely.
-     *
-     * @param string $url The URL to check
-     * @return bool Whether the URL is accessible
-     */
-    protected function isUrlAccessible(string $url): bool
-    {
-        try {
-            $response = $this->client->head($url, [
-                'timeout' => 30,
-                'connect_timeout' => 30,
-                'allow_redirects' => true,
-            ]);
-            return $response->getStatusCode() === 200;
-        } catch (Exception $e) {
-            Craft::warning('URL accessibility check failed: ' . $e->getMessage(), __METHOD__);
-            return false;
+            return rtrim($hostInfo, '/') . $url;
         }
+
+        // Normal relative URLs are resolved against the asset's site base URL.
+        return UrlHelper::siteUrl($url, null, null, $asset->siteId);
     }
 
     /**
@@ -198,15 +192,15 @@ abstract class ApiService extends Component
             }
         }
 
-        if (empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            if ($this->needsFormatConversion($asset)) {
-                $assetMimeType = $asset->getMimeType();
-                // See https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148
-                Craft::warning("Asset {$asset->filename} has no URL and an unsupported MIME type \"$assetMimeType\". A transform is required but retrieving the file contents for a transform is unsupported. Continuing with source asset file contents for base64 encoding just incase it is accepted...", __METHOD__);
-            }
-        } else {
-            Craft::warning("API Request: Download failed for image {$asset->filename}. Using original, un-scaled asset file contents for base64 encoding.", __METHOD__);
+        // Reset the transform so the asset reports the original MIME type before
+        // falling back to source bytes.
+        $asset->setTransform(null);
+        $originalMimeType = $asset->getMimeType();
+        if (!$this->isAcceptedMimeType($originalMimeType)) {
+            throw new Exception("Cannot generate alt text for {$asset->filename}: The transform or asset is not publicly available, or the image transfom could not be downloaded, and the original format \"$originalMimeType\" is not supported natively by the AI provider.");
         }
+
+        Craft::warning("Asset {$asset->filename} has no publicly available URL and an unsupported MIME type \"$originalMimeType\". A transform is required but retrieving the file contents for a transform is unsupported. Continuing with source asset file contents for base64 encoding.", __METHOD__);
 
         return base64_encode($asset->getContents());
     }

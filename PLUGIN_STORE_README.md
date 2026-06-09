@@ -199,7 +199,7 @@ To add this field:
 - **SVG Support**: SVGs are rasterized to PNG (preserving transparency) before being sent to the AI (where transformSvgs is enabled).
 - **AVIF, HEIC & HEIF Support**: These image types are converted to PNG before being sent to an AI provider. This requires an image driver (ImageMagick built with AVIF/HEIF/HEIC support) that can decode them on environments without that support these assets are skipped.
 - **Animated GIFs**: Only the first frame is processed.
-- **Private Assets**: Assets on private volumes without public URLs will be sent as base64 encoded strings. Assets which require transform before being base64 encoded are not currently supported by CraftCMS.
+- **Private Assets**: Assets on private volumes without public URLs can be sent as base64 encoded strings. Retrieving an image transform's file contents is not currently supported by CraftCMS. Meaning that for file types not supported by an AI provider (e.g. an SVG files) it is not possible to generate alt text for these private assets.
 - **Servd/Cloud**: Support for specialized asset bundles (like Servd) depends on the environment's ability to handle raster transforms.
 - **Consider AI Provider level boundaries**: e.g. OpenAI: "No watermarks or logos - No NSFW content - Clear enough for a human to understand"
 
@@ -210,7 +210,7 @@ To add this field:
 - Where an unsupported file type is requested the plugin will attempt an image transform to a jpg to be sent instead
 - The plugin checks a file's mimetype to see if it's valid, or if it needs a format conversion before sending to the API
 - If an asset's dimensions are larger than the dimensions required by the API an image transform is sent instead
-- If an asset has no URL (private) and requires a transform (e.g. if the original asset is an unsupported mime type, or, the dimensions are too large) the plugin [cannot retrieve the transform's file contents](https://github.com/craftcms/cms/issues/17238#issuecomment-2873206148) to send a base64 encoded version of the image to the OpenAI API.
+- If an asset has no URL (private) and requires a transform (e.g. if the original asset is an unsupported mime type, or, the dimensions are too large), Craft will be unable to retrieve the transform's file contents for base64 encoding. In that case the plugin will not fall back to sending the original source file unless its MIME type is natively accepted by the AI provider.
 - Where an alternative image transformer is used, e.g. when an application is hosted on [Servd](https://servd.host) and assets are processed through their asset platform this may not support svg -> raster transforms
 
 ## 🛠️ Troubleshooting
