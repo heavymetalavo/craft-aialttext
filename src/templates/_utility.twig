@@ -1,6 +1,8 @@
+{% if currentUser.admin %}
 <div class="flex flex-nowrap" style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid rgba(0,0,0,0.05);">
     <a href="{{ cpUrl('settings/plugins/ai-alt-text') }}" class="btn " data-icon="settings">Plugin Settings</a>
 </div>
+{% endif %}
 
 <h2>Bulk actions</h2>
 
@@ -24,8 +26,16 @@
             <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
             <td>
                 <div class="buttons">
-                    <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets') }}" class="btn small submit">Generate all</a>
-                    <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text') }}" class="btn small submit">Generate missing</a>
+                    <form method="post" accept-charset="UTF-8">
+                        {{ csrfInput() }}
+                        {{ actionInput('ai-alt-text/generate/generate-all-assets') }}
+                        <button type="submit" class="btn small submit">Generate all</button>
+                    </form>
+                    <form method="post" accept-charset="UTF-8">
+                        {{ csrfInput() }}
+                        {{ actionInput('ai-alt-text/generate/generate-assets-without-alt-text') }}
+                        <button type="submit" class="btn small submit">Generate missing</button>
+                    </form>
                 </div>
             </td>
         </tr>
@@ -38,8 +48,18 @@
                 <td>{{ siteAltTextCounts[site.id].without }}</td>
                 <td>
                     <div class="buttons">
-                        <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets', {siteId: site.id}) }}" class="btn small submit">Generate all</a>
-                        <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text', {siteId: site.id}) }}" class="btn small submit">Generate missing</a>
+                        <form method="post" accept-charset="UTF-8">
+                            {{ csrfInput() }}
+                            {{ actionInput('ai-alt-text/generate/generate-all-assets') }}
+                            {{ hiddenInput('siteId', site.id) }}
+                            <button type="submit" class="btn small submit">Generate all</button>
+                        </form>
+                        <form method="post" accept-charset="UTF-8">
+                            {{ csrfInput() }}
+                            {{ actionInput('ai-alt-text/generate/generate-assets-without-alt-text') }}
+                            {{ hiddenInput('siteId', site.id) }}
+                            <button type="submit" class="btn small submit">Generate missing</button>
+                        </form>
                     </div>
                 </td>
             </tr>

@@ -5,5 +5,7 @@
 .env
 /node_modules
 /vendor
-Agents.md
+AGENTS.md
+CLAUDE.md
 .cursor/
+.claude/

@@ -240,6 +240,11 @@ class GenerateController extends Controller
      */
     private function processAssets(bool $includeWithAltText): int
     {
+        if ($this->batchSize < 1) {
+            $this->failure("Batch size must be at least 1.");
+            return ExitCode::USAGE;
+        }
+
         $sites = $this->siteId ? [Craft::$app->getSites()->getSiteById($this->siteId)] : Craft::$app->getSites()->getAllSites();
         
         if (!$sites[0]) {

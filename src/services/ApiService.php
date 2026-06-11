@@ -34,11 +34,6 @@ abstract class ApiService extends Component
      */
     protected Client $client;
 
-    /**
-     * @var bool Forces the use of base64 encoding even if the asset has a URL (useful for fallback when provider fails to download from URL)
-     */
-    protected bool $forceBase64 = false;
-
     public function __construct($config = [])
     {
         parent::__construct($config);
@@ -47,7 +42,7 @@ abstract class ApiService extends Component
     /**
      * Required implementation for child services to generate their specific payloads.
      */
-    abstract public function generateAltText(Asset $asset, ?int $siteId = null): string;
+    abstract public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceBase64 = false): string;
 
     /**
      * Resolves an asset URL to an absolute URL for Guzzle and provider APIs.

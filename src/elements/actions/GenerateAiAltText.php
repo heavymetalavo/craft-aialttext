@@ -67,6 +67,16 @@ class GenerateAiAltText extends ElementAction
             // Set the current site id on asset
             $asset = Asset::find()->id($asset->id)->siteId($query->siteId)->one();
 
+            if (!$asset instanceof Asset) {
+                continue;
+            }
+
+            // Skip assets the user isn't allowed to save (saveElement() doesn't enforce this itself).
+            // canSave() also covers assets uploaded by other users (savePeerAssets).
+            if (!$asset->canSave($user)) {
+                continue;
+            }
+
             // Create a job for the asset
             AiAltText::getInstance()->aiAltTextService->createJob($asset, true);
         }

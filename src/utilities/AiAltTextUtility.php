@@ -16,7 +16,7 @@ class AiAltTextUtility extends Utility
      */
     public static function displayName(): string
     {
-        return Craft::t('ai-alt-text', 'AI Alt Text');
+        return Craft::t('ai-alt-text', 'AI Alt Text Bulk Actions');
     }
 
     /**

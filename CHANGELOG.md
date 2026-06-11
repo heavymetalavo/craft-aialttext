@@ -1,5 +1,23 @@
 # Release Notes for AI Alt Text
 
+## UNRELEASED
+
+> {warning} This release introduces permission checks. Automatic generation on upload or file replacement is unchanged, but users who generate alt text manually now need permission to save the asset in the relevant volume, plus the **AI Alt Text Bulk Actions** utility permission for the utility's "Generate all" / "Generate missing" actions. Grant it under **Settings → Users → (group or user) → Permissions → Utilities**.
+
+- The "Generate all" / "Generate missing" utility actions are now permission-gated by the **AI Alt Text Bulk Actions** utility permission (the one Craft registers automatically for the utility, under **Settings → Users → (group or user) → Permissions → Utilities**). Grant it to the relevant user groups after updating, otherwise those actions will be unavailable. The element action is deliberately not permission-gated beyond being able to save each selected asset, and on-upload generation is controlled by the plugin setting alone.
+- The bulk action buttons now submit via secure (CSRF-protected) POST forms instead of plain links, and the bulk actions reject any non-POST request.
+- Renamed the utility from **AI Alt Text** to **AI Alt Text Bulk Actions** to better describe what it does.
+- The "Generate AI Alt Text" element action now also skips any assets the user doesn't have permission to save.
+- The element action and single-asset action now use Craft's own save authorization (`canSave()`), so generating alt text for an asset uploaded by another user requires the "Save assets uploaded by other users" volume permission — matching what the user could edit manually.
+- Alt text is now also generated when an image asset's file is replaced (when the "Generate for new image assets" setting is enabled). The previous alt text is overwritten, since it describes the old image.
+- Fixed a rare error in the element action when a selected asset could not be reloaded for the current site.
+- Alt text generation now fails with a clear message if the target site no longer exists, instead of erroring unexpectedly.
+- Fixed a bug where, after a base64 fallback, later assets processed by the same queue worker would unnecessarily skip straight to base64 encoding.
+- Fixed a bug where a non-JSON error response from the Anthropic API could hide the original error behind a confusing secondary one.
+- Fixed a bug where an OpenAI request failure without a response (e.g. a connection-level error) could obscure the original error.
+- Reduced log noise by trimming lengthy base64 image data from the OpenAI debug logs.
+- Prevented a possible infinite loop in the bulk generation console command when a batch size of zero or less was supplied.
+
 ## 1.9.1 - 2026-06-09
 - Removed the plugin-level preflight check before sending a request with an image URL to an AI provider. A CDN (e.g. TwicPics) could reject the preflight request from the plugin despite the file being publicly available and accepted by an AI provider.
 - Updated base64 fallback behavior so original asset file contents are only sent when their MIME type is accepted by the AI provider.

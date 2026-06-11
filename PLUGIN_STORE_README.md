@@ -6,6 +6,10 @@ Generate alt text for CraftCMS Asset Images using the Anthropic or OpenAI API.
 
 [Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft5) | [GitHub Repository](https://github.com/heavymetalavo/craft-aialttext)
 
+## 🎬 Video walkthrough
+
+▶️ [Watch the full plugin walkthrough on YouTube](https://youtu.be/Kp0OQVfd4iw)
+
 ## Video demo
 
 [Watch on GitHub](https://github.com/heavymetalavo/craft-aialttext?tab=readme-ov-file#video-demo)
@@ -139,7 +143,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **OpenAI Reasoning Effort**| The reasoning effort level for OpenAI reasoning models. |
 | **Prompt** | The text prompt sent to the AI providers (example [below](#default-prompt)). Supports `{asset.property}` and `{site.property}` |
 | **Propagate** | Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites. |
-| **Generate for new image assets (on upload)** | Automatically generate alt text when new assets are created. |
+| **Generate for new image assets (on upload or file replacement)** | Automatically generate alt text when new assets are created, or when an asset's file is replaced (the previous alt text is overwritten, since it describes the old image). |
 | **Process SVGs** | Attempt to generate alt text for SVG files when they are uploaded or batched processed. |
 | **Save translated results for each site** | Save translated results to translatable fields for each site. |
 
@@ -179,6 +183,12 @@ Controls how much time the model spends "thinking" before generating a response 
 - `xhigh`
 
 For more information, refer to the [OpenAI](https://platform.openai.com/docs/guides/images) and [Anthropic](https://docs.anthropic.com/en/docs/build-with-claude/vision) documentation.
+
+## 🔐 Permissions
+
+Bulk generation is gated by the **AI Alt Text Bulk Actions** utility permission, which Craft registers automatically for the plugin's utility. Grant it to the relevant user groups under **Settings → Users → (group or user) → Permissions → Utilities** after installing. Admins always have it. One checkbox covers viewing the utility and running its "Generate all" / "Generate missing" actions.
+
+Generating for a single asset doesn't have its own permission — it's available to anyone who can save the asset in question (for assets uploaded by other users this requires the "Save assets uploaded by other users" volume permission, matching what they could edit manually). Automatic generation on upload or file replacement is controlled by the "Generate for new image assets" setting alone.
 
 ## 🏷️ Field requirements
 
