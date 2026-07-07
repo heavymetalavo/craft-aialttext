@@ -1,5 +1,17 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+> {note} If you customised the **prompt** setting, it is left untouched — update it manually to adopt the `{site.languageName}` variable which can offer better results for non-english language sites. Installs still using any former default prompt are migrated automatically.
+
+- Changed the default prompt to output the language as `{site.languageName} ({site.language})` (e.g. `English (United Kingdom) (en-GB)`), making the language fully visible and editable. Existing installs whose stored prompt matches any former default prompt are automatically migrated to the new one; any customised prompt is left untouched.
+- Added a `{site.languageName}` prompt token that resolves to the language's display name only.
+- The prompt is now sent as the system/instruction message for both providers — Anthropic via `system`, and OpenAI via the Responses API top-level `instructions` parameter. The user turn now carries only the image and the shared generation trigger.
+- Fixed a bug where saving a setting from a migration could replace all other stored plugin settings (API keys, provider, model, etc.) in project config. Both the new prompt migration and the existing AI provider migration now merge the single changed setting into the stored settings instead, and skip safely (with a warning) on environments where `allowAdminChanges` is disabled instead of failing the update.
+- Bumped the plugin schema version so pending migrations are actually detected and run by Craft's updater.
+- Fixed a bug where root-relative asset/transform URLs (e.g. from a site with a path-only base URL like `/en`, or during console/queue requests) were sent unresolved to the AI provider and the base64 fallback, causing both to fail. They are now resolved against the primary site's host.
+- Fixed alt text generation throwing an error when no site ID is provided; it now falls back to the asset's own site.
+- Corrected a misleading warning message that reported a supported MIME type as unsupported when falling back to source file contents for base64 encoding.
+
 ## 1.9.1 - 2026-06-09
 - Removed the plugin-level preflight check before sending a request with an image URL to an AI provider. A CDN (e.g. TwicPics) could reject the preflight request from the plugin despite the file being publicly available and accepted by an AI provider.
 - Updated base64 fallback behavior so original asset file contents are only sent when their MIME type is accepted by the AI provider.

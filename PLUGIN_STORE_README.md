@@ -97,7 +97,7 @@ Example twig:
 | `ai-alt-text/generate/stats` | Show alt text coverage statistics |
 | `ai-alt-text/generate/missing` | Queue jobs for assets without alt text (recommended) |
 | `ai-alt-text/generate/all` | Queue jobs for ALL assets (⚠️ overwrites existing alt text) |
-| `ai-alt-text/generate/single <id>` | Queue job for a specific asset ID |
+| `ai-alt-text/generate/single <id> [siteId]` | Queue job for a specific asset ID (optionally for one site) |
 
 ### Options
 
@@ -122,6 +122,9 @@ Example twig:
 
 # Queue for single asset
 ./craft ai-alt-text/generate/single 123
+
+# Queue for single asset on a specific site
+./craft ai-alt-text/generate/single 123 2
 ```
 
 ## ⚙️ Plugin settings
@@ -137,7 +140,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **Model** | The AI model to use (e.g., `gpt-5-nano` or `claude-haiku-4-5`). |
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |
 | **OpenAI Reasoning Effort**| The reasoning effort level for OpenAI reasoning models. |
-| **Prompt** | The text prompt sent to the AI providers (example [below](#default-prompt)). Supports `{asset.property}` and `{site.property}` |
+| **Prompt** | The instructions sent to the AI provider as the system / instruction message (example [below](#default-prompt)). Supports `{asset.property}` and `{site.property}` tokens, plus `{site.languageName}` for the language's display name (e.g. `English (United Kingdom)`). |
 | **Propagate** | Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites. |
 | **Generate for new image assets (on upload)** | Automatically generate alt text when new assets are created. |
 | **Process SVGs** | Attempt to generate alt text for SVG files when they are uploaded or batched processed. |
@@ -153,7 +156,9 @@ To find out which models are capable of vision, check [the models page](https://
 
 #### 💬 Default prompt
 
-> Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don't suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. "#", "alt text:", "An image of", "A photo of"). Do not wrap the output in quotes. Output in the language: {site.language}
+This is sent to the provider as the system / instruction message (Anthropic `system`, OpenAI `instructions`); the image is sent in the user turn with a short trigger. `{site.languageName}` resolves to the language's display name and `{site.language}` to its locale ID, so the default pairs them — edit the parenthesised format freely.
+
+> Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don't suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. "#", "alt text:", "An image of", "A photo of"). Do not wrap the output in quotes. Output in the language: {site.languageName} ({site.language})
 
 #### 🔍 Image detail options
 
