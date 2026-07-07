@@ -15,6 +15,7 @@ class OpenAiRequest extends Model
 {
     public string $model = '';
 
+    private string $instructions = '';
     private string $prompt = '';
     private string $imageUrl = '';
     private string $detail = 'low';
@@ -23,6 +24,17 @@ class OpenAiRequest extends Model
     public function getDetail(): string
     {
         return $this->detail;
+    }
+
+    /**
+     * Sets the system-level instructions (task, output format, language, etc.), emitted as the
+     * Responses API top-level `instructions` parameter, which the model weights more strongly than
+     * text in the user input.
+     */
+    public function setInstructions(string $instructions): self
+    {
+        $this->instructions = $instructions;
+        return $this;
     }
 
     public function setReasoningEffort(string $reasoningEffort): self
@@ -100,6 +112,10 @@ class OpenAiRequest extends Model
                 ],
             ],
         ];
+
+        if (!empty($this->instructions)) {
+            $payload['instructions'] = $this->instructions;
+        }
 
         if ($this->isReasoningModel()) {
             $payload['reasoning']['effort'] = $this->reasoningEffort;

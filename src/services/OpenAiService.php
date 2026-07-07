@@ -204,21 +204,7 @@ class OpenAiService extends ApiService
             $detail = App::parseEnv($plugin->getSettings()->openAiImageInputDetailLevel) ?? 'low';
         }
         
-        $prompt = App::parseEnv($plugin->getSettings()->prompt);
-
-        // parse $prompt for {asset.param} and replace with $asset->param
-        // make sure that if the string may contain "{asset.title}{asset.caption}" we only replace each occurrence, and do not capture "{asset.title}{asset.caption}"
-        $prompt = preg_replace_callback('/{asset\.(.*?)}/', function ($matches) use ($asset) {
-            return $asset->{$matches[1]};
-        }, $prompt);
-
-        // Get the $site
-        $site = Craft::$app->getSites()->getSiteById($siteId);
-
-        // parse $prompt for {site.param} and replace with $site->param
-        $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
-            return $site->{$matches[1]};
-        }, $prompt);
+        $prompt = $this->resolvePrompt($asset, $siteId);
 
         // Log asset info for debugging
         Craft::info('Generating alt text for asset: ' . $asset->filename . ' (' . $imageUrl . ')', __METHOD__);
@@ -226,7 +212,8 @@ class OpenAiService extends ApiService
         // Create and populate the request model
         $request = new OpenAiRequest();
         $request->model = $this->model;
-        $request->setPrompt($prompt)
+        $request->setInstructions($prompt)
+            ->setPrompt(self::GENERATE_TRIGGER)
             ->setImageUrl($imageUrl)
             ->setReasoningEffort((string) App::parseEnv($plugin->getSettings()->openAiReasoningEffort));
             

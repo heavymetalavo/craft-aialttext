@@ -5,6 +5,7 @@ namespace heavymetalavo\craftaialttext\services;
 use Craft;
 use craft\base\Component;
 use craft\elements\Asset;
+use craft\helpers\App;
 use craft\helpers\UrlHelper;
 use Exception;
 use GuzzleHttp\Client;
@@ -30,6 +31,12 @@ abstract class ApiService extends Component
     ];
 
     /**
+     * @var string Minimal user-turn trigger sent alongside the image. The substantive instructions
+     * live in the provider's system/instructions field (see resolvePrompt()).
+     */
+    protected const GENERATE_TRIGGER = 'Generate the alt text for this image now.';
+
+    /**
      * @var Client
      */
     protected Client $client;
@@ -48,6 +55,44 @@ abstract class ApiService extends Component
      * Required implementation for child services to generate their specific payloads.
      */
     abstract public function generateAltText(Asset $asset, ?int $siteId = null): string;
+
+    /**
+     * Resolves the configured prompt template into a final instruction string, substituting
+     * {asset.*} and {site.*} placeholders.
+     *
+     * {site.languageName} resolves to the site language's display name, e.g. "English (United
+     * Kingdom)" — the same value Craft shows in its language dropdown ($locale->getDisplayName(
+     * Craft::$app->language)). It needs a dedicated case because it maps to a method chain rather
+     * than a property. The BCP 47 language tag itself is available via the ordinary {site.language}
+     * token, so the default prompt pairs them ("{site.languageName} (BCP 47: {site.language})") and
+     * the format stays visible and editable in the prompt. Other {site.*} / {asset.*} tokens resolve
+     * to the matching property.
+     *
+     * @todo Consider making $siteId a required `int` and dropping the `?? $asset->getSite()`
+     *       fallback below — in practice $siteId is never null (every caller resolves a concrete
+     *       site). Doing it cleanly means tightening ?int → int across the call chain (the abstract
+     *       generateAltText(), OpenAiService & AnthropicService generateAltText()/sendRequest(),
+     *       and AiAltTextService::generateAltText()), with the one genuine guard at the queue job,
+     *       whose siteId payload is legitimately nullable (`$this->siteId ?? $asset->siteId`).
+     */
+    protected function resolvePrompt(Asset $asset, ?int $siteId): string
+    {
+        $promptTemplate = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
+
+        $prompt = preg_replace_callback('/{asset\.(.*?)}/', function ($matches) use ($asset) {
+            return $asset->{$matches[1]};
+        }, $promptTemplate);
+
+        $site = ($siteId !== null ? Craft::$app->getSites()->getSiteById($siteId) : null) ?? $asset->getSite();
+        $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
+            if ($matches[1] === 'languageName') {
+                return $site->getLocale()->getDisplayName(Craft::$app->language);
+            }
+            return $site->{$matches[1]};
+        }, $prompt);
+
+        return $prompt;
+    }
 
     /**
      * Resolves an asset URL to an absolute URL for Guzzle and provider APIs.
@@ -75,6 +120,13 @@ abstract class ApiService extends Component
             $site = Craft::$app->getSites()->getSiteById($asset->siteId);
             $siteBaseUrl = $site?->getBaseUrl() ?: UrlHelper::baseSiteUrl();
             $hostInfo = UrlHelper::hostInfo($siteBaseUrl);
+
+            // A path-only site base URL (e.g. `/en-US`) has no host info, and in console/queue
+            // requests hostInfo() cannot fall back to the current request's host — use the
+            // primary site's host instead so the URL is absolute for Guzzle and providers.
+            if (empty($hostInfo)) {
+                $hostInfo = UrlHelper::hostInfo(UrlHelper::baseSiteUrl());
+            }
 
             return rtrim($hostInfo, '/') . $url;
         }
@@ -200,7 +252,7 @@ abstract class ApiService extends Component
             throw new Exception("Cannot generate alt text for {$asset->filename}: The transform or asset is not publicly available, or the image transform could not be downloaded, and the original format \"$originalMimeType\" is not supported natively by the AI provider.");
         }
 
-        Craft::warning("Asset {$asset->filename} has no publicly available URL and an unsupported MIME type \"$originalMimeType\". A transform is required but retrieving the file contents for a transform is unsupported. Continuing with source asset file contents for base64 encoding.", __METHOD__);
+        Craft::warning("Falling back to the source file contents of {$asset->filename} for base64 encoding: the (transformed) image URL was unavailable or could not be downloaded, and its source MIME type \"$originalMimeType\" is natively supported by the AI provider.", __METHOD__);
 
         return base64_encode($asset->getContents());
     }
