@@ -67,6 +67,13 @@ abstract class ApiService extends Component
      * token, so the default prompt pairs them ("{site.languageName} (BCP 47: {site.language})") and
      * the format stays visible and editable in the prompt. Other {site.*} / {asset.*} tokens resolve
      * to the matching property.
+     *
+     * @todo Consider making $siteId a required `int` and dropping the `?? $asset->getSite()`
+     *       fallback below — in practice $siteId is never null (every caller resolves a concrete
+     *       site). Doing it cleanly means tightening ?int → int across the call chain (the abstract
+     *       generateAltText(), OpenAiService & AnthropicService generateAltText()/sendRequest(),
+     *       and AiAltTextService::generateAltText()), with the one genuine guard at the queue job,
+     *       whose siteId payload is legitimately nullable (`$this->siteId ?? $asset->siteId`).
      */
     protected function resolvePrompt(Asset $asset, ?int $siteId): string
     {
