@@ -63,10 +63,10 @@ abstract class ApiService extends Component
      * {site.languageName} resolves to the site language's display name, e.g. "English (United
      * Kingdom)" — the same value Craft shows in its language dropdown ($locale->getDisplayName(
      * Craft::$app->language)). It needs a dedicated case because it maps to a method chain rather
-     * than a property. The locale ID itself is available via the ordinary {site.language} token, so
-     * the default prompt pairs them ("{site.languageName} ({site.language})") and the format stays
-     * visible and editable in the prompt. Other {site.*} / {asset.*} tokens resolve to the matching
-     * property.
+     * than a property. The BCP 47 language tag itself is available via the ordinary {site.language}
+     * token, so the default prompt pairs them ("{site.languageName} (BCP 47: {site.language})") and
+     * the format stays visible and editable in the prompt. Other {site.*} / {asset.*} tokens resolve
+     * to the matching property.
      */
     protected function resolvePrompt(Asset $asset, ?int $siteId): string
     {
