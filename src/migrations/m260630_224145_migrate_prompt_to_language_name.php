@@ -6,7 +6,7 @@ use Craft;
 use craft\db\Migration;
 
 /**
- * m260630_224145_migrate_prompt_language_token migration.
+ * m260630_224145_migrate_prompt_to_language_name migration.
  *
  * Upgrades the stored `prompt` setting to the new default that uses the
  * `{site.languageName}` token, but ONLY when the stored value verbatim-matches
@@ -14,7 +14,7 @@ use craft\db\Migration;
  * means the user never customised the prompt, so upgrading them to the current
  * default is safe; any customised prompt is left untouched.
  */
-class m260630_224145_migrate_prompt_language_token extends Migration
+class m260630_224145_migrate_prompt_to_language_name extends Migration
 {
     /**
      * Every default prompt shipped by a previous release, oldest first.
@@ -83,7 +83,7 @@ class m260630_224145_migrate_prompt_language_token extends Migration
      */
     public function safeDown(): bool
     {
-        echo "m260630_224145_migrate_prompt_language_token cannot be reverted.\n";
+        echo "m260630_224145_migrate_prompt_to_language_name cannot be reverted.\n";
         return false;
     }
 }
