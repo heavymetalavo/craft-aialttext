@@ -170,20 +170,13 @@ class AiAltTextService extends Component
             throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
         }
 
-        $propagate = (bool) $plugin->getSettings()->propagate;
-
-        // Bug Workaround: Pre-save blank alt text to prevent propagation across sites where setting is false.
-        if (!$propagate) {
-            $asset->alt = '';
-            Craft::debug("Performing preliminary save for asset {$asset->id} to establish site rows before setting alt text.", __METHOD__);
-            Craft::$app->elements->saveElement($asset, true, false);
-        }
-
+        // Craft 4 stores alt text globally on the assets table, so the propagate
+        // setting (a per-site concern on Craft 5) doesn't apply here.
         $asset->alt = $altText;
-        
-        Craft::info("Saving AI alt text for asset {$asset->id} with propagate=" . ($propagate ? 'true' : 'false'), __METHOD__);
-        
-        if (!Craft::$app->elements->saveElement($asset, true, $propagate)) {
+
+        Craft::info("Saving AI alt text for asset {$asset->id}", __METHOD__);
+
+        if (!Craft::$app->elements->saveElement($asset)) {
             throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
         }
 

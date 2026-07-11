@@ -141,7 +141,6 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |
 | **OpenAI Reasoning Effort**| The reasoning effort level for OpenAI reasoning models. |
 | **Prompt** | The instructions sent to the AI provider as the system / instruction message (example [below](#default-prompt)). Supports `{asset.property}` and `{site.property}` variables, plus `{site.languageName}` for the language's display name (e.g. `English (United Kingdom)`). |
-| **Propagate** | Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites. |
 | **Generate for new image assets (on upload)** | Automatically generate alt text when new assets are created. |
 | **Process SVGs** | Attempt to generate alt text for SVG files when they are uploaded or batched processed. |
 

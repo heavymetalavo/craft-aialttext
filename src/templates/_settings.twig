@@ -168,15 +168,6 @@
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Propagate'|t('aialttext'),
-    id: 'propagate',
-    name: 'propagate',
-    instructions: "Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites."|t("aialttext"),
-    on: settings.propagate,
-    errors: settings.getErrors('propagate'),
-}) }}
-
-{{ forms.lightswitchField({
     label: 'Generate for new image assets (on upload)'|t('aialttext'),
     id: 'generateForNewAssets',
     name: 'generateForNewAssets',

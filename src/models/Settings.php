@@ -81,6 +81,10 @@ class Settings extends Model
 
     /**
      * @var bool Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
+     *
+     * Not used on Craft 4 — alt text is stored globally on the assets table, so there's
+     * nothing to propagate per site. The property is kept so shared project config from
+     * a Craft 5 install doesn't error.
      */
     public bool $propagate = false;
 
