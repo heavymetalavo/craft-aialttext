@@ -8,6 +8,7 @@ use craft\base\Plugin;
 use craft\elements\Asset;
 use craft\events\{ModelEvent, RegisterElementActionsEvent, RegisterComponentTypesEvent, RegisterUrlRulesEvent};
 use craft\helpers\Cp;
+use craft\helpers\Html;
 use craft\services\Utilities;
 use craft\web\{View, UrlManager};
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
@@ -128,6 +129,30 @@ class AiAltText extends Plugin
     protected function createSettingsModel(): Settings
     {
         return new Settings();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getSettingsResponse(): mixed
+    {
+        $view = Craft::$app->getView();
+        $settingsHtml = $view->namespaceInputs(function() {
+            return (string)$this->settingsHtml();
+        }, 'settings');
+
+        // Craft's settings layout posts redirect=settings (the Settings index).
+        // Append a later redirect input — outside the namespaced settings HTML,
+        // so it keeps the plain "redirect" name — to return here on save instead.
+        $settingsHtml .= Html::redirectInput('settings/plugins/' . $this->id);
+
+        /** @var \craft\web\Controller $controller */
+        $controller = Craft::$app->controller;
+
+        return $controller->renderTemplate('settings/plugins/_settings', [
+            'plugin' => $this,
+            'settingsHtml' => $settingsHtml,
+        ]);
     }
 
     /**

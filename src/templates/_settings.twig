@@ -2,10 +2,6 @@
 {# @var settings \heavymetalavo\craftaialttext\models\Settings #}
 {% import '_includes/forms.twig' as forms %}
 
-{# Craft 4's plugin settings layout posts redirect=settings (the Settings index).
-   This input renders after that one, so it wins and returns the user here on save. #}
-{{ redirectInput('settings/plugins/ai-alt-text') }}
-
 <h2>Instructions</h2>
 
 <p>Lots of info in <a target="_blank" href="https://github.com/heavymetalavo/craft-aialttext">the plugin docs</a>, but a short summary;
