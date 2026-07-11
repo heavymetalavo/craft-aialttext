@@ -63,12 +63,13 @@ abstract class ApiService extends Component
      * the format stays visible and editable in the prompt. Other {site.*} / {asset.*} tokens resolve
      * to the matching property.
      *
-     * @todo Consider making $siteId a required `int` and dropping the `?? $asset->getSite()`
-     *       fallback below — in practice $siteId is never null (every caller resolves a concrete
-     *       site). Doing it cleanly means tightening ?int → int across the call chain (the abstract
+     * @todo Consider making $siteId a required `int` and dropping the null branch below — in
+     *       practice $siteId is never null (every caller resolves a concrete site). Doing it
+     *       cleanly means tightening ?int → int across the call chain (the abstract
      *       generateAltText(), OpenAiService & AnthropicService generateAltText()/sendRequest(),
      *       and AiAltTextService::generateAltText()), with the one genuine guard at the queue job,
      *       whose siteId payload is legitimately nullable (`$this->siteId ?? $asset->siteId`).
+     * @throws Exception If an explicitly requested site no longer exists.
      */
     protected function resolvePrompt(Asset $asset, ?int $siteId): string
     {
@@ -78,7 +79,13 @@ abstract class ApiService extends Component
             return $asset->{$matches[1]};
         }, $promptTemplate);
 
-        $site = ($siteId !== null ? Craft::$app->getSites()->getSiteById($siteId) : null) ?? $asset->getSite();
+        // A null $siteId means "no particular site requested" — use the asset's own site. But an
+        // explicit $siteId that no longer resolves (e.g. a queued job running after the site was
+        // deleted) must fail loudly rather than silently generating in another site's language.
+        $site = $siteId !== null ? Craft::$app->getSites()->getSiteById($siteId) : $asset->getSite();
+        if ($site === null) {
+            throw new Exception("Cannot generate alt text for {$asset->filename}: site (ID: {$siteId}) could not be found.");
+        }
         $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
             if ($matches[1] === 'languageName') {
                 return $site->getLocale()->getDisplayName(Craft::$app->language);

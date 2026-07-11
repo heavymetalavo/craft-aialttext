@@ -11,6 +11,7 @@
 - The element action and single-asset action now use Craft's own save authorization (`canSave()`), so generating alt text for an asset uploaded by another user requires the "Save assets uploaded by other users" volume permission — matching what the user could edit manually.
 - Alt text is now also generated when an image asset's file is replaced (when the "Generate for new image assets" setting is enabled). The previous alt text is overwritten, since it describes the old image.
 - Fixed a rare error in the element action when a selected asset could not be reloaded for the current site.
+- Alt text generation now fails with a clear message if the requested site no longer exists (e.g. a queued job running after a site deletion), instead of silently generating with the asset's own site's language.
 - Fixed a bug where, after a base64 fallback, later assets processed by the same queue worker would unnecessarily skip straight to base64 encoding.
 - Fixed a bug where a non-JSON error response from the Anthropic API could hide the original error behind a confusing secondary one.
 - Fixed a bug where an OpenAI request failure without a response (e.g. a connection-level error) could obscure the original error.
