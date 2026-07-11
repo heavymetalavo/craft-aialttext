@@ -165,13 +165,14 @@ class GenerateController extends Controller
         $this->success("Asset Alt Text Statistics");
         $this->stdout(str_repeat("=", 50) . "\n");
         
-        $sites = $this->siteId ? [Craft::$app->getSites()->getSiteById($this->siteId)] : Craft::$app->getSites()->getAllSites();
-        
+        // Alt text is global on Craft 4, so per-site counts are identical — count once.
+        $sites = $this->siteId ? [Craft::$app->getSites()->getSiteById($this->siteId)] : [Craft::$app->getSites()->getPrimarySite()];
+
         if (!$sites[0]) {
             $this->failure("Invalid site ID: {$this->siteId}");
             return ExitCode::DATAERR;
         }
-        
+
         $totalAssets = 0;
         $totalWithAlt = 0;
         $totalWithoutAlt = 0;
@@ -240,7 +241,10 @@ class GenerateController extends Controller
      */
     private function processAssets(bool $includeWithAltText): int
     {
-        $sites = $this->siteId ? [Craft::$app->getSites()->getSiteById($this->siteId)] : Craft::$app->getSites()->getAllSites();
+        // Alt text is global on Craft 4 (one column on the assets table), so a single
+        // pass over the primary site covers every asset; looping all sites would just
+        // repeat the same API calls and overwrite the same value.
+        $sites = $this->siteId ? [Craft::$app->getSites()->getSiteById($this->siteId)] : [Craft::$app->getSites()->getPrimarySite()];
         
         if (!$sites[0]) {
             $this->failure("Invalid site ID: {$this->siteId}");

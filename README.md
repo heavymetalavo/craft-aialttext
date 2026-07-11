@@ -4,7 +4,7 @@ Generate alt text for CraftCMS Asset Images using the Anthropic or OpenAI API.
 
 🚨 NEW Additional AI Provider support for Anthropic is now available.
 
-[Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft5) | [GitHub Repository](https://github.com/heavymetalavo/craft-aialttext)
+[Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft4) | [GitHub Repository](https://github.com/heavymetalavo/craft-aialttext)
 
 ## Video demo
 
@@ -13,13 +13,23 @@ https://github.com/user-attachments/assets/0f7eb3e5-bf33-4f49-a8b8-6579a4c05f8b
 ## 📋 Requirements
 
 This plugin requires: 
-- Craft CMS 4.0.0 or later (this branch targets Craft 4 — use the main release line for Craft 5)
+- Craft CMS 4.0.0 or later
 - PHP 8.2 or later
 - An Anthropic API key or an OpenAI API key
 
+> [!NOTE]
+> This is the **4.x** release line of the plugin, for Craft 4 projects. Plugin version majors track Craft version majors — on Craft 5, use the [5.x releases](https://github.com/heavymetalavo/craft-aialttext).
+
+### 📝 Craft 4 notes
+
+This release line retrofits the plugin's core functionality to Craft 4. Everything you need for day-to-day alt text generation is here — bulk actions from the utility, element index actions, generate-on-upload, and the console commands. A couple of Craft 5 features don't carry across, simply because Craft 4's foundations differ:
+
+- **Per-site translated alt text** isn't possible: Craft 4 stores an asset's alt text as a single global value (it only became a per-site field in Craft 5), so the *Save translated results for each site* and *Propagate* settings from the 5.x line don't exist here. Bulk actions and counts operate once across all assets rather than per site.
+- **The action button on an asset's edit page** relies on Craft 5's element action menus, so on Craft 4 use the element index checkbox action, the bulk actions utility, or the console commands instead.
+
 ## 📥 Installation
 
-You can install this plugin from [the Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft5) or with Composer.
+You can install this plugin from [the Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft4) or with Composer.
 
 ### 📦 With Composer
 
@@ -69,15 +79,12 @@ ddev craft plugin/install ai-alt-text
 4. Then generate some AI Alt text by performing one of the following actions:
     1. Triggering a bulk action in the bulk actions table
     2. For individual or a group of specific assets find them in the <strong>Assets</strong> manager section</a> clicking the checkbox on a row, clicking the cog icon to reveal the Element actions menu and select <strong>Generate AI Alt Text</strong>
-    3. When viewing a single asset's page, open the action menu and select <strong>Generate AI Alt Text</strong>
-    4. Upload a new asset (if the upload setting is enabled)
+    3. Upload a new asset (if the upload setting is enabled)
 5. The plugin will queue jobs to generate alt text for each selected asset
 
 ![The Bulk Actions table in the AI Alt Text settings page](src/bulk-actions.png)
 
 ![The CraftCMS assets manager with two assets selected and the 'Generate AI Alt Text' option visible in the active element actions menu](src/assets-manager.png)
-
-![The active actions menu when viewing a single asset shows the 'Generate AI Alt Text' option](src/single-asset.png)
 
 Example twig:
 
@@ -88,7 +95,7 @@ Example twig:
 
 ## 🖥️ Console Commands
 
-**Important**: These commands will create **queue** jobs which when run will generate the alt text. By default, all commands process **all sites** unless `--site-id` is specified.
+**Important**: These commands will create **queue** jobs which when run will generate the alt text. Alt text is global on Craft 4, so commands process each asset once; `--site-id` only changes which site's context (e.g. `{site.language}` prompt variables) is used.
 
 ### Available Commands
 
@@ -103,7 +110,7 @@ Example twig:
 
 | Option | Alias | Description | Default |
 |--------|-------|-------------|---------|
-| `--site-id=<id>` | `-s` | Process only specific site (if not set, processes all sites) | * |
+| `--site-id=<id>` | `-s` | Process using a specific site's context (defaults to the primary site) | * |
 | `--batch-size=<n>` | `-b` | Assets per batch (memory efficiency) | `500` |
 | `--verbose` | `-v` | Show detailed progress | `false` |
 | `--force` | `-f` | Skip confirmations | `false` |
@@ -111,10 +118,10 @@ Example twig:
 ### Examples
 
 ```sh
-# Check coverage across all sites
+# Check alt text coverage
 ./craft ai-alt-text/generate/stats
 
-# Queue missing alt text for all sites
+# Queue missing alt text
 ./craft ai-alt-text/generate/missing
 
 # Queue for specific site with verbose output
