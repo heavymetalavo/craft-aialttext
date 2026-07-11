@@ -11,12 +11,22 @@
 - The element action and single-asset action now use Craft's own save authorization (`canSave()`), so generating alt text for an asset uploaded by another user requires the "Save assets uploaded by other users" volume permission — matching what the user could edit manually.
 - Alt text is now also generated when an image asset's file is replaced (when the "Generate for new image assets" setting is enabled). The previous alt text is overwritten, since it describes the old image.
 - Fixed a rare error in the element action when a selected asset could not be reloaded for the current site.
-- Alt text generation now fails with a clear message if the target site no longer exists, instead of erroring unexpectedly.
 - Fixed a bug where, after a base64 fallback, later assets processed by the same queue worker would unnecessarily skip straight to base64 encoding.
 - Fixed a bug where a non-JSON error response from the Anthropic API could hide the original error behind a confusing secondary one.
 - Fixed a bug where an OpenAI request failure without a response (e.g. a connection-level error) could obscure the original error.
 - Reduced log noise by trimming lengthy base64 image data from the OpenAI debug logs.
 - Prevented a possible infinite loop in the bulk generation console command when a batch size of zero or less was supplied.
+
+## 1.10.0 - 2026-07-07
+
+> {note} If you have a custom **prompt** value and work with non-English language sites, you might want to update it manually to adopt the `{site.languageName}` variable which can return more reliable results in the desired language. Installs still using any former default prompt values are migrated automatically.
+
+- Changed the default prompt to name the target language explicitly — `{site.languageName} (BCP 47: {site.language})`, e.g. `Norwegian (BCP 47: no)`. The previous default ended in a bare code (`Output in the language: no` for Norwegian), which a model could misread as the English word "no" and answer in the wrong language.
+- Added a `{site.languageName}` prompt variable that resolves to the language's display name only.
+- The prompt is now sent as the system/instruction message for both providers — Anthropic via `system`, and OpenAI via the Responses API top-level `instructions` parameter. The user turn now carries only the image and the shared generation trigger.
+- Fixed a bug where saving a setting from a migration could replace all other stored plugin settings (API keys, provider, model, etc.) in project config. Both the new prompt migration and the existing AI provider migration now merge the single changed setting into the stored settings instead, and skip safely (with a warning) on environments where `allowAdminChanges` is disabled instead of failing the update.
+- Bumped the plugin schema version so pending migrations are actually detected and run by Craft's updater.
+- Fixed a bug where root-relative asset/transform URLs (e.g. from a site with a path-only base URL like `/en`, or during console/queue requests) were sent unresolved to the AI provider and the base64 fallback, causing both to fail. They are now resolved against the primary site's host.
 
 ## 1.9.1 - 2026-06-09
 - Removed the plugin-level preflight check before sending a request with an image URL to an AI provider. A CDN (e.g. TwicPics) could reject the preflight request from the plugin despite the file being publicly available and accepted by an AI provider.

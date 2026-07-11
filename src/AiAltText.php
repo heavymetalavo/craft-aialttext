@@ -28,7 +28,7 @@ use yii\base\Event;
  */
 class AiAltText extends Plugin
 {
-    public string $schemaVersion = '1.0.0';
+    public string $schemaVersion = '1.1.0';
     public bool $hasCpSettings = true;
 
     /**

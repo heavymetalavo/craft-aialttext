@@ -95,23 +95,12 @@ class AnthropicService extends ApiService
             // Log the request intent for debugging
             Craft::info('Anthropic API request initiated for asset: ' . $asset->filename . ' with image URL: ' . $imageUrl, __METHOD__);
 
-            $promptTemplate = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
-
-            $prompt = preg_replace_callback('/{asset\.(.*?)}/', function ($matches) use ($asset) {
-                return $asset->{$matches[1]};
-            }, $promptTemplate);
-
-            $site = $siteId !== null ? Craft::$app->getSites()->getSiteById($siteId) : null;
-            if ($site === null) {
-                throw new Exception("Cannot generate alt text for {$asset->filename}: site (ID: " . ($siteId ?? 'null') . ") could not be found.");
-            }
-            $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
-                return $site->{$matches[1]};
-            }, $prompt);
+            $prompt = $this->resolvePrompt($asset, $siteId);
 
             $requestModel = new AnthropicRequest();
             $requestModel->model = $this->model;
-            $requestModel->setPrompt($prompt);
+            $requestModel->setSystem($prompt);
+            $requestModel->setPrompt(self::GENERATE_TRIGGER);
             if ($base64ImageSource) {
                 $requestModel->setImageSource($base64ImageSource);
             } elseif ($imageUrl) {

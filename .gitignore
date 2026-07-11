@@ -6,6 +6,9 @@
 /node_modules
 /vendor
 AGENTS.md
+Agents.md
 CLAUDE.md
-.cursor/
 .claude/
+.cursor/
+.cursorignore
+temp.txt
