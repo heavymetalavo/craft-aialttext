@@ -406,4 +406,34 @@ class GenerateController extends Controller
             return ExitCode::SOFTWARE;
         }
     }
-} 
+
+    // Craft added these output helpers to craft\console\Controller in 4.4.0;
+    // define equivalents here so the commands run on Craft 4.0–4.3 too.
+    // On 4.4+ these overrides take the parent implementations' place.
+
+    public function note(string $message, string $icon = 'ℹ️ '): void
+    {
+        $this->stdout("\n$icon ", BaseConsole::FG_YELLOW, BaseConsole::BOLD);
+        $this->stdout(trim(preg_replace('/^/m', '   ', $message)) . "\n\n");
+    }
+
+    public function success(string $message): void
+    {
+        $this->note($message, '✅');
+    }
+
+    public function failure(string $message): void
+    {
+        $this->note($message, '❌');
+    }
+
+    public function tip(string $message): void
+    {
+        $this->note($message, '💡');
+    }
+
+    public function warning(string $message): void
+    {
+        $this->note($message, '⚠️');
+    }
+}
