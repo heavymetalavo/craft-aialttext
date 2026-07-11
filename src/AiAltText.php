@@ -6,7 +6,7 @@ use Craft;
 use craft\base\Element;
 use craft\base\Plugin;
 use craft\elements\Asset;
-use craft\events\{ModelEvent, RegisterElementActionsEvent, DefineMenuItemsEvent, RegisterComponentTypesEvent, RegisterUrlRulesEvent};
+use craft\events\{ModelEvent, RegisterElementActionsEvent, RegisterComponentTypesEvent, RegisterUrlRulesEvent};
 use craft\helpers\Cp;
 use craft\services\Utilities;
 use craft\web\{View, UrlManager};
@@ -87,15 +87,6 @@ class AiAltText extends Plugin
             Asset::EVENT_REGISTER_ACTIONS,
             function(RegisterElementActionsEvent $event) {
                 $event->actions[] = GenerateAiAltText::class;
-            }
-        );
-
-        // Add custom menu item to asset action dropdown
-        Event::on(
-            Asset::class,
-            Element::EVENT_DEFINE_ACTION_MENU_ITEMS,
-            function(DefineMenuItemsEvent $event) {
-                $this->aiAltTextService->handleAssetActionMenuItems($event);
             }
         );
 

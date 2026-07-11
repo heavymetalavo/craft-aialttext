@@ -13,7 +13,7 @@ https://github.com/user-attachments/assets/0f7eb3e5-bf33-4f49-a8b8-6579a4c05f8b
 ## 📋 Requirements
 
 This plugin requires: 
-- Craft CMS 5.0.0 or later
+- Craft CMS 4.0.0 or later (this branch targets Craft 4 — use the main release line for Craft 5)
 - PHP 8.2 or later
 - An Anthropic API key or an OpenAI API key
 
@@ -144,7 +144,6 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **Propagate** | Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites. |
 | **Generate for new image assets (on upload)** | Automatically generate alt text when new assets are created. |
 | **Process SVGs** | Attempt to generate alt text for SVG files when they are uploaded or batched processed. |
-| **Save translated results for each site** | Save translated results to translatable fields for each site. |
 
 #### 🧠 Model Options
 
