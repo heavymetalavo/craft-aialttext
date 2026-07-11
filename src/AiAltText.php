@@ -115,7 +115,7 @@ class AiAltText extends Plugin
         // Register Utility
         Event::on(
             Utilities::class,
-            Utilities::EVENT_REGISTER_UTILITIES,
+            Utilities::EVENT_REGISTER_UTILITY_TYPES,
             function(RegisterComponentTypesEvent $event) {
                 $event->types[] = AiAltTextUtility::class;
             }
