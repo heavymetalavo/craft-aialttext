@@ -1,5 +1,17 @@
 # Release Notes for AI Alt Text
 
+## 4.0.0 - 2026-07-12
+
+> {note} This is the first release of the **4.x** line, for Craft 4 projects. Plugin version majors now track Craft version majors — on Craft 5, use the 5.x releases. Everything below 4.0.0 in this changelog is the pre-split (Craft 5) history.
+
+- Added Craft CMS 4 support (`craftcms/cms: ^4.0.0`), verified against Craft 4.0.0.
+- Added console output helper equivalents (`success`, `failure`, `note`, `tip`, `warning`) so the commands run on Craft 4.0–4.3, where `craft\console\Controller` doesn't provide them yet.
+- Changed the settings page to redirect back to itself on save instead of the Settings index.
+- Changed bulk actions, console commands and the utility to process assets once instead of per site — alt text is a single global value on Craft 4, so per-site passes repeated the same API calls and the utility double-counted totals on multi-site installs.
+- Removed the **Save translated results for each site** and **Propagate** settings — Craft 4 stores alt text globally on the `assets` table (per-site alt text arrived in Craft 5), so there is nothing to translate or propagate per site. The properties remain on the settings model so shared project config from a Craft 5 install doesn't error.
+- Removed the action button on the asset edit page — it relies on Craft 5's element action menus. Use the element index action, the bulk actions utility, or the console commands instead.
+- Fixed SVG processing on Craft 4: the transformed MIME type is now derived from the transform params, since Craft 4's `Asset::getMimeType()` ignores the active transform's format.
+
 ## 1.10.0 - 2026-07-07
 
 > {note} If you have a custom **prompt** value and work with non-English language sites, you might want to update it manually to adopt the `{site.languageName}` variable which can return more reliable results in the desired language. Installs still using any former default prompt values are migrated automatically.
