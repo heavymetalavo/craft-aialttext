@@ -6,9 +6,9 @@ use Craft;
 use craft\elements\Asset;
 use craft\errors\ElementNotFoundException;
 use craft\queue\BaseJob;
+use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use Throwable;
-use yii\base\Exception;
 
 /**
  * Generate Alt Text queue job

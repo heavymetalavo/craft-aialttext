@@ -145,6 +145,11 @@ class AiAltText extends Plugin
                 ) {
                     // Save current site ID
                     $currentSite = Cp::requestedSite();
+                    // No resolvable CP site (e.g. request outside a CP site context) —
+                    // bail rather than pass a null site ID into createJob()
+                    if ($currentSite === null) {
+                        return;
+                    }
                     // Force regeneration so the stale alt text is overwritten
                     $this->aiAltTextService->createJob($asset, false, $currentSite->id, false, true);
                 }

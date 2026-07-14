@@ -5,12 +5,15 @@
 > {warning} This release introduces permission checks. Automatic generation on upload or file replacement is unchanged, but users who generate alt text manually now need permission to save the asset in the relevant volume, plus the **AI Alt Text Bulk Actions** utility permission for the utility's "Generate all" / "Generate missing" actions. Grant it under **Settings → Users → (group or user) → Permissions → Utilities**.
 
 - The "Generate all" / "Generate missing" utility actions are now permission-gated by the **AI Alt Text Bulk Actions** utility permission (the one Craft registers automatically for the utility, under **Settings → Users → (group or user) → Permissions → Utilities**). Grant it to the relevant user groups after updating, otherwise those actions will be unavailable. The element action is deliberately not permission-gated beyond being able to save each selected asset, and on-upload generation is controlled by the plugin setting alone.
+- The "Generate all" / "Generate missing" utility actions now also require general CP access (`accessCp`), in addition to the AI Alt Text Bulk Actions permission.
 - The bulk action buttons now submit via secure (CSRF-protected) POST forms instead of plain links, and the bulk actions reject any non-POST request.
 - Renamed the utility from **AI Alt Text** to **AI Alt Text Bulk Actions** to better describe what it does.
 - The "Generate AI Alt Text" element action now also skips any assets the user doesn't have permission to save.
 - The element action and single-asset action now use Craft's own save authorization (`canSave()`), so generating alt text for an asset uploaded by another user requires the "Save assets uploaded by other users" volume permission — matching what the user could edit manually.
 - Alt text is now also generated when an image asset's file is replaced (when the "Generate for new image assets" setting is enabled). The previous alt text is overwritten, since it describes the old image.
 - Fixed a rare error in the element action when a selected asset could not be reloaded for the current site.
+- Fixed a rare error in the file-replace regeneration handler when no CP site could be resolved for the request.
+- Fixed a bug where the queue job's error handling didn't catch the plugin's own generation errors, due to catching the wrong `Exception` base class — they would surface as unhandled queue failures instead of the intended logged/described error.
 - Alt text generation now fails with a clear message if the requested site no longer exists (e.g. a queued job running after a site deletion), instead of silently generating with the asset's own site's language.
 - Fixed a bug where, after a base64 fallback, later assets processed by the same queue worker would unnecessarily skip straight to base64 encoding.
 - Fixed a bug where a non-JSON error response from the Anthropic API could hide the original error behind a confusing secondary one.

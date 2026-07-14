@@ -74,6 +74,7 @@ class GenerateController extends Controller
     public function actionGenerateAssetsWithoutAltText(): Response
     {
         $this->requirePostRequest();
+        $this->requirePermission('accessCp');
         // Require permission to run bulk actions
         $this->requirePermission(AiAltText::PERMISSION_BULK_ACTIONS);
 
@@ -209,6 +210,7 @@ class GenerateController extends Controller
     public function actionGenerateAllAssets(): Response
     {
         $this->requirePostRequest();
+        $this->requirePermission('accessCp');
         // Require permission to run bulk actions
         $this->requirePermission(AiAltText::PERMISSION_BULK_ACTIONS);
 
