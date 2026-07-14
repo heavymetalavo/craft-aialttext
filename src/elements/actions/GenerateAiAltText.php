@@ -67,7 +67,7 @@ class GenerateAiAltText extends ElementAction
             // Set the current site id on asset
             $asset = Asset::find()->id($asset->id)->siteId($query->siteId)->one();
 
-            if (!$asset instanceof Asset) {
+            if (!$asset) {
                 continue;
             }
 

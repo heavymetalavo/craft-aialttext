@@ -10,10 +10,6 @@ Generate alt text for CraftCMS Asset Images using the Anthropic or OpenAI API.
 
 ▶️ [Watch the full plugin walkthrough on YouTube](https://youtu.be/Kp0OQVfd4iw)
 
-## Video demo
-
-[Watch on GitHub](https://github.com/heavymetalavo/craft-aialttext?tab=readme-ov-file#video-demo)
-
 ## 📋 Requirements
 
 This plugin requires: 

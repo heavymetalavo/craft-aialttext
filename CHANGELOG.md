@@ -12,7 +12,7 @@
 - The element action and single-asset action now use Craft's own save authorization (`canSave()`), so generating alt text for an asset uploaded by another user requires the "Save assets uploaded by other users" volume permission — matching what the user could edit manually.
 - Alt text is now also generated when an image asset's file is replaced (when the "Generate for new image assets" setting is enabled). The previous alt text is overwritten, since it describes the old image.
 - Fixed a rare error in the element action when a selected asset could not be reloaded for the current site.
-- Fixed a rare error in the file-replace regeneration handler when no CP site could be resolved for the request.
+- Fixed a rare error in the file-replace regeneration handler when no CP site could be resolved for the request; it now falls back to the asset's own site instead.
 - Fixed a bug where the queue job's error handling didn't catch the plugin's own generation errors, due to catching the wrong `Exception` base class — they would surface as unhandled queue failures instead of the intended logged/described error.
 - Alt text generation now fails with a clear message if the requested site no longer exists (e.g. a queued job running after a site deletion), instead of silently generating with the asset's own site's language.
 - Fixed a bug where, after a base64 fallback, later assets processed by the same queue worker would unnecessarily skip straight to base64 encoding.

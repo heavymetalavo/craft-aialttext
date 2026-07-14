@@ -143,15 +143,12 @@ class AiAltText extends Plugin
                     $asset->kind === Asset::KIND_IMAGE
                     && $this->getSettings()->generateForNewAssets
                 ) {
-                    // Save current site ID
+                    // Save current site ID. Cp::requestedSite() can return null (e.g. no
+                    // resolvable CP site context) — createJob() falls back to the asset's
+                    // own site in that case, so pass it through rather than bailing out.
                     $currentSite = Cp::requestedSite();
-                    // No resolvable CP site (e.g. request outside a CP site context) —
-                    // bail rather than pass a null site ID into createJob()
-                    if ($currentSite === null) {
-                        return;
-                    }
                     // Force regeneration so the stale alt text is overwritten
-                    $this->aiAltTextService->createJob($asset, false, $currentSite->id, false, true);
+                    $this->aiAltTextService->createJob($asset, false, $currentSite?->id, false, true);
                 }
             }
         );

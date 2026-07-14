@@ -12,10 +12,6 @@ A full walkthrough of all plugin features — click to watch on YouTube:
 
 [![Watch the AI Alt Text plugin walkthrough on YouTube](https://img.youtube.com/vi/Kp0OQVfd4iw/hqdefault.jpg)](https://youtu.be/Kp0OQVfd4iw)
 
-## Video demo
-
-https://github.com/user-attachments/assets/0f7eb3e5-bf33-4f49-a8b8-6579a4c05f8b
-
 ## 📋 Requirements
 
 This plugin requires: 

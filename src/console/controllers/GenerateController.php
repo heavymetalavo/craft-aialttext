@@ -242,6 +242,7 @@ class GenerateController extends Controller
     {
         if ($this->batchSize < 1) {
             $this->failure("Batch size must be at least 1.");
+            // USAGE (64): the command was invoked with a bad argument/option value, not a runtime data problem
             return ExitCode::USAGE;
         }
 
