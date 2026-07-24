@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## 4.0.0 - 2026-07-12
+## 4.0.0 - 2026-07-24
 
 > {note} This is the first release of the **4.x** line, for Craft 4 projects. Plugin version majors now track Craft version majors — on Craft 5, use the 5.x releases. Everything below 4.0.0 in this changelog is the pre-split (Craft 5) history.
 

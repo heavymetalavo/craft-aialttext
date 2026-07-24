@@ -85,6 +85,12 @@ class AiAltTextService extends Component
 
         // Craft 4 stores alt text in a single column on the assets table (not per site),
         // so translated per-site results aren't possible — this is always off here.
+        //
+        // @todo Drop this always-false local along with the code it makes unreachable: both
+        //       `if (!$saveTranslatedResultsToEachSite) return;` guards below always return, so
+        //       the per-site `foreach ($sites as $site)` loop never runs and $sites is only ever
+        //       read inside it. Kept as-is for now to keep this method's shape close to the 5.x
+        //       line, which makes forward-porting fixes easier to eyeball.
         $saveTranslatedResultsToEachSite = false;
 
         // Check if we need to save the current site off queue
