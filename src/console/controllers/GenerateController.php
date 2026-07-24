@@ -35,7 +35,8 @@ class GenerateController extends Controller
     public $verbose = false;
     
     /**
-     * @var bool Force regeneration even if alt text already exists
+     * @var bool Skip confirmation prompts (which assets get regenerated is determined by the
+     * action: `all` includes assets that already have alt text, `missing` does not)
      */
     public $force = false;
 
@@ -44,7 +45,15 @@ class GenerateController extends Controller
      */
     public function options($actionID): array
     {
-        return array_merge(parent::options($actionID), ['siteId', 'batchSize', 'verbose', 'force']);
+        $options = parent::options($actionID);
+
+        // Only the batch-processing actions read the batching, verbosity and confirmation options.
+        // `single` and `stats` would otherwise advertise options they ignore in `--help`.
+        if (in_array($actionID, ['missing', 'all'], true)) {
+            return array_merge($options, ['siteId', 'batchSize', 'verbose', 'force']);
+        }
+
+        return array_merge($options, ['siteId']);
     }
 
     /**
@@ -66,16 +75,17 @@ class GenerateController extends Controller
      * This command generates alt text for a specific asset by its ID.
      * Useful for testing or processing individual assets.
      *
+     * Pass --site-id to target a specific site, as with the other commands.
+     *
      * @param int $assetId The asset ID to process
-     * @param int|null $siteId The site ID (optional, uses primary site if not specified)
      * @return int Exit code
      */
-    public function actionSingle(int $assetId, int $siteId = null): int
+    public function actionSingle(int $assetId): int
     {
         $this->success("Generating AI alt text for single asset...");
-        
-        // Use provided siteId or fall back to the option or primary site
-        $targetSiteId = $siteId ?? $this->siteId ?? Craft::$app->getSites()->getCurrentSite()->id;
+
+        // Fall back to the primary site when --site-id isn't given
+        $targetSiteId = $this->siteId ?? Craft::$app->getSites()->getCurrentSite()->id;
         
         // Get the asset
         $asset = Asset::find()->id($assetId)->siteId($targetSiteId)->one();
@@ -163,7 +173,7 @@ class GenerateController extends Controller
     public function actionStats(): int
     {
         $this->success("Asset Alt Text Statistics");
-        $this->stdout(str_repeat("=", 50) . "\n");
+        $this->note("Image assets only. Videos, PDFs and audio are excluded. Formats the provider can't yet process are still counted.");
         
         $sites = $this->siteId ? [Craft::$app->getSites()->getSiteById($this->siteId)] : Craft::$app->getSites()->getAllSites();
         
@@ -175,61 +185,112 @@ class GenerateController extends Controller
         $totalAssets = 0;
         $totalWithAlt = 0;
         $totalWithoutAlt = 0;
+        $siteStats = [];
         
         foreach ($sites as $site) {
             // Count total image assets
             $siteTotal = Asset::find()
                 ->kind(Asset::KIND_IMAGE)
                 ->siteId($site->id)
+                ->status(null)
                 ->count();
-            
-            // Count assets with alt text
+
+            // Count assets with alt text. hasAlt() reads the per-site alt value (falling back to
+            // the asset's own alt), so these counts match the utility's; a raw `alt` condition
+            // would hit the site-agnostic assets.alt column and report the same figure per site.
             $siteWithAlt = Asset::find()
                 ->kind(Asset::KIND_IMAGE)
                 ->siteId($site->id)
-                ->where(['not', ['alt' => null]])
-                ->andWhere(['not', ['alt' => '']])
+                ->status(null)
+                ->hasAlt(true)
                 ->count();
             
             $siteWithoutAlt = $siteTotal - $siteWithAlt;
             
-            // Display site stats
-            $coverage = $siteTotal > 0 ? ($siteWithAlt / $siteTotal * 100) : 0;
-            $this->stdout(sprintf(
-                "Site: %-20s Total: %6d  With Alt: %6d  Missing: %6d  Coverage: %5.1f%%\n",
-                $site->name,
-                $siteTotal,
-                $siteWithAlt,
-                $siteWithoutAlt,
-                $coverage
-            ));
+            // Collected rather than printed here so the all-sites row can lead the table, as it
+            // does in the utility
+            $siteStats[] = [
+                'name' => $site->name,
+                'total' => $siteTotal,
+                'with' => $siteWithAlt,
+                'without' => $siteWithoutAlt,
+                'coverage' => $siteTotal > 0 ? ($siteWithAlt / $siteTotal * 100) : 0,
+            ];
             
             $totalAssets += $siteTotal;
             $totalWithAlt += $siteWithAlt;
             $totalWithoutAlt += $siteWithoutAlt;
         }
         
+        $headers = [
+            'site' => 'Site',
+            'total' => ['Image assets', 'align' => 'right'],
+            'with' => ['With alt', 'align' => 'right'],
+            'missing' => ['Missing', 'align' => 'right'],
+            'coverage' => ['Coverage', 'align' => 'right'],
+        ];
+
+        $rows = [];
+
+        // All-sites row leads the table, mirroring the utility
         if (count($sites) > 1) {
-            $this->stdout(str_repeat("-", 50) . "\n");
             $totalCoverage = $totalAssets > 0 ? ($totalWithAlt / $totalAssets * 100) : 0;
-            $this->stdout(sprintf(
-                "TOTAL: %-15s Total: %6d  With Alt: %6d  Missing: %6d  Coverage: %5.1f%%\n",
-                "All Sites",
-                $totalAssets,
-                $totalWithAlt,
-                $totalWithoutAlt,
-                $totalCoverage
-            ));
+            $rows[] = [
+                'site' => $this->ansiFormat('All sites', BaseConsole::BOLD),
+                'total' => [(string)$totalAssets, 'align' => 'right'],
+                'with' => [(string)$totalWithAlt, 'align' => 'right'],
+                'missing' => [(string)$totalWithoutAlt, 'align' => 'right'],
+                'coverage' => [$this->coverageCell($totalCoverage), 'align' => 'right'],
+            ];
         }
+
+        foreach ($siteStats as $stats) {
+            $rows[] = [
+                'site' => $stats['name'],
+                'total' => [(string)$stats['total'], 'align' => 'right'],
+                'with' => [(string)$stats['with'], 'align' => 'right'],
+                'missing' => [(string)$stats['without'], 'align' => 'right'],
+                'coverage' => [$this->coverageCell($stats['coverage']), 'align' => 'right'],
+            ];
+        }
+
+        Console::table($headers, $rows);
         
         // Provide recommendations
         if ($totalWithoutAlt > 0) {
-            $this->tip("Run 'ai-alt-text-cli/missing' to generate alt text for {$totalWithoutAlt} assets without alt text");
+            $this->tip("Run 'ai-alt-text/generate/missing' to generate alt text for {$totalWithoutAlt} assets without alt text");
         } else {
             $this->success("All assets have alt text! 🎉");
         }
         
         return ExitCode::OK;
+    }
+
+    /**
+     * Renders coverage as a filled-circle glyph followed by the percentage, approximating the
+     * control panel's progress ring.
+     *
+     * The glyph is quantised to quarters because those are the only circle fill glyphs available,
+     * making it an at-a-glance accent for the exact figure beside it. Colour bands are coarser than
+     * the utility's ring, which adds lime and teal steps the basic terminal palette can't express.
+     * ansiFormat() (rather than Console::ansiFormat()) respects `--color=0` and
+     * non-TTY output, so piping to a file stays clean; Console::table() measures cells with the
+     * escape codes stripped, so the column still aligns either way.
+     *
+     * @param float $coverage Coverage percentage
+     * @return string
+     */
+    private function coverageCell(float $coverage): string
+    {
+        $glyph = ['○', '◔', '◑', '◕', '●'][(int) round(min(max($coverage, 0), 100) / 25)];
+
+        $color = match (true) {
+            $coverage >= 90 => BaseConsole::FG_GREEN,
+            $coverage >= 50 => BaseConsole::FG_YELLOW,
+            default => BaseConsole::FG_RED,
+        };
+
+        return sprintf('%s %5.1f%%', $this->ansiFormat($glyph, $color), $coverage);
     }
 
     /**
@@ -266,12 +327,9 @@ class GenerateController extends Controller
                     ->siteId($site->id);
                 
                 if (!$includeWithAltText) {
-                    $query->andWhere(['or', 
-                        ['alt' => null],
-                        ['alt' => '']
-                    ]);
+                    $query->hasAlt(false);
                 }
-                
+
                 $count = $query->count();
                 $totalCount += $count;
                 
@@ -316,12 +374,9 @@ class GenerateController extends Controller
                         ->limit($this->batchSize);
                     
                     if (!$includeWithAltText) {
-                        $query->andWhere(['or', 
-                            ['alt' => null],
-                            ['alt' => '']
-                        ]);
+                        $query->hasAlt(false);
                     }
-                    
+
                     $assetIds = $query->ids();
                     $batchSize = count($assetIds);
                     
