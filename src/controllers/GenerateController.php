@@ -91,8 +91,10 @@ class GenerateController extends Controller
                 return $this->redirect('utilities/ai-alt-text-bulk-actions');
             }
         } else {
-            // Otherwise process all sites
-            $sites = Craft::$app->getSites()->getAllSites();
+            // Alt text is global on Craft 4 (one column on the assets table), so a single
+            // pass over the primary site covers every asset; looping all sites would just
+            // repeat the same API calls and overwrite the same value.
+            $sites = [Craft::$app->getSites()->getPrimarySite()];
         }
         
         try {
@@ -179,7 +181,7 @@ class GenerateController extends Controller
                 );
             } else {
                 Craft::$app->getSession()->setNotice(
-                    Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets across all sites', [
+                    Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets', [
                         'count' => $queuedCount,
                     ])
                 );
@@ -227,8 +229,10 @@ class GenerateController extends Controller
                 return $this->redirect('utilities/ai-alt-text-bulk-actions');
             }
         } else {
-            // Otherwise process all sites
-            $sites = Craft::$app->getSites()->getAllSites();
+            // Alt text is global on Craft 4 (one column on the assets table), so a single
+            // pass over the primary site covers every asset; looping all sites would just
+            // repeat the same API calls and overwrite the same value.
+            $sites = [Craft::$app->getSites()->getPrimarySite()];
         }
         
         try {
@@ -307,7 +311,7 @@ class GenerateController extends Controller
                 );
             } else {
                 Craft::$app->getSession()->setNotice(
-                    Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets across all sites.', [
+                    Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets.', [
                         'count' => $queuedCount,
                     ])
                 );

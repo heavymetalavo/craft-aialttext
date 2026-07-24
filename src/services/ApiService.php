@@ -6,6 +6,7 @@ use Craft;
 use craft\base\Component;
 use craft\elements\Asset;
 use craft\helpers\App;
+use craft\helpers\FileHelper;
 use craft\helpers\UrlHelper;
 use Exception;
 use GuzzleHttp\Client;
@@ -214,6 +215,26 @@ abstract class ApiService extends Component
     protected function needsFormatConversion(Asset $asset): bool
     {
         return !$this->isAcceptedMimeType($asset->getMimeType());
+    }
+
+    /**
+     * Returns the MIME type the asset will have once the given transform params are applied.
+     *
+     * Craft 4's Asset::getMimeType() only looks at the file extension and doesn't account
+     * for the active transform's format, so derive it from the transform params directly.
+     *
+     * @param Asset $asset The original asset
+     * @param array $transformParams The transform params that will be applied
+     * @return string|null
+     */
+    protected function getTransformedMimeType(Asset $asset, array $transformParams): ?string
+    {
+        if (!empty($transformParams['format'])) {
+            // Prepend with '.' to let pathinfo() work
+            return FileHelper::getMimeTypeByExtension('.' . $transformParams['format']);
+        }
+
+        return $asset->getMimeType();
     }
 
     /**

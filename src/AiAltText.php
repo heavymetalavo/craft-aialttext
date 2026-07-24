@@ -6,8 +6,9 @@ use Craft;
 use craft\base\Element;
 use craft\base\Plugin;
 use craft\elements\Asset;
-use craft\events\{ModelEvent, RegisterElementActionsEvent, DefineMenuItemsEvent, RegisterComponentTypesEvent, RegisterUrlRulesEvent};
+use craft\events\{ModelEvent, RegisterElementActionsEvent, RegisterComponentTypesEvent, RegisterUrlRulesEvent};
 use craft\helpers\Cp;
+use craft\helpers\Html;
 use craft\services\Utilities;
 use craft\web\{View, UrlManager};
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
@@ -90,15 +91,6 @@ class AiAltText extends Plugin
             }
         );
 
-        // Add custom menu item to asset action dropdown
-        Event::on(
-            Asset::class,
-            Element::EVENT_DEFINE_ACTION_MENU_ITEMS,
-            function(DefineMenuItemsEvent $event) {
-                $this->aiAltTextService->handleAssetActionMenuItems($event);
-            }
-        );
-
         // Listen for asset creation/save events
         Event::on(
             Asset::class,
@@ -124,7 +116,7 @@ class AiAltText extends Plugin
         // Register Utility
         Event::on(
             Utilities::class,
-            Utilities::EVENT_REGISTER_UTILITIES,
+            Utilities::EVENT_REGISTER_UTILITY_TYPES,
             function(RegisterComponentTypesEvent $event) {
                 $event->types[] = AiAltTextUtility::class;
             }
@@ -137,6 +129,30 @@ class AiAltText extends Plugin
     protected function createSettingsModel(): Settings
     {
         return new Settings();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getSettingsResponse(): mixed
+    {
+        $view = Craft::$app->getView();
+        $settingsHtml = $view->namespaceInputs(function() {
+            return (string)$this->settingsHtml();
+        }, 'settings');
+
+        // Craft's settings layout posts redirect=settings (the Settings index).
+        // Append a later redirect input — outside the namespaced settings HTML,
+        // so it keeps the plain "redirect" name — to return here on save instead.
+        $settingsHtml .= Html::redirectInput('settings/plugins/' . $this->id);
+
+        /** @var \craft\web\Controller $controller */
+        $controller = Craft::$app->controller;
+
+        return $controller->renderTemplate('settings/plugins/_settings', [
+            'plugin' => $this,
+            'settingsHtml' => $settingsHtml,
+        ]);
     }
 
     /**

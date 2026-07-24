@@ -23,7 +23,7 @@
   ],
   "require": {
     "php": ">=8.2",
-    "craftcms/cms": "^5.0.0"
+    "craftcms/cms": "^4.0.0"
   },
   "autoload": {
     "psr-4": {
@@ -35,6 +35,7 @@
     "name": "AI Alt Text",
     "developer": "heavymetalavo",
     "documentationUrl": "https://github.com/heavymetalavo/craft-aialttext",
+    "changelogUrl": "https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/4.x/CHANGELOG.md",
     "class": "heavymetalavo\\craftaialttext\\AiAltText"
   },
   "config": {

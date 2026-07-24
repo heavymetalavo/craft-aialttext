@@ -174,8 +174,8 @@ class OpenAiService extends ApiService
             $asset->setTransform($transformParams);
         }
 
-        // After setTransform(), getMimeType() reflects the output format of the transform
-        $mimeType = $asset->getMimeType();
+        // Craft 4's getMimeType() ignores the active transform, so derive the output MIME type from the params
+        $mimeType = $this->getTransformedMimeType($asset, $transformParams);
         
         if (!$this->isAcceptedMimeType($mimeType)) {
             throw new Exception("Asset transform produced unsupported MIME type: $mimeType. Supported formats are: " . implode(', ', self::ACCEPTED_MIME_TYPES));

@@ -5,8 +5,6 @@ namespace heavymetalavo\craftaialttext\services;
 use Craft;
 use craft\base\Component;
 use craft\elements\Asset;
-use craft\enums\MenuItemType;
-use craft\events\DefineMenuItemsEvent;
 use craft\helpers\App;
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
@@ -85,8 +83,15 @@ class AiAltTextService extends Component
             return;
         }
 
-        // Get the $saveTranslatedResultsToEachSite setting value
-        $saveTranslatedResultsToEachSite = $skipSaveTranslatedResultsToEachSiteSetting ? false : AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
+        // Craft 4 stores alt text in a single column on the assets table (not per site),
+        // so translated per-site results aren't possible — this is always off here.
+        //
+        // @todo Drop this always-false local along with the code it makes unreachable: both
+        //       `if (!$saveTranslatedResultsToEachSite) return;` guards below always return, so
+        //       the per-site `foreach ($sites as $site)` loop never runs and $sites is only ever
+        //       read inside it. Kept as-is for now to keep this method's shape close to the 5.x
+        //       line, which makes forward-porting fixes easier to eyeball.
+        $saveTranslatedResultsToEachSite = false;
 
         // Check if we need to save the current site off queue
         if ($saveCurrentSiteOffQueue) {
@@ -171,20 +176,13 @@ class AiAltTextService extends Component
             throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
         }
 
-        $propagate = (bool) $plugin->getSettings()->propagate;
-
-        // Bug Workaround: Pre-save blank alt text to prevent propagation across sites where setting is false.
-        if (!$propagate) {
-            $asset->alt = '';
-            Craft::debug("Performing preliminary save for asset {$asset->id} to establish site rows before setting alt text.", __METHOD__);
-            Craft::$app->elements->saveElement($asset, true, false);
-        }
-
+        // Craft 4 stores alt text globally on the assets table, so the propagate
+        // setting (a per-site concern on Craft 5) doesn't apply here.
         $asset->alt = $altText;
-        
-        Craft::info("Saving AI alt text for asset {$asset->id} with propagate=" . ($propagate ? 'true' : 'false'), __METHOD__);
-        
-        if (!Craft::$app->elements->saveElement($asset, true, $propagate)) {
+
+        Craft::info("Saving AI alt text for asset {$asset->id}", __METHOD__);
+
+        if (!Craft::$app->elements->saveElement($asset)) {
             throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
         }
 
@@ -223,78 +221,6 @@ class AiAltTextService extends Component
     public function isHeic(Asset $asset): bool
     {
         return in_array($asset->getMimeType(), ['image/heic', 'image/heif'], true);
-    }
-
-    /**
-     * Handles the definition of action menu items for assets.
-     *
-     * This method adds a "Generate AI Alt Text" action to the dropdown menu
-     * for image assets.
-     *
-     * @param DefineMenuItemsEvent $event The event containing the menu items
-     */
-    public function handleAssetActionMenuItems(DefineMenuItemsEvent $event): void
-    {
-        /** @var Asset $asset */
-        $asset = $event->sender;
-        $view = Craft::$app->getView();
-
-        // Check if this is an image asset
-        if ($asset->kind === 'image') {
-            // Add the "Generate AI Alt Text" action to the dropdown
-            $customActionId = sprintf('action-generate-ai-alt-%s', mt_rand());
-            $event->items[] = [
-                'type' => MenuItemType::Button,
-                'id' => $customActionId,
-                'icon' => 'language', // Use a relevant icon
-                'label' => Craft::t('ai-alt-text', 'Generate AI Alt Text'),
-            ];
-
-            // Register the JavaScript for the action
-            $view->registerJsWithVars(fn($id, $assetId, $siteId) => <<<JS
-$('#' + $id).on('activate', () => {
-  // Show a loading spinner in the UI
-  Craft.cp.displayNotice(Craft.t('ai-alt-text', 'Queueing AI alt text generation...'));
-  
-  // Make an AJAX request to your controller action
-  Craft.sendActionRequest('POST', 'ai-alt-text/generate/single-asset', {
-    data: {
-      assetId: $assetId,
-      siteId: $siteId,
-    }
-  })
-  .then((response) => {
-    if (response.data.success) {
-        Craft.cp.displayNotice(Craft.t('ai-alt-text', response.data.message));
-      
-      // Refresh the elements in the current view if possible
-      if (Craft.cp.elementIndex) {
-        Craft.cp.elementIndex.updateElements();
-        return;
-      } 
-      
-      // @todo find a way to update the visible content in the element editor
-
-      // Refresh the single asset page, check if current url contains "assets/edit"
-      if (window.location.href.includes("assets/edit")) {
-        window.location.reload();
-      }
-      return;
-    }
-    throw new Error(response.data.message);
-  })
-  .catch((error) => {
-    console.log('catch', JSON.stringify(error));
-    Craft.cp.displayError(Craft.t('ai-alt-text', 'Failed to queue alt text generation: ') + 
-      (error?.message || 'Unknown error'));
-  });
-});
-JS, [
-                $view->namespaceInputId($customActionId),
-                $asset->id,
-                $asset->siteId,
-            ]);
-        }
     }
 
 }

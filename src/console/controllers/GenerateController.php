@@ -165,13 +165,14 @@ class GenerateController extends Controller
         $this->success("Asset Alt Text Statistics");
         $this->stdout(str_repeat("=", 50) . "\n");
         
-        $sites = $this->siteId ? [Craft::$app->getSites()->getSiteById($this->siteId)] : Craft::$app->getSites()->getAllSites();
-        
+        // Alt text is global on Craft 4, so per-site counts are identical — count once.
+        $sites = $this->siteId ? [Craft::$app->getSites()->getSiteById($this->siteId)] : [Craft::$app->getSites()->getPrimarySite()];
+
         if (!$sites[0]) {
             $this->failure("Invalid site ID: {$this->siteId}");
             return ExitCode::DATAERR;
         }
-        
+
         $totalAssets = 0;
         $totalWithAlt = 0;
         $totalWithoutAlt = 0;
@@ -240,7 +241,10 @@ class GenerateController extends Controller
      */
     private function processAssets(bool $includeWithAltText): int
     {
-        $sites = $this->siteId ? [Craft::$app->getSites()->getSiteById($this->siteId)] : Craft::$app->getSites()->getAllSites();
+        // Alt text is global on Craft 4 (one column on the assets table), so a single
+        // pass over the primary site covers every asset; looping all sites would just
+        // repeat the same API calls and overwrite the same value.
+        $sites = $this->siteId ? [Craft::$app->getSites()->getSiteById($this->siteId)] : [Craft::$app->getSites()->getPrimarySite()];
         
         if (!$sites[0]) {
             $this->failure("Invalid site ID: {$this->siteId}");
@@ -406,4 +410,34 @@ class GenerateController extends Controller
             return ExitCode::SOFTWARE;
         }
     }
-} 
+
+    // Craft added these output helpers to craft\console\Controller in 4.4.0;
+    // define equivalents here so the commands run on Craft 4.0–4.3 too.
+    // On 4.4+ these overrides take the parent implementations' place.
+
+    public function note(string $message, string $icon = 'ℹ️ '): void
+    {
+        $this->stdout("\n$icon ", BaseConsole::FG_YELLOW, BaseConsole::BOLD);
+        $this->stdout(trim(preg_replace('/^/m', '   ', $message)) . "\n\n");
+    }
+
+    public function success(string $message): void
+    {
+        $this->note($message, '✅');
+    }
+
+    public function failure(string $message): void
+    {
+        $this->note($message, '❌');
+    }
+
+    public function tip(string $message): void
+    {
+        $this->note($message, '💡');
+    }
+
+    public function warning(string $message): void
+    {
+        $this->note($message, '⚠️');
+    }
+}
