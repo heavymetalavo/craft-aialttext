@@ -59,6 +59,9 @@ class GenerateAiAltText extends ElementAction
             throw new InvalidConfigException('User not logged in');
         }
 
+        $queuedCount = 0;
+        $skippedCount = 0;
+
         foreach ($query->all() as $asset) {
             if (!$asset instanceof Asset) {
                 continue;
@@ -67,8 +70,30 @@ class GenerateAiAltText extends ElementAction
             // Set the current site id on asset
             $asset = Asset::find()->id($asset->id)->siteId($query->siteId)->one();
 
+            if (!$asset) {
+                continue;
+            }
+
+            // Skip assets the user isn't allowed to save (saveElement() doesn't enforce this itself).
+            // canSave() also covers assets uploaded by other users (savePeerAssets).
+            if (!$asset->canSave($user)) {
+                $skippedCount++;
+                continue;
+            }
+
             // Create a job for the asset
             AiAltText::getInstance()->aiAltTextService->createJob($asset, true);
+            $queuedCount++;
+        }
+
+        // Skipping is otherwise invisible: without this the user gets an unqualified
+        // success notice even when nothing they selected was processed.
+        if ($skippedCount > 0) {
+            $this->setMessage(Craft::t('ai-alt-text', 'Queued {queued} of {total} assets for alt text generation; {skipped} skipped (no permission to save).', [
+                'queued' => $queuedCount,
+                'total' => $queuedCount + $skippedCount,
+                'skipped' => $skippedCount,
+            ]));
         }
 
         return true;

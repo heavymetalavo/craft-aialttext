@@ -7,6 +7,7 @@ use craft\elements\Asset;
 use craft\web\Controller;
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
+use yii\web\ForbiddenHttpException;
 use yii\web\Response;
 
 /**
@@ -41,8 +42,11 @@ class GenerateController extends Controller
             ]);
         }
 
-        // Check permissions
-        $this->requirePermission('saveAssets:' . $asset->getVolume()->uid);
+        // Check the user can save this asset (covers assets uploaded by other users too)
+        $user = Craft::$app->getUser()->getIdentity();
+        if (!$user || !$asset->canSave($user)) {
+            throw new ForbiddenHttpException('User is not permitted to save this asset');
+        }
 
         try {
             AiAltText::getInstance()->aiAltTextService->createJob($asset, true);
@@ -69,11 +73,12 @@ class GenerateController extends Controller
      */
     public function actionGenerateAssetsWithoutAltText(): Response
     {
-        // Require permissions to save assets
+        $this->requirePostRequest();
         $this->requirePermission('accessCp');
-        
+        // Require permission to run bulk actions
+        $this->requirePermission(AiAltText::PERMISSION_BULK_ACTIONS);
+
         $totalCount = 0;
-        $processedCount = 0;
         $queuedCount = 0;
         $plugin = AiAltText::getInstance();
         $settings = $plugin->getSettings();
@@ -130,15 +135,14 @@ class GenerateController extends Controller
                         ->all();
                     
                     $batchSize = count($assets);
-                    $processedCount += $batchSize;
-                    
+
                     if ($batchSize === 0) {
                         $hasMore = false;
                         continue;
                     }
-                    
+
                     Craft::debug("Processing batch of {$batchSize} assets for site {$site->name} (offset: {$offset})", __METHOD__);
-                    
+
                     foreach ($assets as $asset) {
                         // Double-check that the asset doesn't have alt text (just in case)
                         if (!empty($asset->alt)) {
@@ -205,11 +209,12 @@ class GenerateController extends Controller
      */
     public function actionGenerateAllAssets(): Response
     {
-        // Require permissions to save assets
+        $this->requirePostRequest();
         $this->requirePermission('accessCp');
-        
+        // Require permission to run bulk actions
+        $this->requirePermission(AiAltText::PERMISSION_BULK_ACTIONS);
+
         $totalCount = 0;
-        $processedCount = 0;
         $queuedCount = 0;
         $plugin = AiAltText::getInstance();
         $settings = $plugin->getSettings();
@@ -264,15 +269,14 @@ class GenerateController extends Controller
                         ->all();
                     
                     $batchSize = count($assets);
-                    $processedCount += $batchSize;
-                    
+
                     if ($batchSize === 0) {
                         $hasMore = false;
                         continue;
                     }
-                    
+
                     Craft::debug("Processing batch of {$batchSize} assets for site {$site->name} (offset: {$offset})", __METHOD__);
-                    
+
                     foreach ($assets as $asset) {
                         try {
                             // Log which asset we're queuing

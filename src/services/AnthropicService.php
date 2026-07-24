@@ -22,7 +22,6 @@ class AnthropicService extends ApiService
     private string $model;
     private string $detailLevel;
     private string $baseUrl = 'https://api.anthropic.com/v1/messages';
-    private bool $hasFallbackRan = false;
 
     public function __construct()
     {
@@ -37,7 +36,7 @@ class AnthropicService extends ApiService
      * Generates alt text using the Anthropic Messages API
      * @throws Exception
      */
-    public function generateAltText(Asset $asset, ?int $siteId = null): string
+    public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceBase64 = false): string
     {
         if (!$this->validateImageSupport($asset)) {
             return '';
@@ -74,7 +73,7 @@ class AnthropicService extends ApiService
         $imageSource = null;
 
         // If no public URL is available, or base64 is forced
-        if ($this->forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
+        if ($forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
             $base64Image = $this->getAssetBase64String($asset, $transformParams);
             $imageSource = [
                 'type' => 'base64',
@@ -84,13 +83,13 @@ class AnthropicService extends ApiService
             $imageUrl = null; // Clear URL so it's not sent in the payload
         }
 
-        return $this->sendRequest($imageUrl, $imageSource, $mimeType, $asset, $siteId);
+        return $this->sendRequest($imageUrl, $imageSource, $mimeType, $asset, $siteId, $forceBase64);
     }
 
     /**
      * @throws Exception
      */
-    private function sendRequest(?string $imageUrl, ?array $base64ImageSource, string $mimeType, Asset $asset, ?int $siteId): string
+    private function sendRequest(?string $imageUrl, ?array $base64ImageSource, string $mimeType, Asset $asset, ?int $siteId, bool $forceBase64 = false): string
     {
         try {
             // Log the request intent for debugging
@@ -142,12 +141,15 @@ class AnthropicService extends ApiService
             }
 
             // Try a fallback where if we have accessed the image before but the provider cannot access it, we can try again with the base64 encoded contents
-            $decodedErrorResponse = Json::decode($errorResponse);
-            if ($decodedErrorResponse['error']['type'] === 'invalid_request_error' && !$this->hasFallbackRan && !$base64ImageSource) {
-                $this->hasFallbackRan = true;
-                $this->forceBase64 = true;
+            try {
+                $decodedErrorResponse = Json::decode($errorResponse);
+            } catch (\Throwable $jsonError) {
+                $decodedErrorResponse = null;
+            }
+            $errorType = $decodedErrorResponse['error']['type'] ?? null;
+            if ($errorType === 'invalid_request_error' && !$forceBase64 && !$base64ImageSource) {
                 Craft::warning('Can access the asset URL, but the provider could not, forcing base64 fallback', __METHOD__);
-                return $this->generateAltText($asset, $siteId);
+                return $this->generateAltText($asset, $siteId, true);
             }
 
             throw new Exception("Anthropic API request failed error response: " . $errorResponse);

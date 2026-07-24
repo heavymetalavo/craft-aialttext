@@ -28,7 +28,6 @@ class OpenAiService extends ApiService
     private string $apiKey;
     private string $model;
     private string $baseUrl = 'https://api.openai.com/v1';
-    private bool $hasFallbackRan = false;
 
     /**
      * Constructor
@@ -60,8 +59,8 @@ class OpenAiService extends ApiService
         $requestStartedAt = null;
 
         try {
-            // Log the request for debugging
-            Craft::debug('OpenAI API request: ' . Json::encode($requestData), __METHOD__);
+            // Log the request for debugging (cap the length so base64 image data doesn't bloat the log)
+            Craft::debug('OpenAI API request: ' . substr(Json::encode($requestData), 0, 1000), __METHOD__);
 
             $requestStartedAt = microtime(true);
             $response = $this->client->post($this->baseUrl . '/responses', [
@@ -114,7 +113,7 @@ class OpenAiService extends ApiService
             $errorResponse = new OpenAiResponse();
 
             // Check if this is a Guzzle exception with a response
-            if ($e instanceof RequestException) {
+            if ($e instanceof RequestException && $e->hasResponse()) {
                 // Get the response body and parse it
                 $responseBody = (string) $e->getResponse()->getBody();
                 $errorData = json_decode($responseBody, true);
@@ -158,7 +157,7 @@ class OpenAiService extends ApiService
      * @throws InvalidConfigException
      * @throws Exception
      */
-    public function generateAltText(Asset $asset, ?int $siteId = null): string
+    public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceBase64 = false): string
     {
         $plugin = AiAltText::getInstance();
         // Validate image support using the parent base service method
@@ -190,7 +189,7 @@ class OpenAiService extends ApiService
         }
 
         // If no public URL is available, or base64 is forced
-        if ($this->forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
+        if ($forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
             $base64Image = $this->getAssetBase64String($asset, $transformParams);
             $imageUrl = "data:$mimeType;base64,$base64Image"; // Replace URL with data string
         }
@@ -207,7 +206,7 @@ class OpenAiService extends ApiService
         $prompt = $this->resolvePrompt($asset, $siteId);
 
         // Log asset info for debugging
-        Craft::info('Generating alt text for asset: ' . $asset->filename . ' (' . $imageUrl . ')', __METHOD__);
+        Craft::info('Generating alt text for asset: ' . $asset->filename . ' (' . (str_starts_with($imageUrl, 'data:') ? substr($imageUrl, 0, 30) . '…' : $imageUrl) . ')', __METHOD__);
 
         // Create and populate the request model
         $request = new OpenAiRequest();
@@ -238,11 +237,9 @@ class OpenAiService extends ApiService
             $errorDetails = $response->error['details'] ?? null;
             $isBase64 = strpos($imageUrl, 'data:') === 0;
 
-            if ($errorDetails && isset($errorDetails['type']) && $errorDetails['type'] === 'invalid_request_error' && !$this->hasFallbackRan && !$isBase64) {
-                $this->hasFallbackRan = true;
-                $this->forceBase64 = true;
+            if ($errorDetails && isset($errorDetails['type']) && $errorDetails['type'] === 'invalid_request_error' && !$forceBase64 && !$isBase64) {
                 Craft::warning('Can access the asset URL, but the provider could not, forcing base64 fallback', __METHOD__);
-                return $this->generateAltText($asset, $siteId);
+                return $this->generateAltText($asset, $siteId, true);
             }
 
             throw new Exception($response->getErrorMessage());

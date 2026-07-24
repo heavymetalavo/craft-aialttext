@@ -177,10 +177,10 @@
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Generate for new image assets (on upload)'|t('aialttext'),
+    label: 'Generate for new image assets (on upload or file replacement)'|t('aialttext'),
     id: 'generateForNewAssets',
     name: 'generateForNewAssets',
-    instructions: "If enabled, the plugin will automatically generate alt text when an image assets is created (on upload)"|t("aialttext"),
+    instructions: "If enabled, the plugin will automatically generate alt text when an image asset is created (on upload) or its file is replaced. On replacement, the alt text for the site the replacement was made in is overwritten, since it describes the old image; other sites keep their existing alt text unless Save translated results for each site is enabled."|t("aialttext"),
     on: settings.generateForNewAssets,
     errors: settings.getErrors('generateForNewAssets'),
 }) }}

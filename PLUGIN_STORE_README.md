@@ -4,16 +4,18 @@ Generate alt text for CraftCMS Asset Images using the Anthropic or OpenAI API.
 
 🚨 NEW Additional AI Provider support for Anthropic is now available.
 
+🚨 NEW Craft 4 support is now available - [visit the 4.x branch README](https://github.com/heavymetalavo/craft-aialttext/blob/4.x/README.md) for installation and documentation.
+
 [Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft5) | [GitHub Repository](https://github.com/heavymetalavo/craft-aialttext)
 
-## Video demo
+## 🎬 Video walkthrough
 
-[Watch on GitHub](https://github.com/heavymetalavo/craft-aialttext?tab=readme-ov-file#video-demo)
+[![Watch the AI Alt Text plugin walkthrough on YouTube](https://web-extract.constantcontact.com/v1/thumbnail?url=https://img.youtube.com/vi/Kp0OQVfd4iw/hqdefault.jpg)](https://youtu.be/Kp0OQVfd4iw)
 
 ## 📋 Requirements
 
 This plugin requires: 
-- Craft CMS 5.0.0 or later
+- Craft CMS 5.0.0 or later - running Craft 4? [Use the 4.x branch](https://github.com/heavymetalavo/craft-aialttext/blob/4.x/README.md) instead
 - PHP 8.2 or later
 - An Anthropic API key or an OpenAI API key
 
@@ -97,7 +99,7 @@ Example twig:
 | `ai-alt-text/generate/stats` | Show alt text coverage statistics |
 | `ai-alt-text/generate/missing` | Queue jobs for assets without alt text (recommended) |
 | `ai-alt-text/generate/all` | Queue jobs for ALL assets (⚠️ overwrites existing alt text) |
-| `ai-alt-text/generate/single <id> [siteId]` | Queue job for a specific asset ID (optionally for one site) |
+| `ai-alt-text/generate/single <id>` | Queue job for a specific asset ID (use `-s` for one site) |
 
 ### Options
 
@@ -124,7 +126,7 @@ Example twig:
 ./craft ai-alt-text/generate/single 123
 
 # Queue for single asset on a specific site
-./craft ai-alt-text/generate/single 123 2
+./craft ai-alt-text/generate/single 123 --site-id=2
 ```
 
 ## ⚙️ Plugin settings
@@ -142,7 +144,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **OpenAI Reasoning Effort**| The reasoning effort level for OpenAI reasoning models. |
 | **Prompt** | The instructions sent to the AI provider as the system / instruction message (example [below](#default-prompt)). Supports `{asset.property}` and `{site.property}` variables, plus `{site.languageName}` for the language's display name (e.g. `English (United Kingdom)`). |
 | **Propagate** | Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites. |
-| **Generate for new image assets (on upload)** | Automatically generate alt text when new assets are created. |
+| **Generate for new image assets (on upload or file replacement)** | Automatically generate alt text when new assets are created, or when an asset's file is replaced. On replacement, the alt text for the site the replacement was made in is overwritten, since it describes the old image; other sites keep their existing alt text unless **Save translated results for each site** is enabled. |
 | **Process SVGs** | Attempt to generate alt text for SVG files when they are uploaded or batched processed. |
 | **Save translated results for each site** | Save translated results to translatable fields for each site. |
 
@@ -156,7 +158,7 @@ To find out which models are capable of vision, check [the models page](https://
 
 #### 💬 Default prompt
 
-This is sent to the provider as the system / instruction message (Anthropic `system`, OpenAI `instructions`); the image is sent in the user turn with a short trigger. `{site.languageName}` resolves to the language's display name and `{site.language}` to its BCP 47 language tag (e.g. `en-GB`), so the default pairs them — edit the parenthesised format freely.
+This is sent to the provider as the system / instruction message (Anthropic `system`, OpenAI `instructions`); the image is sent in the user turn with a short trigger. `{site.languageName}` resolves to the language's display name and `{site.language}` to its BCP 47 language tag (e.g. `en-GB`), so the default pairs them - edit the parenthesised format freely.
 
 > Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don't suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. "#", "alt text:", "An image of", "A photo of"). Do not wrap the output in quotes. Output in the language: {site.languageName} (BCP 47: {site.language})
 
@@ -184,6 +186,12 @@ Controls how much time the model spends "thinking" before generating a response 
 - `xhigh`
 
 For more information, refer to the [OpenAI](https://platform.openai.com/docs/guides/images) and [Anthropic](https://docs.anthropic.com/en/docs/build-with-claude/vision) documentation.
+
+## 🔐 Permissions
+
+Bulk generation is gated by the **AI Alt Text Bulk Actions** utility permission, which Craft registers automatically for the plugin's utility. Grant it to the relevant user groups under **Settings → Users → (group or user) → Permissions → Utilities** after installing. Admins always have it. One checkbox covers viewing the utility and running its "Generate all" / "Generate missing" actions.
+
+Generating for a single asset doesn't have its own permission - it's available to anyone who can save the asset in question (for assets uploaded by other users this requires the "Save assets uploaded by other users" volume permission, matching what they could edit manually). Automatic generation on upload or file replacement is controlled by the "Generate for new image assets" setting alone.
 
 ## 🏷️ Field requirements
 

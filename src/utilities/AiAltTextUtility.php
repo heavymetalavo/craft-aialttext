@@ -16,7 +16,7 @@ class AiAltTextUtility extends Utility
      */
     public static function displayName(): string
     {
-        return Craft::t('ai-alt-text', 'AI Alt Text');
+        return Craft::t('ai-alt-text', 'AI Alt Text Bulk Actions');
     }
 
     /**
@@ -51,7 +51,8 @@ class AiAltTextUtility extends Utility
             $siteAltTextCounts[$site->id] = [
                 'total' => 0,
                 'with' => 0,
-                'without' => 0
+                'without' => 0,
+                'coverage' => null,
             ];
 
             try {
@@ -73,7 +74,8 @@ class AiAltTextUtility extends Utility
                 $siteAltTextCounts[$site->id] = [
                     'total' => $totalImageAssets,
                     'with' => $withAltCount,
-                    'without' => $withoutAltCount
+                    'without' => $withoutAltCount,
+                    'coverage' => $totalImageAssets > 0 ? ($withAltCount / $totalImageAssets * 100) : null,
                 ];
                 
                 $totalAssetsWithAltTextForAllSites += $withAltCount;
@@ -83,11 +85,14 @@ class AiAltTextUtility extends Utility
             }
         }
         
+        $totalForAllSites = $totalAssetsWithAltTextForAllSites + $totalAssetsWithoutAltTextForAllSites;
+
         return Craft::$app->getView()->renderTemplate(
             'ai-alt-text/_utility',
             [
                 'totalAssetsWithAltTextForAllSites' => $totalAssetsWithAltTextForAllSites,
                 'totalAssetsWithoutAltTextForAllSites' => $totalAssetsWithoutAltTextForAllSites,
+                'coverageForAllSites' => $totalForAllSites > 0 ? ($totalAssetsWithAltTextForAllSites / $totalForAllSites * 100) : null,
                 'sites' => $sites,
                 'siteAltTextCounts' => $siteAltTextCounts,
             ]
