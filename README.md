@@ -4,6 +4,8 @@ Generate alt text for CraftCMS Asset Images using the Anthropic or OpenAI API.
 
 🚨 NEW Additional AI Provider support for Anthropic is now available.
 
+🚨 NEW Craft 4 support is now available - [visit the 4.x branch README](https://github.com/heavymetalavo/craft-aialttext/blob/4.x/README.md) for installation and documentation.
+
 [Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft5) | [GitHub Repository](https://github.com/heavymetalavo/craft-aialttext)
 
 ## Video demo
@@ -13,7 +15,7 @@ https://github.com/user-attachments/assets/0f7eb3e5-bf33-4f49-a8b8-6579a4c05f8b
 ## 📋 Requirements
 
 This plugin requires: 
-- Craft CMS 5.0.0 or later
+- Craft CMS 4.0.0 or later
 - PHP 8.2 or later
 - An Anthropic API key or an OpenAI API key
 
