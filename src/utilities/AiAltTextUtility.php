@@ -21,7 +21,7 @@ class AiAltTextUtility extends Utility
      */
     public static function displayName(): string
     {
-        return t('AI Alt Text', category: 'ai-alt-text');
+        return t('AI Alt Text Bulk Actions', category: 'ai-alt-text');
     }
 
     /**
@@ -57,6 +57,7 @@ class AiAltTextUtility extends Utility
                 'total' => 0,
                 'with' => 0,
                 'without' => 0,
+                'coverage' => null,
             ];
 
             try {
@@ -79,6 +80,7 @@ class AiAltTextUtility extends Utility
                     'total' => $totalImageAssets,
                     'with' => $withAltCount,
                     'without' => $withoutAltCount,
+                    'coverage' => $totalImageAssets > 0 ? ($withAltCount / $totalImageAssets * 100) : null,
                 ];
 
                 $totalAssetsWithAltTextForAllSites += $withAltCount;
@@ -88,9 +90,12 @@ class AiAltTextUtility extends Utility
             }
         }
 
+        $totalForAllSites = $totalAssetsWithAltTextForAllSites + $totalAssetsWithoutAltTextForAllSites;
+
         return template('ai-alt-text/_utility', [
             'totalAssetsWithAltTextForAllSites' => $totalAssetsWithAltTextForAllSites,
             'totalAssetsWithoutAltTextForAllSites' => $totalAssetsWithoutAltTextForAllSites,
+            'coverageForAllSites' => $totalForAllSites > 0 ? ($totalAssetsWithAltTextForAllSites / $totalForAllSites * 100) : null,
             'sites' => $sites,
             'siteAltTextCounts' => $siteAltTextCounts,
         ]);

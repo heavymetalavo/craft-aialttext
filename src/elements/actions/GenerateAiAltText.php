@@ -62,13 +62,42 @@ class GenerateAiAltText extends ElementAction
             throw new \LogicException('User not logged in');
         }
 
+        $queuedCount = 0;
+        $skippedCount = 0;
+
+        $queuedCount = 0;
+        $skippedCount = 0;
+
         foreach ($query->all() as $asset) {
             if (!$asset instanceof Asset) {
                 continue;
             }
 
             $asset = Asset::find()->id($asset->id)->siteId($query->siteId)->one();
+
+            if (!$asset) {
+                continue;
+            }
+
+            // Skip assets the user isn't allowed to save (saving doesn't enforce this itself).
+            // canSave() also covers assets uploaded by other users (savePeerAssets).
+            if (!$asset->canSave($user)) {
+                $skippedCount++;
+                continue;
+            }
+
             app(AiAltTextService::class)->createJob($asset, true);
+            $queuedCount++;
+        }
+
+        // Skipping is otherwise invisible: without this the user gets an unqualified
+        // success notice even when nothing they selected was processed.
+        if ($skippedCount > 0) {
+            $this->setMessage(t('Queued {queued} of {total} assets for alt text generation; {skipped} skipped (no permission to save).', [
+                'queued' => $queuedCount,
+                'total' => $queuedCount + $skippedCount,
+                'skipped' => $skippedCount,
+            ], category: 'ai-alt-text'));
         }
 
         return true;

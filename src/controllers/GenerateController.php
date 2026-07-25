@@ -6,6 +6,7 @@ use CraftCms\Cms\Asset\Elements\Asset;
 use CraftCms\Cms\Http\RespondsWithFlash;
 use CraftCms\Cms\Support\Facades\Sites;
 use Exception;
+use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\services\AiAltTextService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -52,19 +53,18 @@ class GenerateController
             ], 404);
         }
 
+        // Check the user can save this asset (covers assets uploaded by other users too)
         $user = $this->request->user();
-        $volumePermission = 'saveAssets:' . $asset->getVolume()->uid;
 
-        if (!$user || !$user->can($volumePermission)) {
+        if (!$user || !$asset->canSave($user)) {
             Log::warning('AI Alt Text: Permission denied', [
                 'userId' => $user?->id,
                 'assetId' => $assetId,
-                'permission' => $volumePermission,
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => t('You do not have permission to save assets in this volume', category: 'ai-alt-text'),
+                'message' => t('You do not have permission to save this asset', category: 'ai-alt-text'),
             ], 403);
         }
 
@@ -90,7 +90,11 @@ class GenerateController
      */
     public function actionGenerateAssetsWithoutAltText(): RedirectResponse
     {
+        // The routes are POST-only, so a GET is rejected with a 405 before reaching here.
         abort_unless($this->request->user()?->can('accessCp'), 403);
+        // Require permission to run bulk actions
+        abort_unless($this->request->user()?->can(AiAltText::PERMISSION_BULK_ACTIONS), 403);
+
 
         $queuedCount = 0;
         $siteId = $this->request->input('siteId');
@@ -126,6 +130,7 @@ class GenerateController
                     if (empty($assets)) {
                         break;
                     }
+
 
                     foreach ($assets as $asset) {
                         if (!empty($asset->alt)) {
@@ -180,7 +185,11 @@ class GenerateController
      */
     public function actionGenerateAllAssets(): RedirectResponse
     {
+        // The routes are POST-only, so a GET is rejected with a 405 before reaching here.
         abort_unless($this->request->user()?->can('accessCp'), 403);
+        // Require permission to run bulk actions
+        abort_unless($this->request->user()?->can(AiAltText::PERMISSION_BULK_ACTIONS), 403);
+
 
         $queuedCount = 0;
         $siteId = $this->request->input('siteId');
@@ -215,6 +224,7 @@ class GenerateController
                     if (empty($assets)) {
                         break;
                     }
+
 
                     foreach ($assets as $asset) {
                         try {

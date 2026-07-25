@@ -4,7 +4,6 @@ namespace heavymetalavo\craftaialttext\services;
 
 use CraftCms\Cms\Asset\Elements\Asset;
 use CraftCms\Cms\Support\Env;
-use CraftCms\Cms\Support\Facades\Sites;
 use CraftCms\Cms\Support\Json;
 use Exception;
 use GuzzleHttp\Exception\{GuzzleException, RequestException};
@@ -24,7 +23,6 @@ class OpenAiService extends ApiService
     private string $apiKey;
     private string $model;
     private string $baseUrl = 'https://api.openai.com/v1';
-    private bool $hasFallbackRan = false;
 
     public function __construct()
     {
@@ -44,7 +42,8 @@ class OpenAiService extends ApiService
         $requestStartedAt = null;
 
         try {
-            Log::debug('OpenAI API request: ' . Json::encode($requestData));
+            // Cap the length so base64 image data doesn't bloat the log
+            Log::debug('OpenAI API request: ' . substr(Json::encode($requestData), 0, 1000));
 
             $requestStartedAt = microtime(true);
             $response = $this->client->post($this->baseUrl . '/responses', [
@@ -84,7 +83,7 @@ class OpenAiService extends ApiService
 
             $errorResponse = new OpenAiResponse();
 
-            if ($e instanceof RequestException) {
+            if ($e instanceof RequestException && $e->hasResponse()) {
                 $responseBody = (string) $e->getResponse()->getBody();
                 $errorData = json_decode($responseBody, true);
 
@@ -109,7 +108,7 @@ class OpenAiService extends ApiService
      * @throws GuzzleException
      * @throws Exception
      */
-    public function generateAltText(Asset $asset, ?int $siteId = null): string
+    public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceBase64 = false): string
     {
         $settings = AiAltText::settings();
 
@@ -132,16 +131,13 @@ class OpenAiService extends ApiService
 
         $imageUrl = $asset->getUrl($transformParams, true);
 
+        // If we have a URL, resolve root-relative URLs to the site base; leave absolute URLs as-is
         if (!empty($imageUrl)) {
             $imageUrl = $this->resolveAssetUrl($asset, $imageUrl);
-
-            if (!$this->forceBase64 && !$this->isUrlAccessible($imageUrl)) {
-                Log::warning('Asset URL is not accessible locally: ' . $imageUrl);
-                $this->forceBase64 = true;
-            }
         }
 
-        if ($this->forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
+        // If no public URL is available, or base64 is forced
+        if ($forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
             $base64Image = $this->getAssetBase64String($asset, $transformParams);
             $imageUrl = "data:$mimeType;base64,$base64Image";
         }
@@ -153,22 +149,14 @@ class OpenAiService extends ApiService
             $detail = Env::parse($settings->openAiImageInputDetailLevel) ?? 'low';
         }
 
-        $prompt = Env::parse($settings->prompt);
+        $prompt = $this->resolvePrompt($asset, $siteId);
 
-        $prompt = preg_replace_callback('/{asset\.(.*?)}/', function ($matches) use ($asset) {
-            return $asset->{$matches[1]};
-        }, $prompt);
-
-        $site = Sites::getSiteById($siteId);
-        $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
-            return $site->{$matches[1]};
-        }, $prompt);
-
-        Log::info('Generating alt text for asset: ' . $asset->filename . ' (' . $imageUrl . ')');
+        Log::info('Generating alt text for asset: ' . $asset->filename . ' (' . (str_starts_with($imageUrl, 'data:') ? substr($imageUrl, 0, 30) . '…' : $imageUrl) . ')');
 
         $request = new OpenAiRequest();
         $request->model = $this->model;
-        $request->setPrompt($prompt)
+        $request->setInstructions($prompt)
+            ->setPrompt(self::GENERATE_TRIGGER)
             ->setImageUrl($imageUrl)
             ->setReasoningEffort((string) Env::parse($settings->openAiReasoningEffort));
 
@@ -187,11 +175,9 @@ class OpenAiService extends ApiService
             $errorDetails = $response->error['details'] ?? null;
             $isBase64 = strpos($imageUrl, 'data:') === 0;
 
-            if ($errorDetails && isset($errorDetails['type']) && $errorDetails['type'] === 'invalid_request_error' && !$this->hasFallbackRan && !$isBase64) {
-                $this->hasFallbackRan = true;
-                $this->forceBase64 = true;
+            if ($errorDetails && isset($errorDetails['type']) && $errorDetails['type'] === 'invalid_request_error' && !$forceBase64 && !$isBase64) {
                 Log::warning('Can access the asset URL, but the provider could not, forcing base64 fallback');
-                return $this->generateAltText($asset, $siteId);
+                return $this->generateAltText($asset, $siteId, true);
             }
 
             throw new Exception($response->getErrorMessage());

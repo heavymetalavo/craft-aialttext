@@ -23,6 +23,11 @@ trait ProcessesAssets
         $siteId = $this->option('site-id');
         $batchSize = (int)($this->option('batch-size') ?? 500);
 
+        if ($batchSize < 1) {
+            $this->error('Batch size must be at least 1.');
+            return self::INVALID;
+        }
+
         $sites = $siteId
             ? [Sites::getSiteById((int)$siteId)]
             : Sites::getAllSites()->all();
@@ -44,7 +49,10 @@ trait ProcessesAssets
                     ->siteId($site->id);
 
                 if (!$includeWithAltText) {
-                    $query->andWhere(['or', ['alt' => null], ['alt' => '']]);
+                    // hasAlt() reads the per-site alt value (falling back to the asset's own
+                    // alt). A raw `alt` condition would hit the site-agnostic assets.alt column
+                    // and silently skip assets that lack alt text for this particular site.
+                    $query->hasAlt(false);
                 }
 
                 $count = $query->count();
@@ -90,7 +98,7 @@ trait ProcessesAssets
                         ->limit($batchSize);
 
                     if (!$includeWithAltText) {
-                        $query->andWhere(['or', ['alt' => null], ['alt' => '']]);
+                        $query->hasAlt(false);
                     }
 
                     $assetIds = $query->ids();

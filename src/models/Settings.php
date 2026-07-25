@@ -11,7 +11,7 @@ use CraftCms\Cms\Support\Env;
  * Defines the settings for the Ai Alt Text plugin.
  *
  * @property string $openAiApiKey The OpenAI API key
- * @property string $openAiModel The OpenAI model to use (must have vision capabilities)
+ * @property string $openAiModel The OpenAI model to use (e.g., 'gpt-5-nano'; must have vision capabilities)
  * @property string $prompt The prompt template for generating alt text
  * @property string $openAiImageInputDetailLevel The detail level for image analysis
  * @property bool $propagate Whether the asset should be saved across all of its supported sites
@@ -57,7 +57,7 @@ class Settings extends PluginSettings
     /**
      * @var string The prompt template for generating alt text
      */
-    public string $prompt = 'Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. "#", "alt text:", "An image of", "A photo of"). Do not wrap the output in quotes. Output in the language: {site.language}';
+    public string $prompt = 'Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. "#", "alt text:", "An image of", "A photo of"). Do not wrap the output in quotes. Output in the language: {site.languageName} (BCP 47: {site.language})';
 
     /**
      * @var string The detail level for image analysis

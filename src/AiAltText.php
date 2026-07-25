@@ -4,6 +4,7 @@ namespace heavymetalavo\craftaialttext;
 
 use CraftCms\Cms\Asset\Elements\Asset;
 use CraftCms\Cms\Asset\Enums\FileKind;
+use CraftCms\Cms\Asset\Events\AssetReplaced;
 use CraftCms\Cms\Cp\RequestedSite;
 use CraftCms\Cms\Element\Events\{ElementActionsResolving, ElementActionMenuItemsResolving, ElementLifecycleSaved};
 use CraftCms\Cms\Plugin\Plugin;
@@ -28,8 +29,18 @@ use function CraftCms\Cms\template;
  */
 class AiAltText extends Plugin
 {
-    public string $schemaVersion = '1.0.0';
+    public string $schemaVersion = '1.1.0';
     public bool $hasCpSettings = true;
+
+    /**
+     * @var string Permission required to run the sweeping bulk actions (generate for all/missing
+     * assets across sites).
+     *
+     * This is the permission Craft registers automatically for the bulk actions utility
+     * (`utility:` + AiAltTextUtility::id()), so one checkbox under Utilities covers both
+     * viewing the utility and executing its bulk actions.
+     */
+    public const PERMISSION_BULK_ACTIONS = 'utility:ai-alt-text-bulk-actions';
 
     public array $commands = [
         GenerateSingle::class,
@@ -108,6 +119,24 @@ class AiAltText extends Plugin
             ) {
                 $requestedSite = app(RequestedSite::class)->get();
                 app(AiAltTextService::class)->createJob($asset, false, $requestedSite?->id ?? $asset->siteId);
+            }
+        });
+
+        // Regenerate alt text when an asset's file is replaced, since the previous
+        // alt text describes the old image
+        Event::listen(function (AssetReplaced $event): void {
+            $asset = $event->asset;
+
+            if (
+                $asset->kind === FileKind::Image->value
+                && self::settings()->generateForNewAssets
+            ) {
+                // RequestedSite can resolve to null (e.g. no resolvable CP site context) —
+                // createJob() falls back to the asset's own site in that case, so pass it
+                // through rather than bailing out.
+                $requestedSite = app(RequestedSite::class)->get();
+                // Force regeneration so the stale alt text is overwritten
+                app(AiAltTextService::class)->createJob($asset, false, $requestedSite?->id, false, true);
             }
         });
     }

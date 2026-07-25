@@ -160,6 +160,22 @@ class AiAltTextService
     }
 
     /**
+     * Determines if an asset is an AVIF file.
+     */
+    public function isAvif(Asset $asset): bool
+    {
+        return $asset->getMimeType() === 'image/avif';
+    }
+
+    /**
+     * Determines if an asset is a HEIC/HEIF file.
+     */
+    public function isHeic(Asset $asset): bool
+    {
+        return in_array($asset->getMimeType(), ['image/heic', 'image/heif'], true);
+    }
+
+    /**
      * Adds a "Generate AI Alt Text" button to the per-asset action dropdown menu.
      */
     public function handleAssetActionMenuItems(ElementActionMenuItemsResolving $event): void

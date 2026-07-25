@@ -24,7 +24,7 @@ class GenerateStats extends Command
     public function handle(): int
     {
         $this->info('Asset Alt Text Statistics');
-        $this->line(str_repeat('=', 50));
+        $this->comment("Image assets only. Videos, PDFs and audio are excluded. Formats the provider can't yet process are still counted.");
 
         $siteId = $this->option('site-id');
         $sites = $siteId
@@ -39,56 +39,100 @@ class GenerateStats extends Command
         $totalAssets = 0;
         $totalWithAlt = 0;
         $totalWithoutAlt = 0;
+        $siteStats = [];
 
         foreach ($sites as $site) {
             $siteTotal = Asset::find()
                 ->kind('image')
                 ->siteId($site->id)
+                ->status(null)
                 ->count();
 
+            // hasAlt() reads the per-site alt value (falling back to the asset's own alt), so
+            // these counts match the utility's; a raw `alt` condition would hit the
+            // site-agnostic assets.alt column and report the same figure for every site.
             $siteWithAlt = Asset::find()
                 ->kind('image')
                 ->siteId($site->id)
-                ->where(['not', ['alt' => null]])
-                ->andWhere(['not', ['alt' => '']])
+                ->status(null)
+                ->hasAlt(true)
                 ->count();
 
             $siteWithoutAlt = $siteTotal - $siteWithAlt;
-            $coverage = $siteTotal > 0 ? ($siteWithAlt / $siteTotal * 100) : 0;
 
-            $this->line(sprintf(
-                'Site: %-20s Total: %6d  With Alt: %6d  Missing: %6d  Coverage: %5.1f%%',
-                $site->name,
-                $siteTotal,
-                $siteWithAlt,
-                $siteWithoutAlt,
-                $coverage
-            ));
+            // Collected rather than printed here so the all-sites row can lead the table, as it
+            // does in the utility
+            $siteStats[] = [
+                'name' => $site->name,
+                'total' => $siteTotal,
+                'with' => $siteWithAlt,
+                'without' => $siteWithoutAlt,
+                'coverage' => $siteTotal > 0 ? ($siteWithAlt / $siteTotal * 100) : 0,
+            ];
 
             $totalAssets += $siteTotal;
             $totalWithAlt += $siteWithAlt;
             $totalWithoutAlt += $siteWithoutAlt;
         }
 
+        $rows = [];
+
+        // All-sites row leads the table, mirroring the utility
         if (count($sites) > 1) {
-            $this->line(str_repeat('-', 50));
             $totalCoverage = $totalAssets > 0 ? ($totalWithAlt / $totalAssets * 100) : 0;
-            $this->line(sprintf(
-                'TOTAL: %-15s Total: %6d  With Alt: %6d  Missing: %6d  Coverage: %5.1f%%',
-                'All Sites',
+            $rows[] = [
+                '<options=bold>All sites</>',
                 $totalAssets,
                 $totalWithAlt,
                 $totalWithoutAlt,
-                $totalCoverage
-            ));
+                $this->coverageCell($totalCoverage),
+            ];
         }
+
+        foreach ($siteStats as $stats) {
+            $rows[] = [
+                $stats['name'],
+                $stats['total'],
+                $stats['with'],
+                $stats['without'],
+                $this->coverageCell($stats['coverage']),
+            ];
+        }
+
+        $this->table(
+            ['Site', 'Image assets', 'With alt', 'Missing', 'Coverage'],
+            $rows
+        );
 
         if ($totalWithoutAlt > 0) {
             $this->comment("Run 'php artisan ai-alt-text:missing' to generate alt text for {$totalWithoutAlt} assets without alt text");
         } else {
-            $this->info('All assets have alt text!');
+            $this->info('All assets have alt text! 🎉');
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Renders coverage as a filled-circle glyph followed by the percentage, approximating the
+     * control panel's progress ring.
+     *
+     * The glyph is quantised to quarters because those are the only circle fill glyphs available,
+     * making it an at-a-glance accent for the exact figure beside it. Colour bands are coarser
+     * than the utility's ring, which adds lime and teal steps the basic terminal palette can't
+     * express. Symfony's style tags are stripped when the output isn't decorated (`--no-ansi`,
+     * or a non-TTY), so piping to a file stays clean and the column still aligns.
+     */
+    private function coverageCell(float $coverage): string
+    {
+        $glyph = ['○', '◔', '◑', '◕', '●'][(int) round(min(max($coverage, 0), 100) / 25)];
+
+        $color = match (true) {
+            $coverage >= 90 => 'green',
+            $coverage >= 50 => 'yellow',
+            default => 'red',
+        };
+
+        return sprintf('<fg=%s>%s</> %5.1f%%', $color, $glyph, $coverage);
     }
 }
