@@ -1,22 +1,24 @@
 <?php
 
-namespace heavymetalavo\craftaialttext\migrations;
-
 use CraftCms\Cms\Cms;
 use CraftCms\Cms\Database\Migration;
 use CraftCms\Cms\Support\Facades\ProjectConfig;
 use Illuminate\Support\Facades\Log;
 
 /**
- * m260630_224145_migrate_prompt_to_language_name migration.
- *
  * Upgrades the stored `prompt` setting to the new default that uses the
  * `{site.languageName}` token, but ONLY when the stored value verbatim-matches
  * one of the default prompts shipped by a previous release. A verbatim match
  * means the user never customised the prompt, so upgrading them to the current
  * default is safe; any customised prompt is left untouched.
+ *
+ * Returned as an anonymous class, which is the Laravel migration convention Craft 6
+ * inherits. A named class in this namespace would be PSR-4 autoloadable *and* then
+ * `require`d again by the migrator, which fails with "Cannot redeclare class"; the
+ * migrator also derives an expected class name from the filename that would never
+ * match a hand-written one.
  */
-class m260630_224145_migrate_prompt_to_language_name extends Migration
+return new class extends Migration
 {
     /**
      * Every default prompt shipped by a previous release, oldest first.
@@ -83,4 +85,4 @@ class m260630_224145_migrate_prompt_to_language_name extends Migration
     {
         // Cannot be reverted
     }
-}
+};

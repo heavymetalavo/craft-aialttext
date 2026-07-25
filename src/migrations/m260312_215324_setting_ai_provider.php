@@ -1,16 +1,17 @@
 <?php
 
-namespace heavymetalavo\craftaialttext\migrations;
-
 use CraftCms\Cms\Cms;
 use CraftCms\Cms\Database\Migration;
 use CraftCms\Cms\Support\Facades\ProjectConfig;
 use Illuminate\Support\Facades\Log;
 
 /**
- * m260312_215324_setting_ai_provider migration.
+ * Defaults the AI provider to openai for installs that already had an OpenAI key.
+ *
+ * Returned as an anonymous class — see the note in the prompt migration for why a named
+ * class in this namespace breaks under Craft 6's Laravel-based migrator.
  */
-class m260312_215324_setting_ai_provider extends Migration
+return new class extends Migration
 {
     /**
      * @inheritdoc
@@ -53,4 +54,4 @@ class m260312_215324_setting_ai_provider extends Migration
     {
         // Cannot be reverted
     }
-}
+};
