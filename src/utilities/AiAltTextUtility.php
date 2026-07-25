@@ -37,7 +37,10 @@ class AiAltTextUtility extends Utility
      */
     public static function icon(): ?string
     {
-        return dirname(__DIR__) . '/icon.svg';
+        // The mask, not icon.svg: control panel chrome expects a monochrome silhouette it can
+        // colour via currentColor. icon.svg is the full-colour store artwork, which renders in
+        // the nav as its own opaque dark tile.
+        return dirname(__DIR__) . '/icon-mask.svg';
     }
 
     /**
