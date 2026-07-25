@@ -40,9 +40,9 @@ Then:
 
 ```sh
 # tell Craft to install the plugin
-./craft plugin/install ai-alt-text
+php artisan craft:plugin:install ai-alt-text
 # or
-ddev craft plugin/install ai-alt-text
+ddev artisan craft:plugin:install ai-alt-text
 ```
 
 ## 🤖 Setup API Keys
@@ -98,37 +98,43 @@ Example twig:
 
 | Command | Description |
 |---------|-------------|
-| `ai-alt-text/generate/stats` | Show alt text coverage statistics |
-| `ai-alt-text/generate/missing` | Queue jobs for assets without alt text (recommended) |
-| `ai-alt-text/generate/all` | Queue jobs for ALL assets (⚠️ overwrites existing alt text) |
-| `ai-alt-text/generate/single <id>` | Queue job for a specific asset ID (use `-s` for one site) |
+| `ai-alt-text:stats` | Show alt text coverage statistics |
+| `ai-alt-text:missing` | Queue jobs for assets without alt text (recommended) |
+| `ai-alt-text:all` | Queue jobs for ALL assets (⚠️ overwrites existing alt text) |
+| `ai-alt-text:single <id>` | Queue job for a specific asset ID |
 
 ### Options
 
-| Option | Alias | Description | Default |
-|--------|-------|-------------|---------|
-| `--site-id=<id>` | `-s` | Process only specific site (if not set, processes all sites) | * |
-| `--batch-size=<n>` | `-b` | Assets per batch (memory efficiency) | `500` |
-| `--verbose` | `-v` | Show detailed progress | `false` |
-| `--force` | `-f` | Skip confirmations | `false` |
+| Option | Description | Default | Accepted by |
+|--------|-------------|---------|-------------|
+| `--site-id=<id>` | Process only a specific site (if not set, processes all sites) | * | all commands |
+| `--batch-size=<n>` | Assets per batch (memory efficiency) | `500` | `missing`, `all` |
+| `--force` | Skip confirmation prompts. Which assets get regenerated is determined by the command, not this flag | `false` | `missing`, `all` |
+| `-v` | Show detailed progress (Laravel's global verbosity flag) | `false` | `missing`, `all` |
 
 ### Examples
 
 ```sh
 # Check coverage across all sites
-./craft ai-alt-text/generate/stats
+php artisan ai-alt-text:stats
 
 # Queue missing alt text for all sites
-./craft ai-alt-text/generate/missing
+php artisan ai-alt-text:missing
 
 # Queue for specific site with verbose output
-./craft ai-alt-text/generate/missing --site-id=2 --verbose
+php artisan ai-alt-text:missing --site-id=2 -v
 
 # Queue for single asset
-./craft ai-alt-text/generate/single 123
+php artisan ai-alt-text:single 123
 
 # Queue for single asset on a specific site
-./craft ai-alt-text/generate/single 123 --site-id=2
+php artisan ai-alt-text:single 123 --site-id=2
+```
+
+Then run the queue to process the jobs:
+
+```sh
+php artisan queue:work
 ```
 
 ## ⚙️ Plugin settings

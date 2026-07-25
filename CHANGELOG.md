@@ -21,7 +21,7 @@
 - Updated the bulk actions utility and the `stats` console command to label their figures as **image assets**, and to state that only image assets are counted - other kinds (videos, PDFs, audio) never receive alt text and are excluded. Images in formats the AI provider doesn't currently support are still counted, so they surface as missing rather than being hidden.
 - Updated the `stats` console command to count assets of any status, matching the utility, so its totals no longer disagree with the utility's when disabled assets exist.
 - Updated the `stats` console command to print a proper table with column headings and right-aligned figures, instead of repeating a label before every value on each row. The all-sites row leads the table, as it does in the utility.
-- Removed the second site-ID argument from the `ai-alt-text/generate/single` console command; pass the site via `--site-id` (or `-s`) instead, consistent with the other commands, so `single 123 2` becomes `single 123 --site-id=2`. A second argument is now ignored.
+- Removed the second site-ID argument from the `ai-alt-text:single` console command; pass the site via `--site-id` instead, consistent with the other commands, so `single 123 2` becomes `single 123 --site-id=2`.
 - Updated the bulk actions utility's table to scroll horizontally instead of overflowing the page at narrower viewport widths, and made the scrollable region keyboard-reachable.
 - Renamed the utility from **AI Alt Text** to **AI Alt Text Bulk Actions** to better describe what it does.
 - Reduced log noise by trimming lengthy base64 image data from the OpenAI debug logs.
@@ -32,7 +32,7 @@
 - Fixed a bug where, after a base64 fallback, later assets processed by the same queue worker would unnecessarily skip straight to base64 encoding.
 - Fixed a bug where a non-JSON error response from the Anthropic API could hide the original error behind a confusing secondary one.
 - Fixed a bug where an OpenAI request failure without a response (e.g. a connection-level error) could obscure the original error.
-- Fixed the `stats` console command pointing at a non-existent command (`ai-alt-text-cli/missing`) in its closing tip; it now suggests `ai-alt-text/generate/missing`.
+- Fixed the `stats` console command pointing at a non-existent command in its closing tip; it now suggests `php artisan ai-alt-text:missing`.
 - Fixed the `single` and `stats` console commands advertising `--batch-size`, `--verbose` and `--force` in their `--help` output, which they ignore; those options are now only offered by the `missing` and `all` commands, which actually use them.
 - Fixed the `--force` option's description, which claimed it forced regeneration of existing alt text. It skips confirmation prompts - whether existing alt text is regenerated depends on the command (`all` vs `missing`).
 
