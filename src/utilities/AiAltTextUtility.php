@@ -42,7 +42,7 @@ class AiAltTextUtility extends Utility
         // as an attribute for the component to resolve by name — the `iconSvg` markup Craft
         // also sends alongside it is only consumed by the Plugin Store. A file path resolves to
         // nothing, which is why the entry rendered with no icon at all.
-        return 'image';
+        return 'eye';
     }
 
     /**
