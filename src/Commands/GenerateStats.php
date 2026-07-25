@@ -27,11 +27,13 @@ class GenerateStats extends Command
         $this->comment("Image assets only. Videos, PDFs and audio are excluded. Formats the provider can't yet process are still counted.");
 
         $siteId = $this->option('site-id');
+        // getAllSites() returns a collection keyed by site ID, so the resulting array has no
+        // index 0 — filter the single-site case instead of indexing into it.
         $sites = $siteId
-            ? [Sites::getSiteById((int)$siteId)]
+            ? array_filter([Sites::getSiteById((int)$siteId)])
             : Sites::getAllSites()->all();
 
-        if (empty($sites) || !$sites[0]) {
+        if (empty($sites)) {
             $this->error("Invalid site ID: {$siteId}");
             return self::FAILURE;
         }
