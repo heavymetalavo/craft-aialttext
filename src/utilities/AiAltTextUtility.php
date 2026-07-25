@@ -37,10 +37,12 @@ class AiAltTextUtility extends Utility
      */
     public static function icon(): ?string
     {
-        // The mask, not icon.svg: control panel chrome expects a monochrome silhouette it can
-        // colour via currentColor. icon.svg is the full-colour store artwork, which renders in
-        // the nav as its own opaque dark tile.
-        return dirname(__DIR__) . '/icon-mask.svg';
+        // Must be one of Craft's own icon names, not a path to the plugin's SVG. The utilities
+        // nav renders `<craft-nav-item :icon="iconPath">`, passing this value straight through
+        // as an attribute for the component to resolve by name — the `iconSvg` markup Craft
+        // also sends alongside it is only consumed by the Plugin Store. A file path resolves to
+        // nothing, which is why the entry rendered with no icon at all.
+        return 'image';
     }
 
     /**
