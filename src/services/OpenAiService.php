@@ -42,8 +42,7 @@ class OpenAiService extends ApiService
         $requestStartedAt = null;
 
         try {
-            // Cap the length so base64 image data doesn't bloat the log
-            Log::debug('OpenAI API request: ' . substr(Json::encode($requestData), 0, 1000));
+            Log::debug('OpenAI API request: ' . $this->encodeForLog($requestData));
 
             $requestStartedAt = microtime(true);
             $response = $this->client->post($this->baseUrl . '/responses', [

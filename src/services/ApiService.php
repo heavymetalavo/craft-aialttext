@@ -8,6 +8,7 @@ use CraftCms\Cms\Image\ImageTransformHelper;
 use CraftCms\Cms\Support\Env;
 use CraftCms\Cms\Support\Facades\Images;
 use CraftCms\Cms\Support\Facades\Sites;
+use CraftCms\Cms\Support\Json;
 use CraftCms\Cms\Support\Url;
 use Exception;
 use GuzzleHttp\Client;
@@ -53,6 +54,50 @@ abstract class ApiService
      * Required implementation for child services to generate their specific payloads.
      */
     abstract public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceBase64 = false): string;
+
+    /**
+     * Encodes a request payload for logging with the base64 image data replaced by a short
+     * marker.
+     *
+     * Truncating the whole payload instead would be simpler, but a base64 image runs to hundreds
+     * of kilobytes and comes first, so any sane cap swallowed the entire log line before reaching
+     * the interesting part — which is the resolved prompt, and with it whether {site.language*}
+     * substituted the language you expected.
+     */
+    protected function encodeForLog(array $payload): string
+    {
+        return Json::encode($this->redactImageData($payload));
+    }
+
+    /**
+     * Replaces base64 image data with a short marker, walking the payload before it's encoded.
+     *
+     * Deliberately not a regex over the encoded JSON: json_encode escapes the forward slashes in
+     * both the media type and the base64 body ("data:image\/png;base64,..."), which is easy to get
+     * wrong and fails open — leaving the entire image in the log.
+     */
+    private function redactImageData(array $payload): array
+    {
+        foreach ($payload as $key => $value) {
+            if (is_array($value)) {
+                $payload[$key] = $this->redactImageData($value);
+                continue;
+            }
+
+            if (!is_string($value)) {
+                continue;
+            }
+
+            // OpenAI sends a data: URL; Anthropic sends raw base64 in a `data` field.
+            if (preg_match('/^(data:image\/[a-zA-Z0-9.+-]+;base64,)/', $value, $matches)) {
+                $payload[$key] = $matches[1] . '<' . strlen($value) . ' bytes redacted>';
+            } elseif ($key === 'data' && strlen($value) > 256) {
+                $payload[$key] = '<' . strlen($value) . ' bytes redacted>';
+            }
+        }
+
+        return $payload;
+    }
 
     /**
      * Resolves the configured prompt template into a final instruction string, substituting
