@@ -9,8 +9,8 @@ use CraftCms\Cms\Support\Facades\HtmlStack;
 use CraftCms\Cms\Support\Facades\InputNamespace;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\services\AiAltTextService;
-use Illuminate\Support\Facades\Auth;
 
+use function CraftCms\Cms\currentUser;
 use function CraftCms\Cms\t;
 
 /**
@@ -57,7 +57,9 @@ class GenerateAiAltText extends ElementAction
 
     public function performAction(ElementQueryInterface $query): bool
     {
-        $user = Auth::user();
+        // asElement(): Craft has both a user model and a user element, and the auth guard returns
+        // the model. canSave() requires the element and TypeErrors on the model.
+        $user = currentUser()?->asElement();
 
         if (!$user) {
             throw new \LogicException('User not logged in');

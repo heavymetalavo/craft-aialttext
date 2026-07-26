@@ -53,8 +53,12 @@ class GenerateController
             ], 404);
         }
 
-        // Check the user can save this asset (covers assets uploaded by other users too)
-        $user = $this->request->user();
+        // Check the user can save this asset (covers assets uploaded by other users too).
+        // Craft has both a user model and a user element; the auth guard and craftUser() both
+        // return the model, while Element::canSave() requires the element and TypeErrors on the
+        // model. asElement() bridges the two. (Craft's own code pairs craftUser() with the
+        // Elements service's canSave($element, $user), which does accept the model.)
+        $user = $this->request->craftUser()?->asElement();
 
         if (!$user || !$asset->canSave($user)) {
             Log::warning('AI Alt Text: Permission denied', [
