@@ -103,7 +103,7 @@ class GenerateController
             $site = Sites::getSiteById((int)$siteId);
             if (!$site) {
                 session()->flash('cp-notification-error', [
-                    t('Invalid site ID: {siteId}', ['siteId' => $siteId], 'ai-alt-text'),
+                    AiAltText::t('Invalid site ID: {siteId}', ['siteId' => $siteId]),
                     ['icon' => 'alert', 'iconLabel' => t('Error')],
                 ]);
                 return redirect(cp_url('utilities/ai-alt-text-bulk-actions'));
@@ -155,24 +155,24 @@ class GenerateController
 
             if ($siteId) {
                 session()->flash('cp-notification-notice', [
-                    t('Queued alt text generation for {count} assets in site {site}', [
+                    AiAltText::t('Queued alt text generation for {count} assets in site {site}', [
                         'count' => $queuedCount,
                         'site' => $sites[0]->name,
-                    ], 'ai-alt-text'),
+                    ]),
                     ['icon' => 'info', 'iconLabel' => t('Notice')],
                 ]);
             } else {
                 session()->flash('cp-notification-notice', [
-                    t('Queued alt text generation for {count} assets across all sites', [
+                    AiAltText::t('Queued alt text generation for {count} assets across all sites', [
                         'count' => $queuedCount,
-                    ], 'ai-alt-text'),
+                    ]),
                     ['icon' => 'info', 'iconLabel' => t('Notice')],
                 ]);
             }
         } catch (Exception $e) {
             Log::error('Error queueing alt text generation: ' . $e->getMessage());
             session()->flash('cp-notification-error', [
-                t('Error: {message}', ['message' => $e->getMessage()], 'ai-alt-text'),
+                AiAltText::t('Error: {message}', ['message' => $e->getMessage()]),
                 ['icon' => 'alert', 'iconLabel' => t('Error')],
             ]);
         }
@@ -198,7 +198,7 @@ class GenerateController
             $site = Sites::getSiteById((int)$siteId);
             if (!$site) {
                 session()->flash('cp-notification-error', [
-                    t('Invalid site ID: {siteId}', ['siteId' => $siteId], 'ai-alt-text'),
+                    AiAltText::t('Invalid site ID: {siteId}', ['siteId' => $siteId]),
                     ['icon' => 'alert', 'iconLabel' => t('Error')],
                 ]);
                 return redirect(cp_url('utilities/ai-alt-text-bulk-actions'));
@@ -245,24 +245,24 @@ class GenerateController
 
             if ($siteId) {
                 session()->flash('cp-notification-notice', [
-                    t('Queued alt text generation for {count} assets in site {site}.', [
+                    AiAltText::t('Queued alt text generation for {count} assets in site {site}.', [
                         'count' => $queuedCount,
                         'site' => $sites[0]->name,
-                    ], 'ai-alt-text'),
+                    ]),
                     ['icon' => 'info', 'iconLabel' => t('Notice')],
                 ]);
             } else {
                 session()->flash('cp-notification-notice', [
-                    t('Queued alt text generation for {count} assets across all sites.', [
+                    AiAltText::t('Queued alt text generation for {count} assets across all sites.', [
                         'count' => $queuedCount,
-                    ], 'ai-alt-text'),
+                    ]),
                     ['icon' => 'info', 'iconLabel' => t('Notice')],
                 ]);
             }
         } catch (Exception $e) {
             Log::error('Error queueing alt text generation for all assets: ' . $e->getMessage());
             session()->flash('cp-notification-error', [
-                t('Error: {message}', ['message' => $e->getMessage()], 'ai-alt-text'),
+                AiAltText::t('Error: {message}', ['message' => $e->getMessage()]),
                 ['icon' => 'alert', 'iconLabel' => t('Error')],
             ]);
         }

@@ -7,6 +7,7 @@ use CraftCms\Cms\Element\Actions\ElementAction;
 use CraftCms\Cms\Element\Queries\Contracts\ElementQueryInterface;
 use CraftCms\Cms\Support\Facades\HtmlStack;
 use CraftCms\Cms\Support\Facades\InputNamespace;
+use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\services\AiAltTextService;
 use Illuminate\Support\Facades\Auth;
 
@@ -93,11 +94,11 @@ class GenerateAiAltText extends ElementAction
         // Skipping is otherwise invisible: without this the user gets an unqualified
         // success notice even when nothing they selected was processed.
         if ($skippedCount > 0) {
-            $this->setMessage(t('Queued {queued} of {total} assets for alt text generation; {skipped} skipped (no permission to save).', [
+            $this->setMessage(AiAltText::t('Queued {queued} of {total} assets for alt text generation; {skipped} skipped (no permission to save).', [
                 'queued' => $queuedCount,
                 'total' => $queuedCount + $skippedCount,
                 'skipped' => $skippedCount,
-            ], category: 'ai-alt-text'));
+            ]));
         }
 
         return true;

@@ -14,6 +14,7 @@ use heavymetalavo\craftaialttext\models\Settings;
 use heavymetalavo\craftaialttext\utilities\AiAltTextUtility;
 use Illuminate\Queue\Events\JobFailed;
 
+use function CraftCms\Cms\t;
 use function CraftCms\Cms\template;
 
 /**
@@ -61,6 +62,34 @@ class AiAltText extends Plugin
         AssetReplaced::class => RegenerateAltTextOnReplace::class,
         CpTemplateRootsResolving::class => RegisterCpTemplateRoot::class,
     ];
+
+    /**
+     * Translates a message and substitutes `{placeholder}` parameters.
+     *
+     * Craft's t() can't be relied on for the substitution. It asks the Yii translator first,
+     * which returns the message untouched when the plugin's category has no registered source,
+     * and then falls through to Laravel's __(), which only understands `:placeholder` syntax.
+     * The net effect is that `{filename}` and friends reached the UI verbatim — the queue showed
+     * jobs named "Generating alt text for {filename} (ID: {id}{siteMessageSuffix})".
+     *
+     * Translation still goes through t(), so a translation file would be picked up; only the
+     * parameter substitution is done here.
+     */
+    public static function t(string $message, array $params = []): string
+    {
+        $translated = t($message, category: 'ai-alt-text');
+
+        if ($params === []) {
+            return $translated;
+        }
+
+        $replacements = [];
+        foreach ($params as $key => $value) {
+            $replacements['{' . $key . '}'] = (string) $value;
+        }
+
+        return strtr($translated, $replacements);
+    }
 
     /**
      * Returns the plugin settings, with a fallback to loading directly from the project

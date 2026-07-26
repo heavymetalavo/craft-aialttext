@@ -40,7 +40,7 @@ class AiAltTextService
         $assetSiteId = $currentSiteId ?? $asset->siteId;
 
         if ($asset->kind !== FileKind::Image->value) {
-            $message = t('{filename} (ID: {id}) is not an image', ['filename' => $asset->filename, 'id' => $asset->id], 'ai-alt-text');
+            $message = AiAltText::t('{filename} (ID: {id}) is not an image', ['filename' => $asset->filename, 'id' => $asset->id]);
             if (app()->runningInConsole()) {
                 Log::info($message);
             } else {
@@ -74,11 +74,11 @@ class AiAltTextService
             assetId: $asset->id,
             siteId: $assetSiteId,
             forceRegeneration: $forceRegeneration,
-            description: t('Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
+            description: AiAltText::t('Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
                 'filename' => $asset->filename,
                 'id' => $asset->id,
                 'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $assetSiteId" : "",
-            ], 'ai-alt-text'),
+            ]),
         ));
 
         if (!$saveTranslatedResultsToEachSite) {
@@ -94,11 +94,11 @@ class AiAltTextService
                 assetId: $asset->id,
                 siteId: $site->id,
                 forceRegeneration: $forceRegeneration,
-                description: t('Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
+                description: AiAltText::t('Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
                     'filename' => $asset->filename,
                     'id' => $asset->id,
                     'siteMessageSuffix' => $hasPlusOneSite ? ", Site: {$site->id}" : "",
-                ], 'ai-alt-text'),
+                ]),
             ));
         }
     }

@@ -2,13 +2,29 @@
 {# @var settings \heavymetalavo\craftaialttext\models\Settings #}
 {% import '_includes/forms.twig' as forms %}
 
+{# Buttons are styled inline: Craft's `.btn` no longer carries the control panel's button
+   appearance in Craft 6, so it renders as plain text. currentColor keeps these legible in both
+   the light and dark control panel. #}
+{% set btnStyle = 'display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid currentColor; border-radius: 6px; background: transparent; color: inherit; font: inherit; line-height: 1.4; cursor: pointer; text-decoration: none;' %}
+
+<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;">
+    <a href="{{ cpUrl('utilities/ai-alt-text-bulk-actions') }}" style="{{ btnStyle }}">
+        <span style="display: inline-flex; width: 1em; height: 1em; flex: none;" aria-hidden="true">{{ iconSvg('eye') }}</span>
+        Bulk actions
+    </a>
+    <a href="https://github.com/heavymetalavo/craft-aialttext" target="_blank" rel="noopener" style="{{ btnStyle }}">
+        <span style="display: inline-flex; width: 1em; height: 1em; flex: none;" aria-hidden="true">{{ iconSvg('book') }}</span>
+        Plugin docs
+    </a>
+</div>
+
 <h2 class="mb-m">Instructions</h2>
 
 <p>Lots of info in <a target="_blank" href="https://github.com/heavymetalavo/craft-aialttext">the plugin docs</a>, but a short summary;
 <ol>
     <li>Check the plugin settings are suitable for your project (and your API key is added)</li>
-    <li>Ensure your volumes have <a href="https://docs.craftcms.com/api/v5/craft-fieldlayoutelements-assets-altfield.html#altfield" target="_blank">the native alt field</a> assigned to the field layout</li>
-    <li>Check each volume's <strong>Alternative Text Translation Method</strong> suits your site - it decides whether alt text can differ per site. If you want per-site values, also enable <strong>Save translated results for each site</strong> below</li>
+    <li>Ensure each asset volume's field layout includes the native <a href="https://craftcms.com/docs/5.x/reference/element-types/assets.html#alt-text" target="_blank" rel="noopener">Alternative Text field</a>, under <strong>Settings → Assets → (volume) → Field Layout</strong></li>
+    <li>While you're in the field layout, open the Alternative Text field's settings and check its <strong>Translation Method</strong>. That is what decides whether alt text can differ per site: leave it alone for one shared value everywhere, or translate per site to give each site its own. If you want per-site values, also switch on <strong>Save translated results for each site</strong> below, otherwise generating only fills the site you ran it in</li>
     <li><p>Ensure your templates are updated to use the <code>alt</code> field, you could consider a fallback <code>asset.alt ?: asset.title</code> if that what was used before</p></li>
     <li>Then generate some AI Alt text by performing one of the following actions:
         <ol>
@@ -166,11 +182,15 @@
 <hr class="mt-l mb-l" />
 
 
+{# `rows` is set because the shipped default prompt runs to ~510 characters and the default
+   height cut it off mid-sentence. Four fits the default exactly at a typical desktop width;
+   narrower viewports wrap to five and scroll the last line. #}
 {{ forms.textareaField({
     fieldClass: 'mb-m',
     label: 'Prompt'|t('app'),
     id: 'prompt',
     name: 'prompt',
+    rows: 4,
     instructions: "Sent to the AI provider as the system / instruction message. The field supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`. Consider `{site.languageName}` for the site's language display name (e.g. `English (United Kingdom)`) which can help with translations on non-english sites. Checkout [the readme](https://github.com/heavymetalavo/craft-aialttext?tab=readme-ov-file#-default-prompt) for the most up to date suggestion prompt template."|t("aialttext"),
     value: settings.prompt,
     placeholder: "Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. \"#\", \"alt text:\", \"An image of\", \"A photo of\"). Do not wrap the output in quotes. Output in the language: {site.languageName} (BCP 47: {site.language})",
