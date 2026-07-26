@@ -27,9 +27,19 @@ class GenerateSingle extends Command
     public function handle(AiAltTextService $service): int
     {
         $assetId = (int)$this->argument('assetId');
-        $siteId = $this->option('site-id')
-            ? (int)$this->option('site-id')
-            : Sites::getCurrentSite()->id;
+
+        // Resolve the site before looking for the asset, so a bad --site-id reports itself rather
+        // than surfacing as "asset not found" and sending you looking at the wrong thing.
+        if ($this->option('site-id')) {
+            $siteId = (int)$this->option('site-id');
+
+            if (!Sites::getSiteById($siteId)) {
+                $this->error("Invalid site ID: {$siteId}");
+                return self::FAILURE;
+            }
+        } else {
+            $siteId = Sites::getCurrentSite()->id;
+        }
 
         $this->info("Generating AI alt text for single asset...");
 

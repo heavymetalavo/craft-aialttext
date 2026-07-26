@@ -5,6 +5,7 @@ namespace heavymetalavo\craftaialttext\services;
 use CraftCms\Cms\Asset\Elements\Asset;
 use CraftCms\Cms\Asset\Enums\FileKind;
 use CraftCms\Cms\Element\Enums\MenuItemType;
+use CraftCms\Cms\Field\Enums\TranslationMethod;
 use CraftCms\Cms\Element\Events\ElementActionMenuItemsResolving;
 use CraftCms\Cms\Support\Facades\{Elements, HtmlStack, InputNamespace, Sites};
 use Exception;
@@ -58,6 +59,21 @@ class AiAltTextService
         $saveTranslatedResultsToEachSite = $skipSaveTranslatedResultsToEachSiteSetting
             ? false
             : AiAltText::settings()->saveTranslatedResultsToEachSite;
+
+        // Generating per site is only meaningful where the volume's alt text can actually differ
+        // per site. With the volume's Alternative Text Translation Method set to None every site
+        // shares one value, so looping them would spend an API call each and leave whichever job
+        // finished last as the winner. Generate once instead.
+        //
+        // The site isn't redirected to the primary one here. $siteId only selects the language the
+        // prompt asks for; the value is written to whichever site row the passed-in asset was
+        // loaded for. Forcing the primary language would produce, say, English text stored against
+        // the French site's row — harder to explain than simply generating in the language of the
+        // site the action was triggered from.
+        if ($saveTranslatedResultsToEachSite && !$this->altTextCanVaryPerSite($asset)) {
+            Log::debug("Alt text is shared across sites for {$asset->filename} (the volume's Alternative Text Translation Method is None), so generating once rather than once per site.");
+            $saveTranslatedResultsToEachSite = false;
+        }
 
         if ($saveCurrentSiteOffQueue) {
             $this->generateAltText($asset, $assetSiteId, $forceRegeneration);
@@ -149,6 +165,25 @@ class AiAltTextService
 
         Log::info('Successfully saved alt text for asset: ' . $asset->filename);
         return $altText;
+    }
+
+    /**
+     * Whether alt text can hold a different value per site for this asset's volume.
+     *
+     * Craft keeps this on the volume as its Alternative Text Translation Method. `None` means one
+     * value shared across every site; every other method (site, site group, language, custom)
+     * allows it to vary, so per-site generation is worth doing.
+     */
+    private function altTextCanVaryPerSite(Asset $asset): bool
+    {
+        try {
+            return $asset->getVolume()->altTranslationMethod !== TranslationMethod::None;
+        } catch (\Throwable $e) {
+            // Can't resolve the volume: behave as before rather than silently skipping sites.
+            Log::debug("Couldn't read the alt translation method for {$asset->filename}, assuming alt text can vary per site: " . $e->getMessage());
+
+            return true;
+        }
     }
 
     /**
