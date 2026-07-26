@@ -28,6 +28,7 @@
 <h2 id="settings" class="mb-m">Settings</h2>
 
 {{ forms.selectizeField({
+    fieldClass: 'mb-m',
     label: "AI Provider"|t("aialttext"),
     instructions: "Choose which AI service to use for generating alt text"|t("aialttext"),
     id: "aiProvider",
@@ -50,6 +51,7 @@
     <h3 class="mb-m">Anthropic Settings</h3>
 
     {{ forms.autosuggestField({
+    fieldClass: 'mb-m',
         label: "Anthropic API Key"|t("aialttext"),
         instructions: "The API key from your [Anthropic Console account](https://console.anthropic.com/)"|t("aialttext"),
         id: "anthropicApiKey",
@@ -61,6 +63,7 @@
     }) }}
 
     {{ forms.autosuggestField({
+    fieldClass: 'mb-m',
         label: 'Anthropic Model'|t('aialttext'),
         id: 'anthropicModel',
         name: 'anthropicModel',
@@ -72,6 +75,7 @@
     }) }}
 
     {{ forms.selectizeField({
+    fieldClass: 'mb-m',
         label: 'Anthropic Image Detail Level'|t('aialttext'),
         id: 'anthropicImageDetailLevel',
         name: 'anthropicImageDetailLevel',
@@ -96,6 +100,7 @@
     <h3 class="mb-m">OpenAI Settings</h3>
 
     {{ forms.autosuggestField({
+    fieldClass: 'mb-m',
         label: "OpenAI API Key"|t("aialttext"),
         instructions: "The API key from your Open AI account"|t("aialttext"),
         id: "openAiApiKey",
@@ -107,6 +112,7 @@
     }) }}
 
     {{ forms.autosuggestField({
+    fieldClass: 'mb-m',
         label: 'Open AI Model'|t('app'),
         id: 'openAiModel',
         name: 'openAiModel',
@@ -118,6 +124,7 @@
     }) }}
 
     {{ forms.selectizeField({
+    fieldClass: 'mb-m',
         label: 'OpenAI Image Detail Level'|t('aialttext'),
         id: 'openAiImageInputDetailLevel',
         name: 'openAiImageInputDetailLevel',
@@ -135,6 +142,7 @@
     }) }}
 
     {{ forms.selectizeField({
+    fieldClass: 'mb-m',
         label: 'OpenAI Reasoning Effort'|t('aialttext'),
         id: 'openAiReasoningEffort',
         name: 'openAiReasoningEffort',
@@ -159,6 +167,7 @@
 
 
 {{ forms.textareaField({
+    fieldClass: 'mb-m',
     label: 'Prompt'|t('app'),
     id: 'prompt',
     name: 'prompt',
@@ -169,6 +178,7 @@
 }) }}
 
 {{ forms.lightswitchField({
+    fieldClass: 'mb-m',
     label: 'Propagate'|t('aialttext'),
     id: 'propagate',
     name: 'propagate',
@@ -178,6 +188,7 @@
 }) }}
 
 {{ forms.lightswitchField({
+    fieldClass: 'mb-m',
     label: 'Generate for new image assets (on upload or file replacement)'|t('aialttext'),
     id: 'generateForNewAssets',
     name: 'generateForNewAssets',
@@ -187,6 +198,7 @@
 }) }}
 
 {{ forms.lightswitchField({
+    fieldClass: 'mb-m',
     label: 'Process SVGs'|t('aialttext'),
     id: 'processSvgs',
     name: 'processSvgs',
@@ -196,6 +208,7 @@
 }) }}
 
 {{ forms.lightswitchField({
+    fieldClass: 'mb-m',
     label: 'Save translated results for each site'|t('aialttext'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',

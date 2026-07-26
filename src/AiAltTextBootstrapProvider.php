@@ -2,10 +2,12 @@
 
 namespace heavymetalavo\craftaialttext;
 
+use CraftCms\Cms\Route\Routes;
 use CraftCms\Cms\View\Events\CpTemplateRootsResolving;
 use heavymetalavo\craftaialttext\Commands\{GenerateAll, GenerateMissing, GenerateSingle, GenerateStats};
 use heavymetalavo\craftaialttext\listeners\RegisterCpTemplateRoot;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -41,6 +43,45 @@ class AiAltTextBootstrapProvider extends ServiceProvider
                 GenerateAll::class,
                 GenerateStats::class,
             ]);
+        }
+
+        $this->registerActionRoutes();
+    }
+
+    /**
+     * Registers routes/actions.php under Craft's action-trigger prefixes.
+     *
+     * Mirrors what Craft's HasRoutes concern does, for the same reason the template root is
+     * registered here: the concern never runs, so without this the plugin has no routes at all
+     * and both the bulk actions and the single-asset action return 405.
+     *
+     * The `web` middleware is included so the session is started, and with it the authenticated
+     * user — HasRoutes applies only ['craft', 'craft.cp'] to the CP variant.
+     */
+    private function registerActionRoutes(): void
+    {
+        if ($this->app->routesAreCached()) {
+            return;
+        }
+
+        $path = dirname(__DIR__) . '/routes/actions.php';
+
+        if (! is_file($path)) {
+            return;
+        }
+
+        $routes = $this->app->get(Routes::class);
+        $handle = 'ai-alt-text';
+
+        $prefixes = array_unique([
+            $routes->joinRoutePrefix([$routes->cpActionTriggerRoutePrefix(), $handle]),
+            $routes->joinRoutePrefix([$routes->actionTriggerRoutePrefix(), $handle]),
+        ]);
+
+        foreach ($prefixes as $prefix) {
+            Route::middleware(['web', 'craft', 'craft.cp'])
+                ->prefix($prefix)
+                ->group($path);
         }
     }
 }
