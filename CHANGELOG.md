@@ -1,8 +1,10 @@
 # Release Notes for AI Alt Text
 
-## 6.0.0 - 2026-07-24
+## 6.0.0-alpha.1 - 2026-07-26
 
 > {note} **This is the Craft 6 release line.** The plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5, 6.x for Craft 6. Install the line that matches your Craft version. The jump from 1.10.0 to these numbered lines was a version-numbering change rather than a rewrite.
+
+> {note} Released as an alpha because Craft 6 is itself still in alpha, and its plugin API is still moving - this release needed changes to keep up with API changes made between Craft 6 alpha.4 and alpha.14. Developed and tested against **alpha.14**; earlier alphas may not register the plugin's event listeners, which would silently disable the element action, the asset action menu item and regeneration on file replacement. `6.0.0` will follow once Craft 6 is stable.
 
 > {warning} Craft 6 replaces the Yii console commands with Laravel Artisan commands. `./craft ai-alt-text/generate/<action>` becomes `php artisan ai-alt-text:<action>` - for example `php artisan ai-alt-text:missing`. See the readme for the full list.
 
