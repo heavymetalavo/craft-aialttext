@@ -278,11 +278,21 @@ abstract class ApiService
             }
         }
 
-        // For SVGs that require format conversion (e.g. SVG→PNG), getContents() would return
-        // raw SVG data which AI providers reject even when a transform MIME type is claimed.
-        // Try generating the transform locally to obtain the correct binary data instead.
-        $originalExtension = strtolower($asset->getExtension());
-        if ($originalExtension === 'svg' && !empty($transformParams)) {
+        // The transform URL was unavailable or wouldn't download, so work out what the source
+        // actually is. This has to happen before anything reads getMimeType(), because while a
+        // transform is applied the asset reports the *transformed* type, which is always one the
+        // provider accepts — the earlier SVG-only version of this used the file extension to
+        // sidestep exactly that.
+        $asset->setTransform(null);
+        $originalMimeType = $asset->getMimeType();
+        $needsConversion = !$this->isAcceptedMimeType($originalMimeType);
+
+        // Anything needing conversion (SVG/AVIF/HEIC→PNG, WEBP→JPG) can't fall back to the source
+        // bytes: getContents() returns the original format, which the provider rejects even when a
+        // transform MIME type is claimed. Generate the transform locally instead. This used to be
+        // SVG-only, which left AVIF and HEIC failing outright wherever the transform URL isn't
+        // fetchable — including any install whose volume URLs aren't reachable from the app itself.
+        if ($needsConversion && !empty($transformParams)) {
             try {
                 $imageTransform = ImageTransformHelper::normalizeTransform($transformParams);
                 if ($imageTransform) {
@@ -290,22 +300,17 @@ abstract class ApiService
                     $binary = file_get_contents($tempPath);
                     @unlink($tempPath);
                     if ($binary !== false && $binary !== '') {
-                        Log::debug("Generated local SVG transform for {$asset->filename}");
+                        Log::debug("Generated local transform for {$asset->filename} (source: $originalMimeType)");
                         return base64_encode($binary);
                     }
                 }
             } catch (\Throwable $e) {
-                Log::warning("Failed to generate local SVG transform for {$asset->filename}: " . $e->getMessage());
+                Log::warning("Failed to generate a local transform for {$asset->filename}: " . $e->getMessage());
             }
-            throw new Exception("Cannot process SVG asset '{$asset->filename}': the transform URL is inaccessible and local transform generation failed. Ensure the volume URL is publicly accessible, or disable SVG processing in the plugin settings.");
         }
 
-        // Reset the transform so the asset reports the original MIME type before
-        // falling back to source bytes.
-        $asset->setTransform(null);
-        $originalMimeType = $asset->getMimeType();
-        if (!$this->isAcceptedMimeType($originalMimeType)) {
-            throw new Exception("Cannot generate alt text for {$asset->filename}: The transform or asset is not publicly available, or the image transform could not be downloaded, and the original format \"$originalMimeType\" is not supported natively by the AI provider.");
+        if ($needsConversion) {
+            throw new Exception("Cannot generate alt text for {$asset->filename}: its format \"$originalMimeType\" needs converting before the AI provider will accept it, the transform URL was unavailable, and generating the transform locally failed. Check the volume URL is reachable from the site, and that the image driver supports this format.");
         }
 
         Log::warning("Falling back to the source file contents of {$asset->filename} for base64 encoding: the (transformed) image URL was unavailable or could not be downloaded, and its source MIME type \"$originalMimeType\" is natively supported by the AI provider.");
