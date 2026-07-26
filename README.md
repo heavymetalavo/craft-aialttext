@@ -152,9 +152,17 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **OpenAI Reasoning Effort**| The reasoning effort level for OpenAI reasoning models. |
 | **Prompt** | The instructions sent to the AI provider as the system / instruction message (example [below](#default-prompt)). Supports `{asset.property}` and `{site.property}` variables, plus `{site.languageName}` for the language's display name (e.g. `English (United Kingdom)`). |
 | **Propagate** | Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites. |
-| **Generate for new image assets (on upload or file replacement)** | Automatically generate alt text when new assets are created, or when an asset's file is replaced. On replacement, the alt text for the site the replacement was made in is overwritten, since it describes the old image; other sites keep their existing alt text unless **Save translated results for each site** is enabled. |
+| **Generate for new image assets (on upload or file replacement)** | Automatically generate alt text when new assets are created, or when an asset's file is replaced. On replacement, the alt text for the site the replacement was made in is overwritten, since it describes the old image; other sites keep their existing alt text unless **Save translated results for each site** is enabled. See [embedded captions](#embedded-iptcxmp-captions) for how this interacts with captions already in the image file. |
 | **Process SVGs** | Attempt to generate alt text for SVG files when they are uploaded or batched processed. |
 | **Save translated results for each site** | Save translated results to translatable fields for each site. |
+
+#### 🏷️ Embedded IPTC/XMP captions
+
+When an image carries a caption in its own metadata, Craft copies that caption into the asset's alt text as it is uploaded or replaced — before it strips the metadata out. This happens in Craft itself, with or without this plugin installed.
+
+The plugin doesn't look for those captions. With **Generate for new image assets** enabled, generation is queued for every new image, and the generated description overwrites whatever the caption put there. If your images are captioned by whoever shot or licensed them, leave that setting off and generate deliberately instead. The **Generate for assets missing alt text** bulk action and `ai-alt-text:missing` only touch assets that have none, so an embedded caption is left alone. The per-asset action, **Generate for all assets** and `ai-alt-text:all` regenerate regardless — which is the point of asking for them, but it does mean a caption goes too.
+
+It's also worth knowing when you're testing the plugin: upload a captioned image and alt text appears immediately, which looks exactly like the plugin having generated it. Use images with no embedded caption if you want to see what the plugin is actually doing.
 
 #### 🧠 Model Options
 
