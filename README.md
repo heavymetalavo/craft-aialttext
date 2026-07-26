@@ -210,8 +210,9 @@ To add this field:
 2. Scroll to Field Layout section
 3. Click the `+ Add` button
 4. Search for the `alt` field and click 
-5. Save changes to the volume
-6. Update your templates to use the new `alt` field
+5. Review the field's **Alternative Text Translation Method** and check it suits your site. This is what decides whether alt text can differ per site: leave it as-is if one shared value across all sites is what you want, or set it to translate per site if you want each site to hold its own alt text. If you do want per-site values, also enable the plugin's **Save translated results for each site** setting, otherwise generation only fills the site it ran in.
+6. Save changes to the volume
+7. Update your templates to use the new `alt` field
 
 ### Provider-Specific Limits
 

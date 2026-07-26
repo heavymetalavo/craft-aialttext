@@ -29,10 +29,14 @@
         <span style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
             {# viewBox is 40 wide for a radius of 15.9155 plus half the 6-unit stroke either side
                (20 + 15.9155 + 3 = 38.92), so the stroke isn't clipped flat at the edges. #}
+            {# fill, stroke and stroke-width go in inline styles rather than presentation
+               attributes because the Craft 6 control panel ships `svg * { fill: currentColor;
+               stroke-width: 0 }`, and CSS beats presentation attributes — which zeroed the ring's
+               stroke and filled its circles, leaving a solid blob instead of a ring. #}
             <svg viewBox="0 0 40 40" width="16" height="16" aria-hidden="true" focusable="false" style="flex: none;">
-                <circle cx="20" cy="20" r="15.9155" fill="none" stroke="var(--gray-200)" stroke-width="6"/>
+                <circle cx="20" cy="20" r="15.9155" style="fill: none; stroke: var(--gray-200, #e5e7eb); stroke-width: 6;"/>
                 {%- if coverage > 0 %}
-                <circle cx="20" cy="20" r="15.9155" fill="none" stroke="{{ color }}" stroke-width="6"
+                <circle cx="20" cy="20" r="15.9155" style="fill: none; stroke: {{ color }}; stroke-width: 6;"
                         stroke-dasharray="{{ coverage|round(1) }} 100" stroke-linecap="round" transform="rotate(-90 20 20)"/>
                 {%- endif %}
             </svg>
