@@ -254,7 +254,7 @@ class AiAltTextService extends Component
             $view->registerJsWithVars(fn($id, $assetId, $siteId) => <<<JS
 $('#' + $id).on('activate', () => {
   // Show a loading spinner in the UI
-  Craft.cp.displayNotice(Craft.t('ai-alt-text', 'Queueing AI alt text generation...'));
+  Craft.cp.displayNotice(Craft.t('ai-alt-text', 'Generating AI alt text\u2026'));
   
   // Make an AJAX request to your controller action
   Craft.sendActionRequest('POST', 'ai-alt-text/generate/single-asset', {

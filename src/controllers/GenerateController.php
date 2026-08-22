@@ -54,7 +54,7 @@ class GenerateController extends Controller
             // Return success
             return $this->asJson([
                 'success' => true,
-                'message' => Craft::t('ai-alt-text', 'Alt text generation has been queued'),
+                'message' => Craft::t('ai-alt-text', 'Alt text generated'),
             ]);
         } catch (Exception $e) {
             Craft::error('Error queueing alt text generation: ' . $e->getMessage(), __METHOD__);
