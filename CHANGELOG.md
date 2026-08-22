@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed the "already being processed" check refusing the wrong assets. It matched the asset ID as a substring of the queue job's description, so `ID: 1` also matched `ID: 12`, `ID: 100` and so on - queueing asset 1 was refused whenever a higher-numbered asset was already queued. The IDs in job descriptions are now delimited, so they match exactly.
 - Fixed the same check never running at all on single-site installs: it required the site ID to appear in the job description, but the site is only named there when more than one site exists. Duplicate jobs for the same asset were never caught.
