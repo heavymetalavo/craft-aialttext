@@ -106,6 +106,7 @@ class GenerateController extends Controller
                 $assets = Asset::find()
                     ->kind(Asset::KIND_IMAGE)
                     ->siteId($site->id)
+                    ->status(null)
                     ->hasAlt(false)
                     ->count();
                 
@@ -129,7 +130,9 @@ class GenerateController extends Controller
                     $assets = Asset::find()
                         ->kind(Asset::KIND_IMAGE)
                         ->siteId($site->id)
+                        ->status(null)
                         ->hasAlt(false)
+                        ->orderBy(['elements.id' => SORT_ASC])
                         ->offset($offset)
                         ->limit($limit)
                         ->all();
@@ -242,6 +245,7 @@ class GenerateController extends Controller
                 $assets = Asset::find()
                     ->kind(Asset::KIND_IMAGE)
                     ->siteId($site->id)
+                    ->status(null)
                     ->count();
                 
                 $totalCount += $assets;
@@ -264,6 +268,8 @@ class GenerateController extends Controller
                     $assets = Asset::find()
                         ->kind(Asset::KIND_IMAGE)
                         ->siteId($site->id)
+                        ->status(null)
+                        ->orderBy(['elements.id' => SORT_ASC])
                         ->offset($offset)
                         ->limit($limit)
                         ->all();
