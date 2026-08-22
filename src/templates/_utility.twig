@@ -1,31 +1,111 @@
+{# Coverage as a small progress ring followed by the value. Inline SVG so it needs no JS or external
+   component library. The
+   radius is 15.9155 so the circumference is exactly 100, letting the percentage drive
+   stroke-dasharray directly. The figure is real text rather than an SVG <text> node so it inherits
+   the CP font, stays selectable, and is read by screen readers without help, which lets the ring
+   itself be decorative (aria-hidden) instead of duplicating the value. #}
+{% macro coverageRing(coverage) %}
+    {%- if coverage is null -%}
+        <span class="light">—</span>
+    {%- else -%}
+        {#- Bands broadly follow the convention used for 0-100 quality scores (as in Lighthouse):
+            red below 50, amber from 50, green from 90, plus a distinct colour once coverage is
+            complete. Yellow at 75 splits what would otherwise be a wide, flat amber band from
+            50-89, so rising coverage reads as progress; a yellow-green here would be easy to
+            mistake for the green of a complete ring.
+
+            Literal hex rather than Craft's palette variables. Craft 6 aliases those through two
+            further levels (--success-color -> --c-color-success-on-normal -> --color-emerald-*),
+            and custom properties only resolve where they're in scope, so a ring outside the
+            component that declares them silently loses its colour. These values sit on both the
+            light and dark control panel backgrounds. -#}
+        {%- if coverage >= 100 -%}
+            {%- set color = '#0f766e' -%}
+        {%- elseif coverage >= 90 -%}
+            {%- set color = '#22c55e' -%}
+        {%- elseif coverage >= 75 -%}
+            {%- set color = '#eab308' -%}
+        {%- elseif coverage >= 50 -%}
+            {%- set color = '#f59e0b' -%}
+        {%- else -%}
+            {%- set color = '#ef4444' -%}
+        {%- endif -%}
+        <span style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+            {# viewBox is 40 wide for a radius of 15.9155 plus half the 6-unit stroke either side
+               (20 + 15.9155 + 3 = 38.92), so the stroke isn't clipped flat at the edges. #}
+            {# fill, stroke and stroke-width go in inline styles rather than presentation
+               attributes because the Craft 6 control panel ships `svg * { fill: currentColor;
+               stroke-width: 0 }`, and CSS beats presentation attributes — which zeroed the ring's
+               stroke and filled its circles, leaving a solid blob instead of a ring. #}
+            <svg viewBox="0 0 40 40" width="16" height="16" aria-hidden="true" focusable="false" style="flex: none;">
+                <circle cx="20" cy="20" r="15.9155" style="fill: none; stroke: #e5e7eb; stroke-width: 6;"/>
+                {%- if coverage > 0 %}
+                <circle cx="20" cy="20" r="15.9155" style="fill: none; stroke: {{ color }}; stroke-width: 6;"
+                        stroke-dasharray="{{ coverage|round(1) }} 100" stroke-linecap="round" transform="rotate(-90 20 20)"/>
+                {%- endif %}
+            </svg>
+            {{ coverage|number_format(1) }}%
+        </span>
+    {%- endif -%}
+{% endmacro %}
+
+{#- Buttons are styled inline rather than relying on Craft's `.btn`, which no longer carries the
+    control panel's button appearance in Craft 6 — it renders as plain text, so the actions read as
+    body copy rather than as something to click. currentColor and a transparent background keep
+    these legible in both the light and dark control panel without hardcoding a palette. -#}
+{% set btnStyle = 'display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid currentColor; border-radius: 6px; background: transparent; color: inherit; font: inherit; line-height: 1.4; cursor: pointer; text-decoration: none;' %}
+
+{% if currentUser.admin %}
 <div class="flex flex-nowrap" style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid rgba(0,0,0,0.05);">
-    <a href="{{ cpUrl('settings/plugins/ai-alt-text') }}" class="btn " data-icon="settings">Plugin Settings</a>
+    {# iconSvg() renders one of Craft's own named icons, which is how the control panel sources
+       its icons in Craft 6 — data-icon on a .btn no longer does anything. The wrapper sizes it,
+       since `svg * { fill: currentColor }` already colours it to match the label. #}
+    <a href="{{ cpUrl('settings/plugins/ai-alt-text') }}" style="{{ btnStyle }}">
+        <span style="display: inline-flex; width: 1em; height: 1em; flex: none;" aria-hidden="true">{{ iconSvg('gear') }}</span>
+        Plugin Settings
+    </a>
 </div>
+{% endif %}
 
-<h2>Bulk actions</h2>
+<h2>{{ "Bulk actions"|t('ai-alt-text') }}</h2>
 
-<p>Generate alt text for all assets, the <strong>Save translated results for each site</strong> setting will be ignored to perform the requested action.</p>
+<p>Generate alt text for all eligible image assets, the <strong>Save translated results for each site</strong> setting will be ignored to perform the requested action.</p>
 
+<p class="light"><strong>Image assets only</strong>. Videos, PDFs and audio are excluded. Formats the provider can't yet process are still counted.</p>
+
+{# Scrolls horizontally rather than overflowing the pane at narrower widths. tabindex/role make
+   the scrollable region reachable by keyboard, per WCAG 2.1.1. #}
+<div style="overflow-x: auto;" tabindex="0" role="region" aria-label="Alt text coverage by site">
 <table class="data fullwidth">
     <thead>
         <tr>
-            <th>Site</th>
-            <th>Total Assets</th>
-            <th>With Alt Text</th>
-            <th>Without Alt Text</th>
-            <th>Actions</th>
+            <th>{{ "Site"|t('ai-alt-text') }}</th>
+            <th>{{ "Image assets"|t('ai-alt-text') }}</th>
+            <th>{{ "With Alt Text"|t('ai-alt-text') }}</th>
+            <th>{{ "Without Alt Text"|t('ai-alt-text') }}</th>
+            <th>{{ "Coverage"|t('ai-alt-text') }}</th>
+            <th>{{ "Actions"|t('ai-alt-text') }}</th>
         </tr>
     </thead>
     <tbody>
         <tr class="totalcount">
-            <td><strong>{% if sites|length > 1 %} All sites {% else %} {{ (sites|first).name }} {% endif %}</strong></td>
+            <td><strong>{% if sites|length > 1 %} {{ "All sites"|t('ai-alt-text') }} {% else %} {{ (sites|first).name }} {% endif %}</strong></td>
             <td>{{ totalAssetsWithAltTextForAllSites + totalAssetsWithoutAltTextForAllSites }}</td>
             <td>{{ totalAssetsWithAltTextForAllSites }}</td>
             <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
+            <td>{{ _self.coverageRing(coverageForAllSites) }}</td>
             <td>
-                <div class="buttons">
-                    <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets') }}" class="btn small submit">Generate all</a>
-                    <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text') }}" class="btn small submit">Generate missing</a>
+                <div class="buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <form method="post" accept-charset="UTF-8">
+                        {{ csrfInput() }}
+                        {{ actionInput('ai-alt-text/generate/generate-all-assets') }}
+                        <button type="submit" style="{{ btnStyle }}">{{ "Generate all"|t('ai-alt-text') }}</button>
+                    </form>
+                    <form method="post" accept-charset="UTF-8">
+                        {{ csrfInput() }}
+                        {{ actionInput('ai-alt-text/generate/generate-assets-without-alt-text') }}
+                        <button type="submit" style="{{ btnStyle }}">{{ "Generate missing"|t('ai-alt-text') }}</button>
+                    </form>
                 </div>
             </td>
         </tr>
@@ -36,10 +116,21 @@
                 <td>{{ siteAltTextCounts[site.id].total }}</td>
                 <td>{{ siteAltTextCounts[site.id].with }}</td>
                 <td>{{ siteAltTextCounts[site.id].without }}</td>
+                <td>{{ _self.coverageRing(siteAltTextCounts[site.id].coverage) }}</td>
                 <td>
-                    <div class="buttons">
-                        <a href="{{ actionUrl('ai-alt-text/generate/generate-all-assets', {siteId: site.id}) }}" class="btn small submit">Generate all</a>
-                        <a href="{{ actionUrl('ai-alt-text/generate/generate-assets-without-alt-text', {siteId: site.id}) }}" class="btn small submit">Generate missing</a>
+                    <div class="buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <form method="post" accept-charset="UTF-8">
+                            {{ csrfInput() }}
+                            {{ actionInput('ai-alt-text/generate/generate-all-assets') }}
+                            {{ hiddenInput('siteId', site.id) }}
+                            <button type="submit" style="{{ btnStyle }}">{{ "Generate all"|t('ai-alt-text') }}</button>
+                        </form>
+                        <form method="post" accept-charset="UTF-8">
+                            {{ csrfInput() }}
+                            {{ actionInput('ai-alt-text/generate/generate-assets-without-alt-text') }}
+                            {{ hiddenInput('siteId', site.id) }}
+                            <button type="submit" style="{{ btnStyle }}">{{ "Generate missing"|t('ai-alt-text') }}</button>
+                        </form>
                     </div>
                 </td>
             </tr>
@@ -47,3 +138,4 @@
         {% endif %}
     </tbody>
 </table>
+</div>
