@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed connection-level failures when using Anthropic (DNS failures, TLS failures, connect timeouts) escaping as raw errors with no plugin context and no base64 fallback. They are now handled the same way as other request failures, matching the OpenAI provider.
 
