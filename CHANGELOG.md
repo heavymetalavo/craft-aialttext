@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed a mistyped or unsupported prompt token failing generation outright. Tokens like `{asset.filenmae}`, or ones resolving to an object rather than text, now log a warning and are left in the prompt as written instead of throwing. Arbitrary property and custom field tokens still work as before.
 
