@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Improved the error reported when OpenAI returns no usable text. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now report what actually happened.
 
