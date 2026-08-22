@@ -20,6 +20,15 @@ use yii\helpers\BaseConsole;
 class GenerateController extends Controller
 {
     /**
+     * @inheritdoc
+     *
+     * Without this, a bare `ai-alt-text/generate` prints an InvalidRouteException stack trace on
+     * top of the (genuinely useful) "did you mean" suggestions. `stats` is read-only, so it's a
+     * safe landing point.
+     */
+    public $defaultAction = 'stats';
+
+    /**
      * @var int|null Specific site ID to process. If not specified, processes ALL sites.
      */
     public $siteId;

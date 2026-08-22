@@ -81,7 +81,6 @@ class GenerateController extends Controller
         $totalCount = 0;
         $queuedCount = 0;
         $plugin = AiAltText::getInstance();
-        $settings = $plugin->getSettings();
         
         // Check if a specific site ID was provided
         $siteId = $this->request->getParam('siteId');
@@ -217,7 +216,6 @@ class GenerateController extends Controller
         $totalCount = 0;
         $queuedCount = 0;
         $plugin = AiAltText::getInstance();
-        $settings = $plugin->getSettings();
         
         // Check if a specific site ID was provided
         $siteId = $this->request->getParam('siteId');
