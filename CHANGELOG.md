@@ -1,5 +1,10 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+- Fixed the reasoning parameter being sent to models that don't accept one. The check matched any model whose name began with `o` (so `omni-...` and similar), and matched `gpt-5` chat variants such as `gpt-5-chat-latest`. Both were rejected by the API, and the resulting error was misread as the provider being unable to reach the image, triggering a pointless base64 retry before the request finally failed.
+- Noted on the **OpenAI Reasoning Effort** setting that the accepted values depend on the model.
+
 ## 5.0.0 - 2026-07-24
 
 > {note} **This is not a typical major release.** The jump from 1.10.0 to 5.0.0 is a version-numbering change rather than a rewrite: now that Craft 4 is supported, the plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5. Install the line that matches your Craft version.
