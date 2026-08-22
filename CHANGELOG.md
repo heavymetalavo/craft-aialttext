@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed the single-asset "Generate AI Alt Text" action reporting that generation had been queued when it actually runs immediately. Both the progress notice and the success message now say what is really happening, so the alt text appearing straight away is no longer surprising.
 
