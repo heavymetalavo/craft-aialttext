@@ -1,5 +1,9 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+- Fixed connection-level failures when using Anthropic (DNS failures, TLS failures, connect timeouts) escaping as raw errors with no plugin context and no base64 fallback. They are now handled the same way as other request failures, matching the OpenAI provider.
+
 ## 5.0.0 - 2026-07-24
 
 > {note} **This is not a typical major release.** The jump from 1.10.0 to 5.0.0 is a version-numbering change rather than a rewrite: now that Craft 4 is supported, the plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5. Install the line that matches your Craft version.
