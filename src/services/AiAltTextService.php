@@ -242,7 +242,10 @@ class AiAltTextService extends Component
         // Check if this is an image asset
         if ($asset->kind === 'image') {
             // Add the "Generate AI Alt Text" action to the dropdown
-            $customActionId = sprintf('action-generate-ai-alt-%s', mt_rand());
+            // Derived from the asset and site rather than mt_rand(): a random ID has no collision
+            // guarantee, and two assets on one index page landing on the same ID would wire a
+            // button to the wrong asset.
+            $customActionId = sprintf('action-generate-ai-alt-%s-%s', $asset->id, $asset->siteId);
             $event->items[] = [
                 'type' => MenuItemType::Button,
                 'id' => $customActionId,
