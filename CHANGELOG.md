@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed an error that could fail an image asset's save when "Generate for new image assets" was enabled and the asset was saved without a control panel site context (a console command, a queue job, or a front-end save). Generation now falls back to the asset's own site, matching the behaviour on file replacement.
 
