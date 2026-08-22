@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed the "Generate AI Alt Text" element action picking an arbitrary site when the asset index was showing more than one. It now resolves a single concrete site, falling back to the requested control panel site and then the asset own site.
 
