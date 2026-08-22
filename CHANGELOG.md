@@ -1,5 +1,11 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+- Fixed invalid markup in the settings page instructions - an unclosed paragraph wrapping the list, a stray closing tag, and one list item styled differently from its siblings.
+- Increased the height of the **Prompt** field, which previously showed roughly three lines and clipped the default prompt mid-sentence.
+- Added a note to the **Process SVGs** setting when Craft's `transformSvgs` setting is disabled, since SVGs are skipped in that case even with the plugin setting enabled.
+
 ## 5.0.0 - 2026-07-24
 
 > {note} **This is not a typical major release.** The jump from 1.10.0 to 5.0.0 is a version-numbering change rather than a rewrite: now that Craft 4 is supported, the plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5. Install the line that matches your Craft version.
