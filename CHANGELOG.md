@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed invalid markup in the settings page instructions - an unclosed paragraph wrapping the list, a stray closing tag, and one list item styled differently from its siblings.
 - Increased the height of the **Prompt** field, which previously showed roughly three lines and clipped the default prompt mid-sentence.
