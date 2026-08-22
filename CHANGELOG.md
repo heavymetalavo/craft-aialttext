@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed alt text generated via OpenAI being saved with any surrounding whitespace the model returned, such as a trailing newline. It is now trimmed, matching what the Anthropic provider already did.
 
