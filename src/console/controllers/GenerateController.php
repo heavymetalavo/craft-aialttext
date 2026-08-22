@@ -324,7 +324,8 @@ class GenerateController extends Controller
             foreach ($sites as $site) {
                 $query = Asset::find()
                     ->kind(Asset::KIND_IMAGE)
-                    ->siteId($site->id);
+                    ->siteId($site->id)
+                    ->status(null);
                 
                 if (!$includeWithAltText) {
                     $query->hasAlt(false);
@@ -370,6 +371,8 @@ class GenerateController extends Controller
                     $query = Asset::find()
                         ->kind(Asset::KIND_IMAGE)
                         ->siteId($site->id)
+                        ->status(null)
+                        ->orderBy(['elements.id' => SORT_ASC])
                         ->offset($offset)
                         ->limit($this->batchSize);
                     
