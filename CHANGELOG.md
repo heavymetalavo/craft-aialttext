@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Removed the unused `forceRegeneration` parameter from `AiAltTextService::createJob()` and `generateAltText()`, and from the generation queue job. Nothing had read it since the `preSaveAsset` setting was replaced by `propagate`, so it had no effect on whether existing alt text was regenerated - that is decided by the query behind each action (`all` vs `missing`). No behaviour change.
 
