@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed oversized images not having their quality reduced when they also needed resizing. The reduction only applied when no other transform was in play, so a large image over the provider's dimension limit kept full quality and could still exceed the payload limit - most likely with Anthropic, whose limit is much smaller.
 
