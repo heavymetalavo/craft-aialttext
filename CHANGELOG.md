@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed the single-asset action passing the response message through the JavaScript translator. The message is already translated server-side, so treating it as a translation key was both redundant and unable to match anything.
 
