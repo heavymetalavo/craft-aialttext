@@ -6,6 +6,7 @@ use Craft;
 use craft\base\ElementAction;
 use craft\elements\Asset;
 use craft\elements\db\ElementQueryInterface;
+use craft\helpers\Cp;
 use heavymetalavo\craftaialttext\AiAltText;
 use yii\base\InvalidConfigException;
 
@@ -67,8 +68,16 @@ class GenerateAiAltText extends ElementAction
                 continue;
             }
 
+            // ElementQuery::$siteId is mixed - an int, an array of ints, or '*' when the index is
+            // showing several sites. Passing an array or '*' straight through returns whichever
+            // site row the database happens to order first, so alt text would be generated for an
+            // arbitrary site. Resolve one concrete site instead.
+            $siteId = is_numeric($query->siteId)
+                ? (int)$query->siteId
+                : (Cp::requestedSite()?->id ?? $asset->siteId);
+
             // Set the current site id on asset
-            $asset = Asset::find()->id($asset->id)->siteId($query->siteId)->one();
+            $asset = Asset::find()->id($asset->id)->siteId($siteId)->one();
 
             if (!$asset) {
                 continue;
