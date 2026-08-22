@@ -55,7 +55,11 @@ class AiAltTextService extends Component
             $hasPlusOneSite = count(Craft::$app->getSites()->getAllSites()) > 1;
 
             if ($hasExistingJob) {
-                $message = Craft::t('ai-alt-text', "$asset->filename (ID: $asset->id" . ($hasPlusOneSite ? ", Site: $assetSiteId" : "") . ") is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again.");
+                $message = Craft::t('ai-alt-text', '{filename} (ID: {id}{siteMessageSuffix}) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again.', [
+                    'filename' => $asset->filename,
+                    'id' => $asset->id,
+                    'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $assetSiteId" : "",
+                ]);
                 
                 // Only use session in web context
                 if (Craft::$app->getRequest()->getIsConsoleRequest()) {
@@ -68,7 +72,10 @@ class AiAltTextService extends Component
         }
 
         if ($asset->kind !== Asset::KIND_IMAGE) {
-            $message = Craft::t('ai-alt-text', "$asset->filename (ID: $asset->id) is not an image");
+            $message = Craft::t('ai-alt-text', '{filename} (ID: {id}) is not an image', [
+                'filename' => $asset->filename,
+                'id' => $asset->id,
+            ]);
             
             // Only use session in web context
             if (Craft::$app->getRequest()->getIsConsoleRequest()) {
