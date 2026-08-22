@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - The bulk actions utility now queues a single job that fans out into one job per asset, instead of walking the whole library inside the web request. Large libraries no longer time out part-way through with no indication of how much was queued, and progress is visible in the queue.
 
