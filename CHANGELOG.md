@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 > {warning} Generation failures now mark their queue job as failed, where previously they were logged but the job reported as completed. If your library contains images the provider can't process (for example a format your image driver doesn't support), those will now show up as failed jobs rather than passing silently.
 
