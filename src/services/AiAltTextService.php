@@ -100,27 +100,32 @@ class AiAltTextService extends Component
         $sites = Craft::$app->getSites()->getAllSites();
         $hasPlusOneSite = count($sites) > 1;
 
-        // Save the current site on queue
-        $queue->push(new GenerateAiAltTextJob([
-            'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
-                'filename' => $asset->filename,
-                'id' => $asset->id,
-                'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $assetSiteId" : "",
-            ]),
-            'assetId' => $asset->id,
-            'siteId' => $assetSiteId,
-            'forceRegeneration' => $forceRegeneration,
-        ]));
+        // Queue the current site's job — unless generateAltText() already handled it off queue
+        // above, in which case queueing it here would generate (and pay for) it a second time.
+        if (!$saveCurrentSiteOffQueue) {
+            $queue->push(new GenerateAiAltTextJob([
+                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
+                    'filename' => $asset->filename,
+                    'id' => $asset->id,
+                    'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $assetSiteId" : "",
+                ]),
+                'assetId' => $asset->id,
+                'siteId' => $assetSiteId,
+                'forceRegeneration' => $forceRegeneration,
+            ]));
+        }
 
         // return early if we're not saving translated results to each site
         if (!$saveTranslatedResultsToEachSite) {
             return;
         }
 
-        // If we're saving results to each site and translated results for each site, we need to queue a job for each site
+        // Queue a job for each of the *other* sites. The current site is always already handled
+        // above — either inline via generateAltText() or by the push above — so it must never be
+        // queued again here, regardless of which of those two routes it took.
         foreach ($sites as $site) {
             // Skip the current site
-            if ($saveCurrentSiteOffQueue && $site->id === $assetSiteId) {
+            if ($site->id === $assetSiteId) {
                 continue;
             }
 
