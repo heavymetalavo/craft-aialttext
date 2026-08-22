@@ -25,8 +25,6 @@ use yii\base\InvalidConfigException;
  */
 class OpenAiService extends ApiService
 {
-    private string $apiKey;
-    private string $model;
     private string $baseUrl = 'https://api.openai.com/v1';
 
     /**
@@ -34,12 +32,23 @@ class OpenAiService extends ApiService
      *
      * Initializes the service with the OpenAI API key and model from the plugin settings.
      */
-    public function __construct()
+    public function __construct($config = [])
     {
-        parent::__construct();
-        $plugin = AiAltText::getInstance();
-        $this->apiKey = App::parseEnv($plugin->getSettings()->openAiApiKey);
-        $this->model = App::parseEnv($plugin->getSettings()->openAiModel);
+        parent::__construct($config);
+    }
+
+    /**
+     * Read lazily rather than cached at construction, so a settings change is picked up within the
+     * same request and by long-lived queue workers.
+     */
+    private function apiKey(): string
+    {
+        return (string) App::parseEnv(AiAltText::getInstance()->getSettings()->openAiApiKey);
+    }
+
+    private function model(): string
+    {
+        return (string) App::parseEnv(AiAltText::getInstance()->getSettings()->openAiModel);
     }
 
     /**
@@ -65,7 +74,7 @@ class OpenAiService extends ApiService
             $requestStartedAt = microtime(true);
             $response = $this->client->post($this->baseUrl . '/responses', [
                 'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Authorization' => 'Bearer ' . $this->apiKey(),
                     'Content-Type' => 'application/json',
                 ],
                 'json' => $requestData,
@@ -210,7 +219,7 @@ class OpenAiService extends ApiService
 
         // Create and populate the request model
         $request = new OpenAiRequest();
-        $request->model = $this->model;
+        $request->model = $this->model();
         $request->setInstructions($prompt)
             ->setPrompt(self::GENERATE_TRIGGER)
             ->setImageUrl($imageUrl)
