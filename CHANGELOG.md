@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Added a control panel warning for admins when no AI provider has been chosen, linking straight to the plugin settings. Previously the first sign of an unconfigured install was a failed generation.
 - Fixed alt text generation falling back to OpenAI for any unrecognised **AI Provider** value, including no value at all. On a fresh install that meant an OpenAI request with an empty API key and an opaque error from the provider. Generation now fails immediately with a message naming what's missing, and does the same when the chosen provider has no API key configured.
