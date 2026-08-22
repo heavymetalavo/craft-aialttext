@@ -28,10 +28,9 @@ class AiAltTextService extends Component
      * @param bool $saveCurrentSiteOffQueue Whether to process the current site off queue
      * @param int|null $currentSiteId The current site ID
      * @param bool $skipExistingJobCheck Whether to skip the check for existing jobs (useful for bulk operations)
-     * @param bool $forceRegeneration Whether to force regeneration even if alt text exists
      * @throws Exception
      */
-    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $forceRegeneration = false, $skipSaveTranslatedResultsToEachSiteSetting = false): void
+    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $skipSaveTranslatedResultsToEachSiteSetting = false): void
     {
         $queue = Craft::$app->getQueue();
 
@@ -90,7 +89,7 @@ class AiAltTextService extends Component
 
         // Check if we need to save the current site off queue
         if ($saveCurrentSiteOffQueue) {
-            $this->generateAltText($asset, $assetSiteId, $forceRegeneration);
+            $this->generateAltText($asset, $assetSiteId);
     
             if (!$saveTranslatedResultsToEachSite) {
                 return;
@@ -109,7 +108,6 @@ class AiAltTextService extends Component
             ]),
             'assetId' => $asset->id,
             'siteId' => $assetSiteId,
-            'forceRegeneration' => $forceRegeneration,
         ]));
 
         // return early if we're not saving translated results to each site
@@ -132,7 +130,6 @@ class AiAltTextService extends Component
                 ]),
                 'assetId' => $asset->id,
                 'siteId' => $site->id,
-                'forceRegeneration' => $forceRegeneration,
             ]));
         }
     }
@@ -147,11 +144,10 @@ class AiAltTextService extends Component
      *
      * @param Asset $asset The asset to generate alt text for
      * @param int|null $siteId The site ID
-     * @param bool $forceRegeneration Whether to force regeneration even if alt text exists
      * @return string The generated alt text
      * @throws Exception If the asset is invalid or alt text generation fails
      */
-    public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceRegeneration = false): string
+    public function generateAltText(Asset $asset, ?int $siteId = null): string
     {
         if ($asset->kind !== Asset::KIND_IMAGE) {
             throw new Exception('Asset must be an image');

@@ -148,7 +148,7 @@ class AiAltText extends Plugin
                     // own site in that case, so pass it through rather than bailing out.
                     $currentSite = Cp::requestedSite();
                     // Force regeneration so the stale alt text is overwritten
-                    $this->aiAltTextService->createJob($asset, false, $currentSite?->id, false, true);
+                    $this->aiAltTextService->createJob($asset, false, $currentSite?->id);
                 }
             }
         );
