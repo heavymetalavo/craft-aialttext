@@ -345,8 +345,14 @@ abstract class ApiService extends Component
             }
         }
         
-        // If the file exceeds the provider's max payload and no other transform has been set, reduce quality
-        if (empty($transformParams) && $asset->size > $maxFileSizeMb * 1024 * 1024) {
+        // Applied independently of the other transform params. Gating this on "no other transform
+        // has been set" meant an image needing both a resize and a quality reduction only ever got
+        // the resize - so for Anthropic (5MB) a large photo over the long-edge limit kept full
+        // quality and could still exceed the payload limit, which the base64 fallback can't fix.
+        //
+        // This is a heuristic on the *source* size: the transformed output's size isn't known
+        // until it's generated, so it errs toward reducing quality.
+        if ($asset->size > $maxFileSizeMb * 1024 * 1024) {
             Craft::debug("{$asset->filename} is larger than {$maxFileSizeMb}MB, setting transform quality to 75", __METHOD__);
             $transformParams['quality'] = 75;
         }
