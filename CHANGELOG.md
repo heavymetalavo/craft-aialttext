@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed the AI request timeout being impossible to change. The plugin passed its own 30 second timeout to Craft's Guzzle client factory, and because that argument is merged last it overrode any `timeout` set in `config/guzzle.php`. The 30 second default is unchanged, but a project value is now respected - useful for slower reasoning models.
 
