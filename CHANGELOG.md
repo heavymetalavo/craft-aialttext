@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed the OpenAI and Anthropic services discarding any configuration passed to them, by overriding the constructor without accepting Yii component config. Their settings are also now read when needed rather than cached when the service is created, so a settings change takes effect within the same request and in long-running queue workers.
 
