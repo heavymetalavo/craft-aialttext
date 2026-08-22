@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed the bulk actions and the `missing` / `all` console commands skipping disabled assets while the utility and `stats` counted them. The utility could report a number of assets missing alt text, then queue fewer than it reported, with nothing explaining the gap. All of them now count and process assets of any status.
 - Fixed the batched bulk queries paginating without a deterministic order. With no `ORDER BY`, a `LIMIT`/`OFFSET` query gives no ordering guarantee, so assets could be processed twice in one batch and missed entirely in another - most likely on the large libraries the console commands exist for.
