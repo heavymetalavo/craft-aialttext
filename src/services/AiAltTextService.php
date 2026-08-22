@@ -159,13 +159,36 @@ class AiAltTextService extends Component
         
         $plugin = AiAltText::getInstance();
 
-        $provider = App::parseEnv($plugin->getSettings()->aiProvider);
+        // Dispatch on the configured provider explicitly. Falling through to OpenAI for any
+        // unrecognised value (including no value at all) turned a configuration mistake into an
+        // opaque provider error — a fresh install would attempt OpenAI with an empty API key.
+        $settings = $plugin->getSettings();
+        $provider = App::parseEnv($settings->aiProvider);
 
-        if ($provider === 'anthropic') {
-            $altText = $plugin->anthropicService->generateAltText($asset, $siteId);
-        } else {
-            $altText = $plugin->openAiService->generateAltText($asset, $siteId);
+        if ($provider === '' || $provider === null) {
+            throw new Exception('No AI provider is configured. Choose one in the AI Alt Text plugin settings.');
         }
+
+        if (!in_array($provider, ['openai', 'anthropic'], true)) {
+            throw new Exception(sprintf(
+                '"%s" is not a supported AI provider. Choose OpenAI or Anthropic in the AI Alt Text plugin settings.',
+                $provider
+            ));
+        }
+
+        $isAnthropic = $provider === 'anthropic';
+        $apiKey = App::parseEnv($isAnthropic ? $settings->anthropicApiKey : $settings->openAiApiKey);
+
+        if ($apiKey === '' || $apiKey === null) {
+            throw new Exception(sprintf(
+                'No API key is configured for the %s provider. Add one in the AI Alt Text plugin settings.',
+                $isAnthropic ? 'Anthropic' : 'OpenAI'
+            ));
+        }
+
+        $altText = $isAnthropic
+            ? $plugin->anthropicService->generateAltText($asset, $siteId)
+            : $plugin->openAiService->generateAltText($asset, $siteId);
 
         if (empty($altText)) {
             throw new Exception('Empty alt text generated for asset: ' . $asset->filename);

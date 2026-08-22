@@ -1,5 +1,10 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+- Added a control panel warning for admins when no AI provider has been chosen, linking straight to the plugin settings. Previously the first sign of an unconfigured install was a failed generation.
+- Fixed alt text generation falling back to OpenAI for any unrecognised **AI Provider** value, including no value at all. On a fresh install that meant an OpenAI request with an empty API key and an opaque error from the provider. Generation now fails immediately with a message naming what's missing, and does the same when the chosen provider has no API key configured.
+
 ## 5.0.0 - 2026-07-24
 
 > {note} **This is not a typical major release.** The jump from 1.10.0 to 5.0.0 is a version-numbering change rather than a rewrite: now that Craft 4 is supported, the plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5. Install the line that matches your Craft version.

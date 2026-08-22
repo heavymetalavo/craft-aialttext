@@ -6,8 +6,8 @@ use Craft;
 use craft\base\Element;
 use craft\base\Plugin;
 use craft\elements\Asset;
-use craft\events\{ModelEvent, RegisterElementActionsEvent, DefineMenuItemsEvent, RegisterComponentTypesEvent, RegisterUrlRulesEvent, ReplaceAssetEvent};
-use craft\helpers\Cp;
+use craft\events\{ModelEvent, RegisterElementActionsEvent, DefineMenuItemsEvent, RegisterComponentTypesEvent, RegisterCpAlertsEvent, RegisterUrlRulesEvent, ReplaceAssetEvent};
+use craft\helpers\{App, Cp, Html, UrlHelper};
 use craft\services\{Assets, Utilities};
 use craft\web\{View, UrlManager};
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
@@ -159,6 +159,30 @@ class AiAltText extends Plugin
             Utilities::EVENT_REGISTER_UTILITIES,
             function(RegisterComponentTypesEvent $event) {
                 $event->types[] = AiAltTextUtility::class;
+            }
+        );
+
+        // Warn admins if the plugin is installed but no AI provider has been chosen — otherwise
+        // the first sign of it is a failed queue job. Only shown to admins, since nobody else can
+        // change it.
+        Event::on(
+            Cp::class,
+            Cp::EVENT_REGISTER_ALERTS,
+            function(RegisterCpAlertsEvent $event) {
+                if (!Craft::$app->getUser()->getIsAdmin()) {
+                    return;
+                }
+
+                if (App::parseEnv($this->getSettings()->aiProvider) !== '') {
+                    return;
+                }
+
+                $event->alerts[] = Craft::t('ai-alt-text', 'No AI provider is configured for AI Alt Text, so no alt text can be generated. {link}', [
+                    'link' => Html::a(
+                        Craft::t('ai-alt-text', 'Choose a provider'),
+                        UrlHelper::cpUrl('settings/plugins/ai-alt-text')
+                    ),
+                ]);
             }
         );
     }
