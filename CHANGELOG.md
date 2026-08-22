@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed an empty **OpenAI Image Detail Level** setting being sent to the API as an empty value rather than falling back to `low`. The fallback used `??`, but the setting resolves to an empty string rather than null, so it never applied.
 
