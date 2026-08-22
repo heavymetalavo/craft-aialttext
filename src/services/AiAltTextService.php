@@ -265,7 +265,7 @@ $('#' + $id).on('activate', () => {
   })
   .then((response) => {
     if (response.data.success) {
-        Craft.cp.displayNotice(Craft.t('ai-alt-text', response.data.message));
+        Craft.cp.displayNotice(response.data.message);
       
       // Refresh the elements in the current view if possible
       if (Craft.cp.elementIndex) {
