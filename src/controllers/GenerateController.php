@@ -77,7 +77,7 @@ class GenerateController
 
             return response()->json([
                 'success' => true,
-                'message' => t('Alt text generation has been queued', category: 'ai-alt-text'),
+                'message' => t('Alt text generated', category: 'ai-alt-text'),
             ]);
         } catch (Exception $e) {
             Log::error('Error queueing alt text generation: ' . $e->getMessage());
@@ -126,7 +126,9 @@ class GenerateController
                     $assets = Asset::find()
                         ->kind('image')
                         ->siteId($site->id)
+                        ->status(null)
                         ->hasAlt(false)
+                        ->orderBy(['elements.id' => SORT_ASC])
                         ->offset($offset)
                         ->limit($limit)
                         ->all();
@@ -142,7 +144,7 @@ class GenerateController
                         }
 
                         try {
-                            app(AiAltTextService::class)->createJob($asset, false, $site->id, false, true, true);
+                            app(AiAltTextService::class)->createJob($asset, false, $site->id, false, true);
                             $queuedCount++;
                         } catch (Exception $e) {
                             Log::error('Error queuing job for asset ' . $asset->id . ': ' . $e->getMessage());
@@ -221,6 +223,8 @@ class GenerateController
                     $assets = Asset::find()
                         ->kind('image')
                         ->siteId($site->id)
+                        ->status(null)
+                        ->orderBy(['elements.id' => SORT_ASC])
                         ->offset($offset)
                         ->limit($limit)
                         ->all();
@@ -232,7 +236,7 @@ class GenerateController
 
                     foreach ($assets as $asset) {
                         try {
-                            app(AiAltTextService::class)->createJob($asset, false, $site->id, false, true, true);
+                            app(AiAltTextService::class)->createJob($asset, false, $site->id, false, true);
                             $queuedCount++;
                         } catch (Exception $e) {
                             Log::error('Error queuing job for asset ' . $asset->id . ': ' . $e->getMessage());

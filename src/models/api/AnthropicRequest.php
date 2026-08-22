@@ -12,6 +12,11 @@ use CraftCms\Cms\Component\Component;
 class AnthropicRequest extends Component
 {
     public string $model = '';
+    /**
+     * @var int Ceiling on the *reply* only - it does not bound the image or other input tokens,
+     * which is where most of a vision request's cost sits. Alt text needs a fraction of this;
+     * the headroom is for models that also spend the budget on thinking tokens.
+     */
     public int $maxTokens = 1024;
 
     private string $system = '';

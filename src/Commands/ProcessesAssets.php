@@ -48,7 +48,8 @@ trait ProcessesAssets
             foreach ($sites as $site) {
                 $query = Asset::find()
                     ->kind('image')
-                    ->siteId($site->id);
+                    ->siteId($site->id)
+                    ->status(null);
 
                 if (!$includeWithAltText) {
                     // hasAlt() reads the per-site alt value (falling back to the asset's own
@@ -96,6 +97,8 @@ trait ProcessesAssets
                     $query = Asset::find()
                         ->kind('image')
                         ->siteId($site->id)
+                        ->status(null)
+                        ->orderBy(['elements.id' => SORT_ASC])
                         ->offset($offset)
                         ->limit($batchSize);
 
@@ -134,7 +137,7 @@ trait ProcessesAssets
                                 continue;
                             }
 
-                            $service->createJob($asset, false, $site->id, false, true, true);
+                            $service->createJob($asset, false, $site->id, false, true);
                             $queuedCount++;
 
                             if ($this->output->isVerbose()) {

@@ -1,5 +1,31 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+- Fixed a duplicate job being queued for the site being worked in when "Save translated results for each site" was enabled, so that site's alt text was generated (and charged for) twice.
+- Fixed existing alt text being lost if a save failed. When **Propagate** is off, generation blanks the alt value in a preliminary save before writing the new one; both saves now run in one transaction so a failure leaves the previous value intact.
+- Fixed alt text generation falling back to OpenAI for any unrecognised **AI Provider** value, including no value at all. Generation now fails immediately with a message naming what's missing, and does the same when the chosen provider has no API key.
+- Fixed the bulk actions and the `missing` / `all` commands skipping disabled assets that the utility and `stats` counted, so the utility could report more assets than it queued.
+- Fixed the batched bulk queries paginating without a deterministic order, which could process an asset twice in one batch and miss it in another.
+- Fixed connection-level failures when using Anthropic (DNS failures, TLS failures, connect timeouts) escaping as raw errors with no plugin context and no base64 fallback.
+- Fixed the reasoning parameter being sent to models that don't accept one - the check matched any model whose name began with `o`, and matched `gpt-5` chat variants.
+- Fixed an empty **OpenAI Image Detail Level** setting being sent to the API as an empty value rather than falling back to `low`.
+- Fixed alt text generated via OpenAI being saved with any surrounding whitespace the model returned, matching what the Anthropic provider already did.
+- Improved the error reported when OpenAI returns no usable text: a response cut short by the output token limit, or an outright refusal, now reports what actually happened.
+- Fixed a mistyped or unsupported prompt token failing generation outright. Unresolvable tokens now log a warning and are left in the prompt as written. Arbitrary property and custom field tokens still work.
+- Fixed the "Generate AI Alt Text" element action picking an arbitrary site when the asset index was showing more than one.
+- Fixed oversized images not having their quality reduced when they also needed resizing, so they could still exceed the provider's payload limit.
+- Fixed every label and instruction on the plugin settings page using an unregistered translation category (`aialttext` rather than `ai-alt-text`), which meant none of them could ever be translated. Two fields were also using Craft's own `app` category.
+- Made the bulk actions utility translatable - none of its text was run through a translation filter.
+- Fixed the single-asset action reporting that generation had been queued when it actually runs immediately.
+- Fixed the per-asset action menu item using a random element ID, which could collide with another asset on the same page and wire the button to the wrong asset.
+- Fixed the response message being passed through the JavaScript translator, which treated a runtime value as a translation key.
+- Reduced memory use when checking whether a GIF is animated - the whole file was previously read into memory.
+- Made the AI request timeout configurable via `config('ai-alt-text.timeout')` instead of being hardcoded.
+- Increased the height of the **Prompt** field, and fixed a stray closing tag in the settings page instructions.
+- Renamed the **Open AI Model** setting label to **OpenAI Model**, matching the other three OpenAI fields.
+- Removed the unused `forceRegeneration` parameter from `createJob()`, `generateAltText()` and the generation job. Nothing had read it since the `preSaveAsset` setting was replaced by `propagate`.
+
 ## 6.0.0-alpha.1 - 2026-07-26
 
 > {note} **This is the Craft 6 release line.** The plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5, 6.x for Craft 6. Install the line that matches your Craft version. The jump from 1.10.0 to these numbered lines was a version-numbering change rather than a rewrite.

@@ -132,8 +132,14 @@ class AnthropicService extends ApiService
 
             return $responseModel->getText();
 
-        } catch (RequestException $e) {
-            $errorResponse = $e->hasResponse() ? (string)$e->getResponse()->getBody() : $e->getMessage();
+        } catch (\Exception $e) {
+            // Catch Exception, not just RequestException: Guzzle throws ConnectException (which
+            // extends TransferException, not RequestException) for DNS failures, TLS failures and
+            // connect timeouts, so those previously escaped unhandled with no base64 fallback.
+            // OpenAiService already catches Exception here.
+            $errorResponse = ($e instanceof RequestException && $e->hasResponse())
+                ? (string)$e->getResponse()->getBody()
+                : $e->getMessage();
             Log::error("Anthropic API Error: " . $errorResponse);
 
             $responseModel = new AnthropicResponse();

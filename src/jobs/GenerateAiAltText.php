@@ -18,7 +18,6 @@ class GenerateAiAltText extends Job
     public function __construct(
         public int $assetId,
         public int $siteId,
-        public bool $forceRegeneration = false,
         public ?string $description = null,
     ) {}
 
@@ -43,7 +42,7 @@ class GenerateAiAltText extends Job
             throw new ElementNotFoundException("Asset not found: $this->assetId");
         }
 
-        $altText = $service->generateAltText($asset, $this->siteId, $this->forceRegeneration);
+        $altText = $service->generateAltText($asset, $this->siteId);
 
         if (!empty($altText)) {
             Log::info("Successfully generated alt text for asset $this->assetId: " . $altText);

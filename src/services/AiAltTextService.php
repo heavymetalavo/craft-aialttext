@@ -12,6 +12,7 @@ use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
 use Illuminate\Container\Attributes\Singleton;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 use function CraftCms\Cms\t;
@@ -32,11 +33,10 @@ class AiAltTextService
      * @param bool $saveCurrentSiteOffQueue Whether to process the current site synchronously before queuing
      * @param int|null $currentSiteId The site ID to target
      * @param bool $skipExistingJobCheck Unused — duplicate prevention is handled by WithoutOverlapping in the job
-     * @param bool $forceRegeneration Whether to force regeneration even if alt text exists
      * @param bool $skipSaveTranslatedResultsToEachSiteSetting Skip the multi-site translation setting
      * @throws Exception
      */
-    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $forceRegeneration = false, $skipSaveTranslatedResultsToEachSiteSetting = false): void
+    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $skipSaveTranslatedResultsToEachSiteSetting = false): void
     {
         $assetSiteId = $currentSiteId ?? $asset->siteId;
 
@@ -76,7 +76,7 @@ class AiAltTextService
         }
 
         if ($saveCurrentSiteOffQueue) {
-            $this->generateAltText($asset, $assetSiteId, $forceRegeneration);
+            $this->generateAltText($asset, $assetSiteId);
 
             if (!$saveTranslatedResultsToEachSite) {
                 return;
@@ -86,30 +86,34 @@ class AiAltTextService
         $sites = Sites::getAllSites();
         $hasPlusOneSite = $sites->count() > 1;
 
-        dispatch(new GenerateAiAltTextJob(
-            assetId: $asset->id,
-            siteId: $assetSiteId,
-            forceRegeneration: $forceRegeneration,
-            description: AiAltText::t('Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
-                'filename' => $asset->filename,
-                'id' => $asset->id,
-                'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $assetSiteId" : "",
-            ]),
-        ));
+        // Queue the current site's job unless generateAltText() already handled it off queue
+        // above, in which case queueing it here would generate (and pay for) it a second time.
+        if (!$saveCurrentSiteOffQueue) {
+            dispatch(new GenerateAiAltTextJob(
+                assetId: $asset->id,
+                siteId: $assetSiteId,
+                description: AiAltText::t('Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
+                    'filename' => $asset->filename,
+                    'id' => $asset->id,
+                    'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $assetSiteId" : "",
+                ]),
+            ));
+        }
 
         if (!$saveTranslatedResultsToEachSite) {
             return;
         }
 
+        // The current site is always already handled above - either inline via generateAltText()
+        // or by the dispatch above - so it must never be queued again here.
         foreach ($sites as $site) {
-            if ($saveCurrentSiteOffQueue && $site->id === $assetSiteId) {
+            if ($site->id === $assetSiteId) {
                 continue;
             }
 
             dispatch(new GenerateAiAltTextJob(
                 assetId: $asset->id,
                 siteId: $site->id,
-                forceRegeneration: $forceRegeneration,
                 description: AiAltText::t('Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
                     'filename' => $asset->filename,
                     'id' => $asset->id,
@@ -124,44 +128,72 @@ class AiAltTextService
      *
      * @param Asset $asset The asset to generate alt text for
      * @param int|null $siteId The site ID
-     * @param bool $forceRegeneration Whether to force regeneration even if alt text exists
      * @return string The generated alt text
      * @throws Exception If the asset is invalid or alt text generation fails
      */
-    public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceRegeneration = false): string
+    public function generateAltText(Asset $asset, ?int $siteId = null): string
     {
         if ($asset->kind !== FileKind::Image->value) {
             throw new Exception('Asset must be an image');
         }
 
-        $provider = \CraftCms\Cms\Support\Env::parse(AiAltText::settings()->aiProvider);
+        // Dispatch on the configured provider explicitly. Falling through to OpenAI for any
+        // unrecognised value (including no value at all) turned a configuration mistake into an
+        // opaque provider error - a fresh install would attempt OpenAI with an empty API key.
+        $settings = AiAltText::settings();
+        $provider = \CraftCms\Cms\Support\Env::parse($settings->aiProvider);
 
-        if ($provider === 'anthropic') {
-            $altText = app(AnthropicService::class)->generateAltText($asset, $siteId);
-        } else {
-            $altText = app(OpenAiService::class)->generateAltText($asset, $siteId);
+        if ($provider === '' || $provider === null) {
+            throw new Exception('No AI provider is configured. Choose one in the AI Alt Text plugin settings.');
         }
+
+        if (!in_array($provider, ['openai', 'anthropic'], true)) {
+            throw new Exception(sprintf(
+                '"%s" is not a supported AI provider. Choose OpenAI or Anthropic in the AI Alt Text plugin settings.',
+                $provider
+            ));
+        }
+
+        $isAnthropic = $provider === 'anthropic';
+        $apiKey = \CraftCms\Cms\Support\Env::parse($isAnthropic ? $settings->anthropicApiKey : $settings->openAiApiKey);
+
+        if ($apiKey === '' || $apiKey === null) {
+            throw new Exception(sprintf(
+                'No API key is configured for the %s provider. Add one in the AI Alt Text plugin settings.',
+                $isAnthropic ? 'Anthropic' : 'OpenAI'
+            ));
+        }
+
+        $altText = $isAnthropic
+            ? app(AnthropicService::class)->generateAltText($asset, $siteId)
+            : app(OpenAiService::class)->generateAltText($asset, $siteId);
 
         if (empty($altText)) {
             throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
         }
 
-        $propagate = (bool) AiAltText::settings()->propagate;
+        $propagate = (bool) $settings->propagate;
 
-        // Bug workaround: pre-save blank alt text to prevent propagation across sites when setting is false
-        if (!$propagate) {
-            $asset->alt = '';
-            Log::debug("Performing preliminary save for asset {$asset->id} to establish site rows before setting alt text.");
-            Elements::saveElement($asset, true, false);
-        }
+        // Both saves go in one transaction. The blank pre-save below deliberately clears the alt
+        // value, so if the real save afterwards failed - a validation error, a veto from another
+        // plugin, a DB problem - the asset would be left with its previous alt text replaced by an
+        // empty string. Rolling back keeps the old value.
+        DB::transaction(function() use ($asset, $altText, $propagate) {
+            // Bug workaround: pre-save blank alt text to prevent propagation across sites when setting is false
+            if (!$propagate) {
+                $asset->alt = '';
+                Log::debug("Performing preliminary save for asset {$asset->id} to establish site rows before setting alt text.");
+                Elements::saveElement($asset, true, false);
+            }
 
-        $asset->alt = $altText;
+            $asset->alt = $altText;
 
-        Log::info("Saving AI alt text for asset {$asset->id} with propagate=" . ($propagate ? 'true' : 'false'));
+            Log::info("Saving AI alt text for asset {$asset->id} with propagate=" . ($propagate ? 'true' : 'false'));
 
-        if (!Elements::saveElement($asset, true, $propagate)) {
-            throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
-        }
+            if (!Elements::saveElement($asset, true, $propagate)) {
+                throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
+            }
+        });
 
         Log::info('Successfully saved alt text for asset: ' . $asset->filename);
         return $altText;
@@ -221,7 +253,10 @@ class AiAltTextService
             return;
         }
 
-        $customActionId = sprintf('action-generate-ai-alt-%s', mt_rand());
+        // Derived from the asset and site rather than mt_rand(): a random ID has no collision
+            // guarantee, and two assets on one page sharing an ID would wire a button to the
+            // wrong asset.
+            $customActionId = sprintf('action-generate-ai-alt-%s-%s', $asset->id, $asset->siteId);
 
         $event->items[] = [
             'type' => MenuItemType::Button,
@@ -232,7 +267,7 @@ class AiAltTextService
 
         HtmlStack::jsWithVars(fn ($id, $assetId, $siteId) => <<<JS
 $('#' + $id).on('activate', () => {
-  Craft.cp.displayNotice(Craft.t('ai-alt-text', 'Queueing AI alt text generation...'));
+  Craft.cp.displayNotice(Craft.t('ai-alt-text', 'Generating AI alt text\u2026'));
 
   Craft.sendActionRequest('POST', 'ai-alt-text/generate/single-asset', {
     data: {
@@ -242,7 +277,7 @@ $('#' + $id).on('activate', () => {
   })
   .then((response) => {
     if (response.data.success) {
-      Craft.cp.displayNotice(Craft.t('ai-alt-text', response.data.message));
+      Craft.cp.displayNotice(response.data.message);
 
       if (Craft.cp.elementIndex) {
         Craft.cp.elementIndex.updateElements();

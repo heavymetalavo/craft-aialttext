@@ -121,6 +121,14 @@ class OpenAiRequest extends Component
 
     private function isReasoningModel(): bool
     {
-        return str_starts_with($this->model, 'gpt-5') || str_starts_with($this->model, 'o');
+        // Chat variants don't accept a reasoning parameter, whatever family they're in.
+        if (str_contains($this->model, '-chat')) {
+            return false;
+        }
+
+        // o-series (o1, o3, o4-mini, ...) and the gpt-5 family onwards, including point releases
+        // such as gpt-5.1 and future two-digit majors. The old check matched any model whose name
+        // merely began with "o".
+        return (bool) preg_match('/^(o\\d|gpt-([5-9]|\\d{2,}))/', $this->model);
     }
 }

@@ -67,7 +67,7 @@
 </div>
 {% endif %}
 
-<h2>Bulk actions</h2>
+<h2>{{ "Bulk actions"|t('ai-alt-text') }}</h2>
 
 <p>Generate alt text for all eligible image assets, the <strong>Save translated results for each site</strong> setting will be ignored to perform the requested action.</p>
 
@@ -79,17 +79,17 @@
 <table class="data fullwidth">
     <thead>
         <tr>
-            <th>Site</th>
-            <th>Image assets</th>
-            <th>With Alt Text</th>
-            <th>Without Alt Text</th>
-            <th>Coverage</th>
-            <th>Actions</th>
+            <th>{{ "Site"|t('ai-alt-text') }}</th>
+            <th>{{ "Image assets"|t('ai-alt-text') }}</th>
+            <th>{{ "With Alt Text"|t('ai-alt-text') }}</th>
+            <th>{{ "Without Alt Text"|t('ai-alt-text') }}</th>
+            <th>{{ "Coverage"|t('ai-alt-text') }}</th>
+            <th>{{ "Actions"|t('ai-alt-text') }}</th>
         </tr>
     </thead>
     <tbody>
         <tr class="totalcount">
-            <td><strong>{% if sites|length > 1 %} All sites {% else %} {{ (sites|first).name }} {% endif %}</strong></td>
+            <td><strong>{% if sites|length > 1 %} {{ "All sites"|t('ai-alt-text') }} {% else %} {{ (sites|first).name }} {% endif %}</strong></td>
             <td>{{ totalAssetsWithAltTextForAllSites + totalAssetsWithoutAltTextForAllSites }}</td>
             <td>{{ totalAssetsWithAltTextForAllSites }}</td>
             <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
@@ -99,12 +99,12 @@
                     <form method="post" accept-charset="UTF-8">
                         {{ csrfInput() }}
                         {{ actionInput('ai-alt-text/generate/generate-all-assets') }}
-                        <button type="submit" style="{{ btnStyle }}">Generate all</button>
+                        <button type="submit" style="{{ btnStyle }}">{{ "Generate all"|t('ai-alt-text') }}</button>
                     </form>
                     <form method="post" accept-charset="UTF-8">
                         {{ csrfInput() }}
                         {{ actionInput('ai-alt-text/generate/generate-assets-without-alt-text') }}
-                        <button type="submit" style="{{ btnStyle }}">Generate missing</button>
+                        <button type="submit" style="{{ btnStyle }}">{{ "Generate missing"|t('ai-alt-text') }}</button>
                     </form>
                 </div>
             </td>
@@ -123,13 +123,13 @@
                             {{ csrfInput() }}
                             {{ actionInput('ai-alt-text/generate/generate-all-assets') }}
                             {{ hiddenInput('siteId', site.id) }}
-                            <button type="submit" style="{{ btnStyle }}">Generate all</button>
+                            <button type="submit" style="{{ btnStyle }}">{{ "Generate all"|t('ai-alt-text') }}</button>
                         </form>
                         <form method="post" accept-charset="UTF-8">
                             {{ csrfInput() }}
                             {{ actionInput('ai-alt-text/generate/generate-assets-without-alt-text') }}
                             {{ hiddenInput('siteId', site.id) }}
-                            <button type="submit" style="{{ btnStyle }}">Generate missing</button>
+                            <button type="submit" style="{{ btnStyle }}">{{ "Generate missing"|t('ai-alt-text') }}</button>
                         </form>
                     </div>
                 </td>
