@@ -1,5 +1,10 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+- Fixed the "already being processed" check refusing the wrong assets. It matched the asset ID as a substring of the queue job's description, so `ID: 1` also matched `ID: 12`, `ID: 100` and so on - queueing asset 1 was refused whenever a higher-numbered asset was already queued. The IDs in job descriptions are now delimited, so they match exactly.
+- Fixed the same check never running at all on single-site installs: it required the site ID to appear in the job description, but the site is only named there when more than one site exists. Duplicate jobs for the same asset were never caught.
+
 ## 5.0.0 - 2026-07-24
 
 > {note} **This is not a typical major release.** The jump from 1.10.0 to 5.0.0 is a version-numbering change rather than a rewrite: now that Craft 4 is supported, the plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5. Install the line that matches your Craft version.
