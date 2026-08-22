@@ -1,5 +1,11 @@
 # Release Notes for AI Alt Text
 
+## 5.1.0 - 2026-08-23
+
+> {warning} Generation failures now mark their queue job as failed, where previously they were logged but the job reported as completed. If your library contains images the provider can't process (for example a format your image driver doesn't support), those will now show up as failed jobs rather than passing silently.
+
+- Fixed generation failures being invisible in the control panel. The queue job caught every error and set its own description, but a job's description is stored when the job is queued - assigning it while the job runs never reached the queue row. A failed generation wrote a log line while reporting as completed, with no error message and no way to retry. Failures now mark the job as failed with the error message, so they appear in the control panel and can be retried from there. The base64 fallback for images the provider can't fetch by URL is unaffected.
+
 ## 5.0.0 - 2026-07-24
 
 > {note} **This is not a typical major release.** The jump from 1.10.0 to 5.0.0 is a version-numbering change rather than a rewrite: now that Craft 4 is supported, the plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5. Install the line that matches your Craft version.
