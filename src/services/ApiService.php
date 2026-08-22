@@ -76,7 +76,7 @@ abstract class ApiService extends Component
         $promptTemplate = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
         $prompt = preg_replace_callback('/{asset\.(.*?)}/', function ($matches) use ($asset) {
-            return $asset->{$matches[1]};
+            return $this->resolvePromptToken($asset, $matches[1], $matches[0]);
         }, $promptTemplate);
 
         // A null $siteId means "no particular site requested" — use the asset's own site. But an
@@ -90,10 +90,53 @@ abstract class ApiService extends Component
             if ($matches[1] === 'languageName') {
                 return $site->getLocale()->getDisplayName(Craft::$app->language);
             }
-            return $site->{$matches[1]};
+            return $this->resolvePromptToken($site, $matches[1], $matches[0]);
         }, $prompt);
 
         return $prompt;
+    }
+
+    /**
+     * Resolves a single `{asset.*}` / `{site.*}` prompt token to a string.
+     *
+     * Deliberately not restricted to an allowlist - reading arbitrary properties, including custom
+     * field values, is a legitimate use of the prompt field. But a mistyped token throws
+     * UnknownPropertyException, and an object-valued one (`{asset.volume}`, `{site.locale}`) throws
+     * on string conversion. Either way generation failed with an error an admin would struggle to
+     * connect back to their prompt edit.
+     *
+     * So: resolve what can be resolved, and for anything else warn and leave the token in place,
+     * which makes the problem visible in the output without stopping the run.
+     *
+     * @param object $model The asset or site the token refers to
+     * @param string $property The property name from inside the token
+     * @param string $original The full token as written, returned unchanged if it can't be resolved
+     */
+    private function resolvePromptToken(object $model, string $property, string $original): string
+    {
+        try {
+            $value = $model->$property;
+        } catch (\Throwable $e) {
+            Craft::warning(sprintf(
+                'Prompt token "%s" could not be resolved: %s',
+                $original,
+                $e->getMessage()
+            ), __METHOD__);
+
+            return $original;
+        }
+
+        if ($value === null || is_scalar($value) || $value instanceof \Stringable) {
+            return (string) $value;
+        }
+
+        Craft::warning(sprintf(
+            'Prompt token "%s" resolved to a %s, which cannot be used in a prompt.',
+            $original,
+            get_debug_type($value)
+        ), __METHOD__);
+
+        return $original;
     }
 
     /**
