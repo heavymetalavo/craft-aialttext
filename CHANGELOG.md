@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Running `ai-alt-text/generate` with no action now shows the read-only `stats` summary instead of printing an exception stack trace.
 - Removed two unused variables from the bulk action controller.
