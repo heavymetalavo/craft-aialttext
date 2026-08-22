@@ -1,5 +1,10 @@
 # Release Notes for AI Alt Text
 
+## 5.1.0 - 2026-08-23
+
+- Fixed every label and instruction on the plugin settings page using an unregistered translation category (`aialttext` rather than `ai-alt-text`), which meant none of them could ever be translated. Two fields were also using Craft's own `app` category. All 26 now use the plugin's category.
+- Renamed the **Open AI Model** setting label to **OpenAI Model**, matching the other three OpenAI fields.
+
 ## 5.0.0 - 2026-07-24
 
 > {note} **This is not a typical major release.** The jump from 1.10.0 to 5.0.0 is a version-numbering change rather than a rewrite: now that Craft 4 is supported, the plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5. Install the line that matches your Craft version.

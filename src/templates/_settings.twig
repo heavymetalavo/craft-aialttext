@@ -27,8 +27,8 @@
 <h2 id="settings">Settings</h2>
 
 {{ forms.selectizeField({
-    label: "AI Provider"|t("aialttext"),
-    instructions: "Choose which AI service to use for generating alt text"|t("aialttext"),
+    label: "AI Provider"|t("ai-alt-text"),
+    instructions: "Choose which AI service to use for generating alt text"|t("ai-alt-text"),
     id: "aiProvider",
     name: "aiProvider",
     options: [
@@ -49,8 +49,8 @@
     <h3>Anthropic Settings</h3>
 
     {{ forms.autosuggestField({
-        label: "Anthropic API Key"|t("aialttext"),
-        instructions: "The API key from your [Anthropic Console account](https://console.anthropic.com/)"|t("aialttext"),
+        label: "Anthropic API Key"|t("ai-alt-text"),
+        instructions: "The API key from your [Anthropic Console account](https://console.anthropic.com/)"|t("ai-alt-text"),
         id: "anthropicApiKey",
         name: "anthropicApiKey",
         placeholder: '$ANTHROPIC_API_KEY',
@@ -60,10 +60,10 @@
     }) }}
 
     {{ forms.autosuggestField({
-        label: 'Anthropic Model'|t('aialttext'),
+        label: 'Anthropic Model'|t('ai-alt-text'),
         id: 'anthropicModel',
         name: 'anthropicModel',
-        instructions: "The Anthropic model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-haiku-4-5`."|t("aialttext"),
+        instructions: "The Anthropic model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-haiku-4-5`."|t("ai-alt-text"),
         value: settings.anthropicModel,
         placeholder: 'claude-haiku-4-5',
         errors: settings.getErrors('anthropicModel'),
@@ -71,10 +71,10 @@
     }) }}
 
     {{ forms.selectizeField({
-        label: 'Anthropic Image Detail Level'|t('aialttext'),
+        label: 'Anthropic Image Detail Level'|t('ai-alt-text'),
         id: 'anthropicImageDetailLevel',
         name: 'anthropicImageDetailLevel',
-        instructions: "Pre-scale the image to reduce [token cost and latency](https://platform.claude.com/docs/en/build-with-claude/vision#evaluate-image-size)."|t("aialttext"),
+        instructions: "Pre-scale the image to reduce [token cost and latency](https://platform.claude.com/docs/en/build-with-claude/vision#evaluate-image-size)."|t("ai-alt-text"),
         options: [
             { label: 'Low (500px x 500px)', value: 'low' },
             { label: 'Medium (1000px x 1000px)', value: 'medium' },
@@ -95,8 +95,8 @@
     <h3>OpenAI Settings</h3>
 
     {{ forms.autosuggestField({
-        label: "OpenAI API Key"|t("aialttext"),
-        instructions: "The API key from your Open AI account"|t("aialttext"),
+        label: "OpenAI API Key"|t("ai-alt-text"),
+        instructions: "The API key from your Open AI account"|t("ai-alt-text"),
         id: "openAiApiKey",
         name: "openAiApiKey",
         placeholder: '$OPENAI_API_KEY',
@@ -106,10 +106,10 @@
     }) }}
 
     {{ forms.autosuggestField({
-        label: 'Open AI Model'|t('app'),
+        label: 'OpenAI Model'|t('ai-alt-text'),
         id: 'openAiModel',
         name: 'openAiModel',
-        instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models) E.g., `gpt-5-nano`."|t("aialttext"),
+        instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models) E.g., `gpt-5-nano`."|t("ai-alt-text"),
         value: settings.openAiModel,
         placeholder: 'gpt-5-nano',
         errors: settings.getErrors('openAiModel'),
@@ -117,10 +117,10 @@
     }) }}
 
     {{ forms.selectizeField({
-        label: 'OpenAI Image Detail Level'|t('aialttext'),
+        label: 'OpenAI Image Detail Level'|t('ai-alt-text'),
         id: 'openAiImageInputDetailLevel',
         name: 'openAiImageInputDetailLevel',
-        instructions: "Controls the [detail level](https://developers.openai.com/api/docs/guides/images-vision#choose-an-image-detail-level) OpenAI uses to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest."|t("aialttext"),
+        instructions: "Controls the [detail level](https://developers.openai.com/api/docs/guides/images-vision#choose-an-image-detail-level) OpenAI uses to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest."|t("ai-alt-text"),
         options: [
             { label: 'Low - Fast, low-cost (512px x 512px)', value: 'low' },
             { label: 'High - Standard high-fidelity understanding', value: 'high' },
@@ -134,10 +134,10 @@
     }) }}
 
     {{ forms.selectizeField({
-        label: 'OpenAI Reasoning Effort'|t('aialttext'),
+        label: 'OpenAI Reasoning Effort'|t('ai-alt-text'),
         id: 'openAiReasoningEffort',
         name: 'openAiReasoningEffort',
-        instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage."|t("aialttext"),
+        instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage."|t("ai-alt-text"),
         options: [
             { label: 'None', value: 'none' },
             { label: 'Minimal', value: 'minimal' },
@@ -158,47 +158,47 @@
 
 
 {{ forms.textareaField({
-    label: 'Prompt'|t('app'),
+    label: 'Prompt'|t('ai-alt-text'),
     id: 'prompt',
     name: 'prompt',
-    instructions: "Sent to the AI provider as the system / instruction message. The field supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`. Consider `{site.languageName}` for the site's language display name (e.g. `English (United Kingdom)`) which can help with translations on non-english sites. Checkout [the readme](https://github.com/heavymetalavo/craft-aialttext?tab=readme-ov-file#-default-prompt) for the most up to date suggestion prompt template."|t("aialttext"),
+    instructions: "Sent to the AI provider as the system / instruction message. The field supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`. Consider `{site.languageName}` for the site's language display name (e.g. `English (United Kingdom)`) which can help with translations on non-english sites. Checkout [the readme](https://github.com/heavymetalavo/craft-aialttext?tab=readme-ov-file#-default-prompt) for the most up to date suggestion prompt template."|t("ai-alt-text"),
     value: settings.prompt,
     placeholder: "Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. \"#\", \"alt text:\", \"An image of\", \"A photo of\"). Do not wrap the output in quotes. Output in the language: {site.languageName} (BCP 47: {site.language})",
     errors: settings.getErrors('prompt'),
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Propagate'|t('aialttext'),
+    label: 'Propagate'|t('ai-alt-text'),
     id: 'propagate',
     name: 'propagate',
-    instructions: "Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites."|t("aialttext"),
+    instructions: "Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites."|t("ai-alt-text"),
     on: settings.propagate,
     errors: settings.getErrors('propagate'),
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Generate for new image assets (on upload or file replacement)'|t('aialttext'),
+    label: 'Generate for new image assets (on upload or file replacement)'|t('ai-alt-text'),
     id: 'generateForNewAssets',
     name: 'generateForNewAssets',
-    instructions: "If enabled, the plugin will automatically generate alt text when an image asset is created (on upload) or its file is replaced. On replacement, the alt text for the site the replacement was made in is overwritten, since it describes the old image; other sites keep their existing alt text unless Save translated results for each site is enabled."|t("aialttext"),
+    instructions: "If enabled, the plugin will automatically generate alt text when an image asset is created (on upload) or its file is replaced. On replacement, the alt text for the site the replacement was made in is overwritten, since it describes the old image; other sites keep their existing alt text unless Save translated results for each site is enabled."|t("ai-alt-text"),
     on: settings.generateForNewAssets,
     errors: settings.getErrors('generateForNewAssets'),
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Process SVGs'|t('aialttext'),
+    label: 'Process SVGs'|t('ai-alt-text'),
     id: 'processSvgs',
     name: 'processSvgs',
-    instructions: "Attempt to generate alt text for SVG files when they are uploaded or batched processed. This requires Craft's global `transformSvgs` setting to be enabled."|t("aialttext"),
+    instructions: "Attempt to generate alt text for SVG files when they are uploaded or batched processed. This requires Craft's global `transformSvgs` setting to be enabled."|t("ai-alt-text"),
     on: settings.processSvgs,
     errors: settings.getErrors('processSvgs'),
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Save translated results for each site'|t('aialttext'),
+    label: 'Save translated results for each site'|t('ai-alt-text'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',
-    instructions: "If enabled, the plugin will queue an extra job for each site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the site (`en-GB` for British english, `en-US` for American english, `de` for German etc). When disabled, alt text will generate for assets on the site the control panel is currently working with only."|t("aialttext"),
+    instructions: "If enabled, the plugin will queue an extra job for each site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the site (`en-GB` for British english, `en-US` for American english, `de` for German etc). When disabled, alt text will generate for assets on the site the control panel is currently working with only."|t("ai-alt-text"),
     on: settings.saveTranslatedResultsToEachSite,
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}
