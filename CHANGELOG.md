@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## Unreleased
+## 5.1.0 - 2026-08-23
 
 - Fixed the per-asset "Generate AI Alt Text" action menu item using a random element ID, which could in principle collide with another asset on the same page and wire the button to the wrong asset. The ID is now derived from the asset and site.
 
