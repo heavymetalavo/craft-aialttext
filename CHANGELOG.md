@@ -1,5 +1,10 @@
 # Release Notes for AI Alt Text
 
+## 5.1.0 - 2026-08-23
+
+- Running `ai-alt-text/generate` with no action now shows the read-only `stats` summary instead of printing an exception stack trace.
+- Removed two unused variables from the bulk action controller.
+
 ## 5.0.0 - 2026-07-24
 
 > {note} **This is not a typical major release.** The jump from 1.10.0 to 5.0.0 is a version-numbering change rather than a rewrite: now that Craft 4 is supported, the plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5. Install the line that matches your Craft version.
