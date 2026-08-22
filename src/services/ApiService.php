@@ -37,6 +37,11 @@ abstract class ApiService extends Component
     protected const GENERATE_TRIGGER = 'Generate the alt text for this image now.';
 
     /**
+     * @var int How much of a GIF to scan when checking for multiple frames.
+     */
+    private const GIF_FRAME_SCAN_BYTES = 2097152;
+
+    /**
      * @var Client
      */
     protected Client $client;
@@ -192,8 +197,44 @@ abstract class ApiService extends Component
             return false;
         }
 
-        $fileContents = $asset->getContents();
-        return substr_count($fileContents, "\x21\xF9\x04") > 1;
+        // Scan the head of the file in chunks rather than pulling the whole thing into memory:
+        // getContents() loads the entire file as a string, which for a remote volume is a full
+        // download on top of the transform fetch that follows, and a large GIF could exhaust a
+        // queue worker's memory limit.
+        //
+        // A second Graphic Control Extension means more than one frame. It normally appears soon
+        // after the first frame's data, so a bounded scan is enough; if we reach the cap without
+        // finding one, treat the GIF as static.
+        $stream = $asset->getStream();
+
+        try {
+            $found = 0;
+            $read = 0;
+            $carry = '';
+
+            while ($read < self::GIF_FRAME_SCAN_BYTES && !feof($stream)) {
+                $chunk = fread($stream, 8192);
+
+                if ($chunk === false || $chunk === '') {
+                    break;
+                }
+
+                $read += strlen($chunk);
+                // Prepend the tail of the previous chunk so a marker split across the boundary is
+                // still matched.
+                $found += substr_count($carry . $chunk, "\x21\xF9\x04");
+
+                if ($found > 1) {
+                    return true;
+                }
+
+                $carry = substr($chunk, -2);
+            }
+        } finally {
+            fclose($stream);
+        }
+
+        return false;
     }
 
     /**
