@@ -11,19 +11,19 @@
 - Fixed the reasoning parameter being sent to models that don't accept one - the check matched any model whose name began with `o`, and matched `gpt-5` chat variants.
 - Fixed an empty **OpenAI Image Detail Level** setting being sent to the API as an empty value rather than falling back to `low`.
 - Fixed alt text generated via OpenAI being saved with any surrounding whitespace the model returned, matching what the Anthropic provider already did.
-- Improved the error reported when OpenAI returns no usable text: a response cut short by the output token limit, or an outright refusal, now reports what actually happened.
+- Changed the error reported when OpenAI returns no usable text: a response cut short by the output token limit, or an outright refusal, now reports what actually happened.
 - Fixed a mistyped or unsupported prompt token failing generation outright. Unresolvable tokens now log a warning and are left in the prompt as written. Arbitrary property and custom field tokens still work.
 - Fixed the "Generate AI Alt Text" element action picking an arbitrary site when the asset index was showing more than one.
 - Fixed oversized images not having their quality reduced when they also needed resizing, so they could still exceed the provider's payload limit.
 - Fixed every label and instruction on the plugin settings page using an unregistered translation category (`aialttext` rather than `ai-alt-text`), which meant none of them could ever be translated. Two fields were also using Craft's own `app` category.
-- Made the bulk actions utility translatable - none of its text was run through a translation filter.
+- Changed the bulk actions utility to be translatable - none of its text was run through a translation filter.
 - Fixed the single-asset action reporting that generation had been queued when it actually runs immediately.
 - Fixed the per-asset action menu item using a random element ID, which could collide with another asset on the same page and wire the button to the wrong asset.
 - Fixed the response message being passed through the JavaScript translator, which treated a runtime value as a translation key.
-- Reduced memory use when checking whether a GIF is animated - the whole file was previously read into memory.
-- Made the AI request timeout configurable via `config('ai-alt-text.timeout')` instead of being hardcoded.
-- Increased the height of the **Prompt** field, and fixed a stray closing tag in the settings page instructions.
-- Renamed the **Open AI Model** setting label to **OpenAI Model**, matching the other three OpenAI fields.
+- Changed the GIF animation check to use less memory - the whole file was previously read into memory.
+- Changed the AI request timeout to be configurable via `config('ai-alt-text.timeout')` instead of being hardcoded.
+- Changed the **Prompt** field to be taller, and fixed a stray closing tag in the settings page instructions.
+- Changed the **Open AI Model** setting label to **OpenAI Model**, matching the other three OpenAI fields.
 - Removed the unused `forceRegeneration` parameter from `createJob()`, `generateAltText()` and the generation job. Nothing had read it since the `preSaveAsset` setting was replaced by `propagate`.
 
 ## 6.0.0-alpha.1 - 2026-07-26
