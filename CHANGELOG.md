@@ -5,6 +5,7 @@
 - Updated error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
 - Updated the OpenAI and Anthropic services to accept Yii component config in their constructors.
 - Updated the majority of text within bulk actions utility to be translatable.
+- Fixed two control panel notices being built as interpolated strings before being passed to the translator, which meant they could never match a translation entry. They now use placeholders.
 - Fixed alt text generated via OpenAI being saved with any surrounding whitespace the model returned, such as a trailing newline. It is now trimmed, matching what the Anthropic provider already did.
 - Fixed every label and instruction on the plugin settings page to use the correct translation category (`ai-alt-text`).
 - Fixed an error that could fail an image asset's save when "Generate for new image assets" was enabled and the asset was saved via a console command / a queue job. Generation now falls back to the asset's own site.
