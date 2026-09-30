@@ -2,7 +2,7 @@
 
 ## 5.1.0 - 2026-08-23
 
-- Fixed the OpenAI and Anthropic services discarding any configuration passed to them, by overriding the constructor without accepting Yii component config. Their settings are also now read when needed rather than cached when the service is created, so a settings change takes effect within the same request and in long-running queue workers.
+- Fixed the OpenAI and Anthropic services ignoring any Yii component config passed to them (e.g. via `Craft::createObject()`), by overriding the constructor without accepting it. The plugin itself never passed any, so this is a correctness fix with no behaviour change for existing installs. The API key, model and image detail level are also now read from the plugin settings when a request is made rather than cached when the service is created.
 
 ## 5.0.0 - 2026-07-24
 
