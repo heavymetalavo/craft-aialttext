@@ -30,17 +30,19 @@ class OpenAiService extends ApiService
     private string $baseUrl = 'https://api.openai.com/v1';
 
     /**
-     * @inheritdoc
+     * Constructor
      *
-     * Reads the OpenAI API key and model from the plugin settings. This runs after any component
-     * config has been applied, so the constructor is left to the parent class.
+     * Initializes the service with the OpenAI API key and model from the plugin settings.
+     *
+     * @param array $config Standard Yii component configuration. The parent constructor is called last,
+     * per Yii convention, so that config is applied after the defaults set here.
      */
-    public function init(): void
+    public function __construct($config = [])
     {
-        parent::init();
         $plugin = AiAltText::getInstance();
         $this->apiKey = App::parseEnv($plugin->getSettings()->openAiApiKey);
         $this->model = App::parseEnv($plugin->getSettings()->openAiModel);
+        parent::__construct($config);
     }
 
     /**

@@ -24,18 +24,18 @@ class AnthropicService extends ApiService
     private string $baseUrl = 'https://api.anthropic.com/v1/messages';
 
     /**
-     * @inheritdoc
+     * Initializes the service with the Anthropic API key, model and image detail level from the plugin settings.
      *
-     * Reads the Anthropic API key, model and image detail level from the plugin settings. This runs
-     * after any component config has been applied, so the constructor is left to the parent class.
+     * @param array $config Standard Yii component configuration. The parent constructor is called last,
+     * per Yii convention, so that config is applied after the defaults set here.
      */
-    public function init(): void
+    public function __construct($config = [])
     {
-        parent::init();
         $plugin = AiAltText::getInstance();
         $this->apiKey = App::parseEnv($plugin->getSettings()->anthropicApiKey);
         $this->model = App::parseEnv($plugin->getSettings()->anthropicModel);
         $this->detailLevel = $plugin->getSettings()->anthropicImageDetailLevel;
+        parent::__construct($config);
     }
 
     /**
