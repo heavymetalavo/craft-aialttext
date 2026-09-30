@@ -43,33 +43,33 @@
 
 {% if currentUser.admin %}
 <div class="flex flex-nowrap" style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid rgba(0,0,0,0.05);">
-    <a href="{{ cpUrl('settings/plugins/ai-alt-text') }}" class="btn " data-icon="settings">Plugin Settings</a>
+    <a href="{{ cpUrl('settings/plugins/ai-alt-text') }}" class="btn " data-icon="settings">{{ "Plugin Settings"|t('ai-alt-text') }}</a>
 </div>
 {% endif %}
 
-<h2>Bulk actions</h2>
+<h2>{{ "Bulk actions"|t('ai-alt-text') }}</h2>
 
-<p>Generate alt text for all eligible image assets, the <strong>Save translated results for each site</strong> setting will be ignored to perform the requested action.</p>
+<p>{{ "Generate alt text for all eligible image assets, the <strong>Save translated results for each site</strong> setting will be ignored to perform the requested action."|t('ai-alt-text')|raw }}</p>
 
-<p class="light"><strong>Image assets only</strong>. Videos, PDFs and audio are excluded. Formats the provider can't yet process are still counted.</p>
+<p class="light">{{ "<strong>Image assets only</strong>. Videos, PDFs and audio are excluded. Formats the provider can't yet process are still counted."|t('ai-alt-text')|raw }}</p>
 
 {# Scrolls horizontally rather than overflowing the pane at narrower widths. tabindex/role make
    the scrollable region reachable by keyboard, per WCAG 2.1.1. #}
-<div style="overflow-x: auto;" tabindex="0" role="region" aria-label="Alt text coverage by site">
+<div style="overflow-x: auto;" tabindex="0" role="region" aria-label="{{ 'Alt text coverage by site'|t('ai-alt-text') }}">
 <table class="data fullwidth">
     <thead>
         <tr>
-            <th>Site</th>
-            <th>Image assets</th>
-            <th>With Alt Text</th>
-            <th>Without Alt Text</th>
-            <th>Coverage</th>
-            <th>Actions</th>
+            <th>{{ "Site"|t('ai-alt-text') }}</th>
+            <th>{{ "Image assets"|t('ai-alt-text') }}</th>
+            <th>{{ "With Alt Text"|t('ai-alt-text') }}</th>
+            <th>{{ "Without Alt Text"|t('ai-alt-text') }}</th>
+            <th>{{ "Coverage"|t('ai-alt-text') }}</th>
+            <th>{{ "Actions"|t('ai-alt-text') }}</th>
         </tr>
     </thead>
     <tbody>
         <tr class="totalcount">
-            <td><strong>{% if sites|length > 1 %} All sites {% else %} {{ (sites|first).name }} {% endif %}</strong></td>
+            <td><strong>{% if sites|length > 1 %} {{ "All sites"|t('ai-alt-text') }} {% else %} {{ (sites|first).name }} {% endif %}</strong></td>
             <td>{{ totalAssetsWithAltTextForAllSites + totalAssetsWithoutAltTextForAllSites }}</td>
             <td>{{ totalAssetsWithAltTextForAllSites }}</td>
             <td>{{ totalAssetsWithoutAltTextForAllSites }}</td>
@@ -79,12 +79,12 @@
                     <form method="post" accept-charset="UTF-8">
                         {{ csrfInput() }}
                         {{ actionInput('ai-alt-text/generate/generate-all-assets') }}
-                        <button type="submit" class="btn small submit">Generate all</button>
+                        <button type="submit" class="btn small submit">{{ "Generate all"|t('ai-alt-text') }}</button>
                     </form>
                     <form method="post" accept-charset="UTF-8">
                         {{ csrfInput() }}
                         {{ actionInput('ai-alt-text/generate/generate-assets-without-alt-text') }}
-                        <button type="submit" class="btn small submit">Generate missing</button>
+                        <button type="submit" class="btn small submit">{{ "Generate missing"|t('ai-alt-text') }}</button>
                     </form>
                 </div>
             </td>
@@ -103,13 +103,13 @@
                             {{ csrfInput() }}
                             {{ actionInput('ai-alt-text/generate/generate-all-assets') }}
                             {{ hiddenInput('siteId', site.id) }}
-                            <button type="submit" class="btn small submit">Generate all</button>
+                            <button type="submit" class="btn small submit">{{ "Generate all"|t('ai-alt-text') }}</button>
                         </form>
                         <form method="post" accept-charset="UTF-8">
                             {{ csrfInput() }}
                             {{ actionInput('ai-alt-text/generate/generate-assets-without-alt-text') }}
                             {{ hiddenInput('siteId', site.id) }}
-                            <button type="submit" class="btn small submit">Generate missing</button>
+                            <button type="submit" class="btn small submit">{{ "Generate missing"|t('ai-alt-text') }}</button>
                         </form>
                     </div>
                 </td>
