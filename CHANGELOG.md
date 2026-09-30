@@ -2,8 +2,7 @@
 
 ## 5.1.0 - 2026-08-23
 
-- Running `ai-alt-text/generate` with no action now shows the read-only `stats` summary instead of printing an exception stack trace.
-- Removed two unused variables from the bulk action controller.
+- Changed `ai-alt-text/generate` with no action to show the list of available commands instead of printing an exception stack trace. It only prints help, so it never queues jobs or uses API credits.
 
 ## 5.0.0 - 2026-07-24
 
