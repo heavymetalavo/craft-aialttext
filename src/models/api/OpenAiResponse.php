@@ -77,16 +77,16 @@ class OpenAiResponse extends Model
                             }
 
                             if (isset($contentItem['type']) && $contentItem['type'] === 'output_text' && isset($contentItem['text'])) {
-                                $this->outputText = $contentItem['text'];
+                                $this->outputText = trim($contentItem['text']);
                                 break 2;
                             }
                         }
                     }
                 }
             } elseif (isset($responseData['output_text'])) {
-                $this->outputText = $responseData['output_text'];
+                $this->outputText = trim($responseData['output_text']);
             } elseif (isset($responseData['choices'][0]['message']['content'])) {
-                $this->outputText = $responseData['choices'][0]['message']['content'];
+                $this->outputText = trim($responseData['choices'][0]['message']['content']);
                 $this->content = [
                     ['type' => 'output_text', 'text' => $this->outputText],
                 ];
