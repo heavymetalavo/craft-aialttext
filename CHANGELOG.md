@@ -2,6 +2,7 @@
 
 ## 5.1.0 - 2026-09-30
 
+- Updated error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
 - Updated the OpenAI and Anthropic services to accept Yii component config in their constructors.
 - Updated the majority of text within bulk actions utility to be translatable.
 - Fixed alt text generated via OpenAI being saved with any surrounding whitespace the model returned, such as a trailing newline. It is now trimmed, matching what the Anthropic provider already did.
