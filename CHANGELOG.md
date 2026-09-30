@@ -2,7 +2,7 @@
 
 ## 5.1.0 - 2026-08-23
 
-- Made the bulk actions utility translatable. None of its text was run through a translation filter - the heading, the two explanatory paragraphs, all six table headings, the "All sites" row label, the "Generate all" / "Generate missing" buttons, the "Plugin Settings" link and the table's accessible label were all hardcoded English, even though the utility's own name in the sidebar was translated.
+- Updated the majority of text within bulk actions utility to be translatable.
 
 ## 5.0.0 - 2026-07-24
 
