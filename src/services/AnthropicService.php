@@ -26,8 +26,8 @@ class AnthropicService extends ApiService
     }
 
     /**
-     * Read lazily rather than cached at construction, so a settings change is picked up within the
-     * same request and by long-lived queue workers.
+     * Read from the plugin settings at the point of use rather than cached at construction. Note the
+     * settings model itself is cached per process, so this won't see changes saved by another process.
      */
     private function apiKey(): string
     {
