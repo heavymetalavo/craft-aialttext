@@ -4,8 +4,10 @@
 
 - Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
 - Changed the OpenAI and Anthropic services to accept Yii component config in their constructors.
-- Changed the majority of text within bulk actions utility to be translatable.
+- Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model. within bulk actions utility to be translatable.
 - Changed `ai-alt-text/generate` with no action to show the list of available commands instead of printing an exception stack trace.
+- Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model.
+- Fixed the reasoning parameter being sent to models that don't accept one. The check matched any model whose name began with `o` (so `omni-...` and similar), and matched `gpt-5` chat variants such as `gpt-5-chat-latest`. Both were rejected by the API, and the resulting error was misread as the provider being unable to reach the image, triggering a pointless base64 retry before the request finally failed.
 - Fixed two control panel notices being built as interpolated strings before being passed to the translator, which meant they could never match a translation entry. They now use placeholders.
 - Fixed alt text generated via OpenAI being saved with any surrounding whitespace the model returned, such as a trailing newline. It is now trimmed, matching what the Anthropic provider already did.
 - Fixed every label and instruction on the plugin settings page to use the correct translation category (`ai-alt-text`).
