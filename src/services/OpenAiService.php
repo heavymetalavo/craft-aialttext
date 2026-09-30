@@ -17,11 +17,8 @@ use yii\base\InvalidConfigException;
  * OpenAI API Service
  *
  * Handles all interactions with the OpenAI API, including sending requests and processing responses.
- * This service manages the API configuration and provides methods for generating alt text using OpenAI's vision models.
- *
- * @property string $apiKey The OpenAI API key
- * @property string $model The OpenAI model to use
- * @property string $baseUrl The base URL for OpenAI API requests
+ * This service provides methods for generating alt text using OpenAI's vision models. The API key and
+ * model are read from the plugin settings each time a request is made.
  */
 class OpenAiService extends ApiService
 {
@@ -30,7 +27,7 @@ class OpenAiService extends ApiService
     /**
      * Constructor
      *
-     * Initializes the service with the OpenAI API key and model from the plugin settings.
+     * @param array $config Standard Yii component configuration
      */
     public function __construct($config = [])
     {
