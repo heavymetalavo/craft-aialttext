@@ -2,6 +2,7 @@
 
 ## 5.1.0 - 2026-09-30
 
+- Changed the HTTP client's request timeout from a static 30 second timeout to Craft's Guzzle client's config timeout
 - Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
 - Changed the OpenAI and Anthropic services to accept Yii component config in their constructors.
 - Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model. within bulk actions utility to be translatable.
@@ -12,7 +13,7 @@
 - Fixed alt text generated via OpenAI being saved with any surrounding whitespace the model returned, such as a trailing newline. It is now trimmed, matching what the Anthropic provider already did.
 - Fixed every label and instruction on the plugin settings page to use the correct translation category (`ai-alt-text`).
 - Fixed an error that could fail an image asset's save when "Generate for new image assets" was enabled and the asset was saved via a console command / a queue job. Generation now falls back to the asset's own site.
-- - Fixed existing alt text being lost if a save failed. When **Propagate** is off, generation blanks the alt value in a preliminary save before writing the new one; if that second save failed, the asset was left with an empty alt value instead of what it had before. Both saves now run in one transaction, so a failure leaves the previous value intact.
+- Fixed existing alt text being lost if a save failed. When **Propagate** is off, generation blanks the alt value in a preliminary save before writing the new one; if that second save failed, the asset was left with an empty alt value instead of what it had before. Both saves now run in one transaction, so a failure leaves the previous value intact.
 - Removed the single-asset action passing the response message through the JavaScript translator. The message would already be translated server-side.
 
 ## 5.0.0 - 2026-07-24
