@@ -11,6 +11,7 @@ use craft\helpers\App;
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
+use Throwable;
 
 /**
  * AI Alt Text Service
@@ -55,7 +56,11 @@ class AiAltTextService extends Component
             $hasPlusOneSite = count(Craft::$app->getSites()->getAllSites()) > 1;
 
             if ($hasExistingJob) {
-                $message = Craft::t('ai-alt-text', "$asset->filename (ID: $asset->id" . ($hasPlusOneSite ? ", Site: $assetSiteId" : "") . ") is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again.");
+                $message = Craft::t('ai-alt-text', '{filename} (ID: {id}{siteMessageSuffix}) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again.', [
+                    'filename' => $asset->filename,
+                    'id' => $asset->id,
+                    'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $assetSiteId" : "",
+                ]);
                 
                 // Only use session in web context
                 if (Craft::$app->getRequest()->getIsConsoleRequest()) {
@@ -68,7 +73,10 @@ class AiAltTextService extends Component
         }
 
         if ($asset->kind !== Asset::KIND_IMAGE) {
-            $message = Craft::t('ai-alt-text', "$asset->filename (ID: $asset->id) is not an image");
+            $message = Craft::t('ai-alt-text', '{filename} (ID: {id}) is not an image', [
+                'filename' => $asset->filename,
+                'id' => $asset->id,
+            ]);
             
             // Only use session in web context
             if (Craft::$app->getRequest()->getIsConsoleRequest()) {
@@ -173,19 +181,32 @@ class AiAltTextService extends Component
 
         $propagate = (bool) $plugin->getSettings()->propagate;
 
-        // Bug Workaround: Pre-save blank alt text to prevent propagation across sites where setting is false.
-        if (!$propagate) {
-            $asset->alt = '';
-            Craft::debug("Performing preliminary save for asset {$asset->id} to establish site rows before setting alt text.", __METHOD__);
-            Craft::$app->elements->saveElement($asset, true, false);
-        }
+        // Both saves go in one transaction. The blank pre-save below deliberately clears the alt
+        // value, so if the real save afterwards failed for any reason - a validation error, a
+        // beforeSave veto from another plugin, a DB problem - the asset would be left with its
+        // previous alt text replaced by an empty string. Rolling back keeps the old value.
+        $transaction = Craft::$app->getDb()->beginTransaction();
 
-        $asset->alt = $altText;
-        
-        Craft::info("Saving AI alt text for asset {$asset->id} with propagate=" . ($propagate ? 'true' : 'false'), __METHOD__);
-        
-        if (!Craft::$app->elements->saveElement($asset, true, $propagate)) {
-            throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
+        try {
+            // Bug Workaround: Pre-save blank alt text to prevent propagation across sites where setting is false.
+            if (!$propagate) {
+                $asset->alt = '';
+                Craft::debug("Performing preliminary save for asset {$asset->id} to establish site rows before setting alt text.", __METHOD__);
+                Craft::$app->elements->saveElement($asset, true, false);
+            }
+
+            $asset->alt = $altText;
+
+            Craft::info("Saving AI alt text for asset {$asset->id} with propagate=" . ($propagate ? 'true' : 'false'), __METHOD__);
+
+            if (!Craft::$app->elements->saveElement($asset, true, $propagate)) {
+                throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
+            }
+
+            $transaction->commit();
+        } catch (Throwable $e) {
+            $transaction->rollBack();
+            throw $e;
         }
 
         Craft::info('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
@@ -265,7 +286,7 @@ $('#' + $id).on('activate', () => {
   })
   .then((response) => {
     if (response.data.success) {
-        Craft.cp.displayNotice(Craft.t('ai-alt-text', response.data.message));
+        Craft.cp.displayNotice(response.data.message);
       
       // Refresh the elements in the current view if possible
       if (Craft.cp.elementIndex) {
