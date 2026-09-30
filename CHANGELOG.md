@@ -1,14 +1,17 @@
 # Release Notes for AI Alt Text
 
-## 5.1.0 - 2026-08-23
+## 5.1.0 - 2026-09-30
 
 - Fixed alt text generated via OpenAI being saved with any surrounding whitespace the model returned, such as a trailing newline. It is now trimmed, matching what the Anthropic provider already did.
+- Updated the majority of text within bulk actions utility to be translatable.
+- Fixed every label and instruction on the plugin settings page to use the correct translation category (`ai-alt-text`).
+- Fixed an error that could fail an image asset's save when "Generate for new image assets" was enabled and the asset was saved via a console command / a queue job. Generation now falls back to the asset's own site.
 
 ## 5.0.0 - 2026-07-24
 
-> {note} **This is not a typical major release.** The jump from 1.10.0 to 5.0.0 is a version-numbering change rather than a rewrite: now that Craft 4 is supported, the plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5. Install the line that matches your Craft version.
+> {tip} **This is not a typical major release.** The jump from 1.10.0 to 5.0.0 is a version-numbering change rather than a rewrite: now that Craft 4 is supported, the plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5. Install the line that matches your Craft version.
 
-> {warning} This release introduces permission checks. Automatic generation on upload or file replacement is unchanged, but users who generate alt text manually now need permission to save the asset in the relevant volume, plus the **AI Alt Text Bulk Actions** utility permission for the utility's "Generate all" / "Generate missing" actions. Grant it under **Settings → Users → (group or user) → Permissions → Utilities**.
+> {tip} This release introduces permission checks. Automatic generation on upload or file replacement is unchanged, but users who generate alt text manually now need permission to save the asset in the relevant volume, plus the **AI Alt Text Bulk Actions** utility permission for the utility's "Generate all" / "Generate missing" actions. Grant it under **Settings → Users → (group or user) → Permissions → Utilities**.
 
 - Added a permission requirement to the "Generate all" / "Generate missing" utility actions: the **AI Alt Text Bulk Actions** utility permission (the one Craft registers automatically for the utility, under **Settings → Users → (group or user) → Permissions → Utilities**). Grant it to the relevant user groups after updating, otherwise those actions will be unavailable. The element action is deliberately not permission-gated beyond being able to save each selected asset, and on-upload generation is controlled by the plugin setting alone.
 - Added a general CP access (`accessCp`) requirement to the "Generate all" / "Generate missing" utility actions, alongside the AI Alt Text Bulk Actions permission.
@@ -40,7 +43,7 @@
 
 ## 1.10.0 - 2026-07-07
 
-> {note} If you have a custom **prompt** value and work with non-English language sites, you might want to update it manually to adopt the `{site.languageName}` variable which can return more reliable results in the desired language. Installs still using any former default prompt values are migrated automatically.
+> {tip} If you have a custom **prompt** value and work with non-English language sites, you might want to update it manually to adopt the `{site.languageName}` variable which can return more reliable results in the desired language. Installs still using any former default prompt values are migrated automatically.
 
 - Changed the default prompt to name the target language explicitly - `{site.languageName} (BCP 47: {site.language})`, e.g. `Norwegian (BCP 47: no)`. The previous default ended in a bare code (`Output in the language: no` for Norwegian), which a model could misread as the English word "no" and answer in the wrong language.
 - Added a `{site.languageName}` prompt variable that resolves to the language's display name only.
