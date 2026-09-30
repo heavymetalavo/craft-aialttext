@@ -12,6 +12,7 @@
 - Fixed alt text generated via OpenAI being saved with any surrounding whitespace the model returned, such as a trailing newline. It is now trimmed, matching what the Anthropic provider already did.
 - Fixed every label and instruction on the plugin settings page to use the correct translation category (`ai-alt-text`).
 - Fixed an error that could fail an image asset's save when "Generate for new image assets" was enabled and the asset was saved via a console command / a queue job. Generation now falls back to the asset's own site.
+- - Fixed existing alt text being lost if a save failed. When **Propagate** is off, generation blanks the alt value in a preliminary save before writing the new one; if that second save failed, the asset was left with an empty alt value instead of what it had before. Both saves now run in one transaction, so a failure leaves the previous value intact.
 - Removed the single-asset action passing the response message through the JavaScript translator. The message would already be translated server-side.
 
 ## 5.0.0 - 2026-07-24
