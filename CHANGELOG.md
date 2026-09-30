@@ -2,6 +2,7 @@
 
 ## 5.1.0 - 2026-09-30
 
+- Updated the majority of text within bulk actions utility to be translatable.
 - Fixed every label and instruction on the plugin settings page to use the correct translation category (`ai-alt-text`).
 - Fixed an error that could fail an image asset's save when "Generate for new image assets" was enabled and the asset was saved via a console command / a queue job. Generation now falls back to the asset's own site.
 
