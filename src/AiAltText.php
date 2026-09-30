@@ -2,133 +2,116 @@
 
 namespace heavymetalavo\craftaialttext;
 
-use Craft;
-use craft\base\Element;
-use craft\base\Plugin;
-use craft\elements\Asset;
-use craft\events\{ModelEvent, RegisterElementActionsEvent, DefineMenuItemsEvent, RegisterComponentTypesEvent, RegisterUrlRulesEvent};
-use craft\helpers\Cp;
-use craft\services\Utilities;
-use craft\web\{View, UrlManager};
-use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
+use CraftCms\Cms\Asset\Events\AssetReplaced;
+use CraftCms\Cms\Element\Events\{ElementActionsResolving, ElementActionMenuItemsResolving, ElementLifecycleSaved};
+use CraftCms\Cms\Plugin\Plugin;
+use CraftCms\Cms\ProjectConfig\ProjectConfig;
+use CraftCms\Cms\Support\Facades\Plugins;
+use heavymetalavo\craftaialttext\Commands\{GenerateAll, GenerateMissing, GenerateSingle, GenerateStats};
+use CraftCms\Cms\View\Events\CpTemplateRootsResolving;
+use heavymetalavo\craftaialttext\listeners\{AddAssetActionMenuItem, QueueAltTextForNewAsset, RegenerateAltTextOnReplace, RegisterAssetElementActions, RegisterCpTemplateRoot, RestoreFailedJobDescription};
 use heavymetalavo\craftaialttext\models\Settings;
-use heavymetalavo\craftaialttext\services\{AiAltTextService, OpenAiService, AnthropicService};
 use heavymetalavo\craftaialttext\utilities\AiAltTextUtility;
-use yii\base\Event;
+use Illuminate\Queue\Events\JobFailed;
+
+use function CraftCms\Cms\t;
+use function CraftCms\Cms\template;
 
 /**
  * AI Alt Text Plugin
  *
  * A Craft CMS plugin that generates alt text for images using AI vision models.
- *
- * @property AiAltTextService $aiAltTextService The service for generating alt text
- * @property OpenAiService $openAiService
- * @property AnthropicService $anthropicService
- * @property Settings $settings The plugin settings
  */
 class AiAltText extends Plugin
 {
-    public string $schemaVersion = '1.0.0';
+    public string $schemaVersion = '1.1.0';
     public bool $hasCpSettings = true;
 
-    public static function config(): array
+    /**
+     * @var string Permission required to run the sweeping bulk actions (generate for all/missing
+     * assets across sites).
+     *
+     * This is the permission Craft registers automatically for the bulk actions utility
+     * (`utility:` + AiAltTextUtility::id()), so one checkbox under Utilities covers both
+     * viewing the utility and executing its bulk actions.
+     */
+    public const PERMISSION_BULK_ACTIONS = 'utility:ai-alt-text-bulk-actions';
+
+    public array $commands = [
+        GenerateSingle::class,
+        GenerateMissing::class,
+        GenerateAll::class,
+        GenerateStats::class,
+    ];
+
+    protected array $utilities = [
+        AiAltTextUtility::class,
+    ];
+
+    /**
+     * Event listeners, registered by Craft's HasListeners concern.
+     *
+     * These have to be listener classes rather than closures: `bootPlugin()` is final as of
+     * Craft 6 alpha.14, so there is no longer a hook in which to register closures.
+     */
+    protected array $events = [
+        ElementActionsResolving::class => RegisterAssetElementActions::class,
+        ElementActionMenuItemsResolving::class => AddAssetActionMenuItem::class,
+        JobFailed::class => RestoreFailedJobDescription::class,
+        ElementLifecycleSaved::class => QueueAltTextForNewAsset::class,
+        AssetReplaced::class => RegenerateAltTextOnReplace::class,
+        CpTemplateRootsResolving::class => RegisterCpTemplateRoot::class,
+    ];
+
+    /**
+     * Translates a message and substitutes `{placeholder}` parameters.
+     *
+     * Craft's t() can't be relied on for the substitution. It asks the Yii translator first,
+     * which returns the message untouched when the plugin's category has no registered source,
+     * and then falls through to Laravel's __(), which only understands `:placeholder` syntax.
+     * The net effect is that `{filename}` and friends reached the UI verbatim — the queue showed
+     * jobs named "Generating alt text for {filename} (ID: {id}{siteMessageSuffix})".
+     *
+     * Translation still goes through t(), so a translation file would be picked up; only the
+     * parameter substitution is done here.
+     */
+    public static function t(string $message, array $params = []): string
     {
-        return [
-            'components' => [
-                'aiAltTextService' => AiAltTextService::class,
-                'openAiService' => OpenAiService::class,
-                'anthropicService' => AnthropicService::class,
-            ],
-        ];
+        $translated = t($message, category: 'ai-alt-text');
+
+        if ($params === []) {
+            return $translated;
+        }
+
+        $replacements = [];
+        foreach ($params as $key => $value) {
+            $replacements['{' . $key . '}'] = (string) $value;
+        }
+
+        return strtr($translated, $replacements);
     }
 
     /**
-     * @inheritdoc
+     * Returns the plugin settings, with a fallback to loading directly from the project
+     * config when the Plugins service registry hasn't been populated (e.g. in the queue
+     * context where Plugin::create() may fail before registerPlugin() is called).
      */
-    public function init(): void
+    public static function settings(): Settings
     {
-        parent::init();
+        $plugin = Plugins::getPlugin('ai-alt-text');
 
-        $this->setComponents([
-            'aiAltTextService' => AiAltTextService::class,
-            'openAiService' => OpenAiService::class,
-            'anthropicService' => AnthropicService::class,
-        ]);
+        if ($plugin instanceof self) {
+            return $plugin->getSettings();
+        }
 
-        // Register template path
-        Event::on(
-            View::class,
-            View::EVENT_REGISTER_CP_TEMPLATE_ROOTS,
-            function($event) {
-                $event->roots[$this->id] = $this->getBasePath() . '/templates';
-            }
-        );
+        $settings = new Settings();
+        $rawSettings = app(ProjectConfig::class)->get('plugins.ai-alt-text.settings') ?? [];
 
-        // Register controller routes
-        Event::on(
-            UrlManager::class,
-            UrlManager::EVENT_REGISTER_CP_URL_RULES,
-            function(RegisterUrlRulesEvent $event) {
-                $event->rules['ai-alt-text/generate/single-asset'] = 'ai-alt-text/generate/single-asset';
-                $event->rules['ai-alt-text/generate-all-assets'] = 'ai-alt-text/generate/generate-all-assets';
-                $event->rules['ai-alt-text/generate-assets-without-alt-text'] = 'ai-alt-text/generate/generate-assets-without-alt-text';
-            }
-        );
+        if (!empty($rawSettings)) {
+            $settings->setAttributes($rawSettings, false);
+        }
 
-        $this->attachEventHandlers();
-    }
-
-    private function attachEventHandlers(): void
-    {
-        // Register event handlers here ...
-        // (see https://craftcms.com/docs/5.x/extend/events.html to get started)
-        Event::on(
-            Asset::class,
-            Asset::EVENT_REGISTER_ACTIONS,
-            function(RegisterElementActionsEvent $event) {
-                $event->actions[] = GenerateAiAltText::class;
-            }
-        );
-
-        // Add custom menu item to asset action dropdown
-        Event::on(
-            Asset::class,
-            Element::EVENT_DEFINE_ACTION_MENU_ITEMS,
-            function(DefineMenuItemsEvent $event) {
-                $this->aiAltTextService->handleAssetActionMenuItems($event);
-            }
-        );
-
-        // Listen for asset creation/save events
-        Event::on(
-            Asset::class,
-            Element::EVENT_AFTER_SAVE,
-            function(ModelEvent $event) {
-                /** @var Asset $element */
-                $asset = $event->sender;
-
-                // Only process new assets that are images and if the setting is enabled
-                if (
-                    $event->isNew
-                    && $asset->kind === Asset::KIND_IMAGE
-                    && $this->getSettings()->generateForNewAssets
-                ) {
-                    // Save current site ID
-                    $currentSite = Cp::requestedSite();
-                    // Pass current site ID to create a job
-                    $this->aiAltTextService->createJob($asset, false, $currentSite->id);
-                }
-            }
-        );
-
-        // Register Utility
-        Event::on(
-            Utilities::class,
-            Utilities::EVENT_REGISTER_UTILITIES,
-            function(RegisterComponentTypesEvent $event) {
-                $event->types[] = AiAltTextUtility::class;
-            }
-        );
+        return $settings;
     }
 
     /**
@@ -144,11 +127,8 @@ class AiAltText extends Plugin
      */
     protected function settingsHtml(): ?string
     {
-        return Craft::$app->view->renderTemplate(
-            'ai-alt-text/_settings',
-            [
-                'settings' => $this->getSettings(),
-            ]
-        );
+        return template('ai-alt-text/_settings', [
+            'settings' => $this->getSettings(),
+        ]);
     }
 }

@@ -2,12 +2,16 @@
 
 namespace heavymetalavo\craftaialttext\elements\actions;
 
-use Craft;
-use craft\base\ElementAction;
-use craft\elements\Asset;
-use craft\elements\db\ElementQueryInterface;
+use CraftCms\Cms\Asset\Elements\Asset;
+use CraftCms\Cms\Element\Actions\ElementAction;
+use CraftCms\Cms\Element\Queries\Contracts\ElementQueryInterface;
+use CraftCms\Cms\Support\Facades\HtmlStack;
+use CraftCms\Cms\Support\Facades\InputNamespace;
 use heavymetalavo\craftaialttext\AiAltText;
-use yii\base\InvalidConfigException;
+use heavymetalavo\craftaialttext\services\AiAltTextService;
+
+use function CraftCms\Cms\currentUser;
+use function CraftCms\Cms\t;
 
 /**
  * Generate Alt Text element action
@@ -21,17 +25,17 @@ class GenerateAiAltText extends ElementAction
 
     public static function displayName(): string
     {
-        return Craft::t('ai-alt-text', 'Generate AI Alt Text');
+        return t('Generate AI Alt Text', category: 'ai-alt-text');
     }
 
     public function getTriggerLabel(): string
     {
-        return Craft::t('ai-alt-text', 'Generate AI Alt Text');
+        return t('Generate AI Alt Text', category: 'ai-alt-text');
     }
 
     public function getTriggerHtml(): ?string
     {
-        Craft::$app->getView()->registerJsWithVars(fn($type) => <<<JS
+        HtmlStack::jsWithVars(fn ($type) => <<<JS
             (() => {
                 new Craft.ElementActionTrigger({
                     type: $type,
@@ -53,22 +57,56 @@ class GenerateAiAltText extends ElementAction
 
     public function performAction(ElementQueryInterface $query): bool
     {
-        $user = Craft::$app->getUser()->getIdentity();
+        // asElement(): Craft has both a user model and a user element, and the auth guard returns
+        // the model. canSave() requires the element and TypeErrors on the model.
+        $user = currentUser()?->asElement();
 
         if (!$user) {
-            throw new InvalidConfigException('User not logged in');
+            throw new \LogicException('User not logged in');
         }
+
+        $queuedCount = 0;
+        $skippedCount = 0;
+
+        $queuedCount = 0;
+        $skippedCount = 0;
 
         foreach ($query->all() as $asset) {
             if (!$asset instanceof Asset) {
                 continue;
             }
 
-            // Set the current site id on asset
-            $asset = Asset::find()->id($asset->id)->siteId($query->siteId)->one();
+            // ElementQuery::$siteId is mixed - an int, an array of ints, or '*' when the index is
+            // showing several sites. Passing an array or '*' straight through returns whichever
+            // site row the database happens to order first, so alt text would be generated for an
+            // arbitrary site. Resolve one concrete site instead.
+            $siteId = is_numeric($query->siteId) ? (int)$query->siteId : $asset->siteId;
 
-            // Create a job for the asset
-            AiAltText::getInstance()->aiAltTextService->createJob($asset, true);
+            $asset = Asset::find()->id($asset->id)->siteId($siteId)->one();
+
+            if (!$asset) {
+                continue;
+            }
+
+            // Skip assets the user isn't allowed to save (saving doesn't enforce this itself).
+            // canSave() also covers assets uploaded by other users (savePeerAssets).
+            if (!$asset->canSave($user)) {
+                $skippedCount++;
+                continue;
+            }
+
+            app(AiAltTextService::class)->createJob($asset, true);
+            $queuedCount++;
+        }
+
+        // Skipping is otherwise invisible: without this the user gets an unqualified
+        // success notice even when nothing they selected was processed.
+        if ($skippedCount > 0) {
+            $this->setMessage(AiAltText::t('Queued {queued} of {total} assets for alt text generation; {skipped} skipped (no permission to save).', [
+                'queued' => $queuedCount,
+                'total' => $queuedCount + $skippedCount,
+                'skipped' => $skippedCount,
+            ]));
         }
 
         return true;
