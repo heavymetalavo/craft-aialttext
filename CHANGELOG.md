@@ -2,7 +2,7 @@
 
 ## 5.1.0 - 2026-08-23
 
-- Improved the error reported when OpenAI returns no usable text. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now report what actually happened.
+- Updated error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
 
 ## 5.0.0 - 2026-07-24
 
