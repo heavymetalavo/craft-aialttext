@@ -2,7 +2,7 @@
 
 ## 5.1.0 - 2026-08-23
 
-- Reduced memory use when checking whether a GIF is animated. The whole file was previously read into memory - a full download for remote volumes, and enough to exhaust a queue worker on a large GIF. Only the start of the file is scanned now.
+- Changed the GIF animation check to use less memory. It previously checked whether a GIF is animated, reading the whole file was previously read into memory - a full download for remote volumes, and enough to exhaust a queue worker on a large GIF. Only the start of the file is scanned now.
 
 ## 5.0.0 - 2026-07-24
 
