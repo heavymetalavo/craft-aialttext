@@ -2,7 +2,7 @@
 
 ## 5.1.0 - 2026-08-23
 
-- Fixed two control panel notices being built as interpolated strings before being passed to the translator, which meant they could never match a translation entry. They now use placeholders, like the queue job descriptions already did.
+- Fixed two control panel notices being built as interpolated strings before being passed to the translator, which meant they could never match a translation entry. They now use placeholders.
 
 ## 5.0.0 - 2026-07-24
 
