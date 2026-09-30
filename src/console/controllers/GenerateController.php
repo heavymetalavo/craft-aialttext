@@ -20,6 +20,15 @@ use yii\helpers\BaseConsole;
 class GenerateController extends Controller
 {
     /**
+     * @inheritdoc
+     *
+     * Without this, a bare `ai-alt-text/generate` prints an InvalidRouteException stack trace on
+     * top of the (genuinely useful) "did you mean" suggestions. The default action shows the help
+     * rather than running anything, so a bare command never does work or costs API usage.
+     */
+    public $defaultAction = 'index';
+
+    /**
      * @var int|null Specific site ID to process. If not specified, processes ALL sites.
      */
     public $siteId;
@@ -67,6 +76,16 @@ class GenerateController extends Controller
             'v' => 'verbose',
             'f' => 'force',
         ];
+    }
+
+    /**
+     * Show the available generate commands
+     *
+     * @return int Exit code
+     */
+    public function actionIndex(): int
+    {
+        return Craft::$app->runAction('help', [$this->getUniqueId()]);
     }
 
     /**
