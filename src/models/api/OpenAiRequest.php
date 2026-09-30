@@ -124,15 +124,7 @@ class OpenAiRequest extends Model
         return $payload;
     }
 
-    /**
-     * Whether the configured model takes a `reasoning` parameter.
-     *
-     * The previous check was `str_starts_with($model, 'o')`, which matched *any* model name
-     * beginning with "o", and a bare `gpt-5` prefix, which also matched non-reasoning chat
-     * variants such as `gpt-5-chat-latest`. Either way the request failed with an
-     * invalid_request_error, which generateAltText() then misread as the provider being unable to
-     * fetch the image URL - so it retried the whole thing as base64 before giving up.
-     */
+    /** Whether the configured model takes a `reasoning` parameter (chat variants don't). */
     private function isReasoningModel(): bool
     {
         // Chat variants don't accept a reasoning parameter, whatever family they're in.
