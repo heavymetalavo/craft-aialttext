@@ -2,7 +2,7 @@
 
 ## 5.1.0 - 2026-08-23
 
-- Changed `ai-alt-text/generate` with no action to show the list of available commands instead of printing an exception stack trace. It only prints help, so it never queues jobs or uses API credits.
+- Changed `ai-alt-text/generate` with no action to show the list of available commands instead of printing an exception stack trace.
 
 ## 5.0.0 - 2026-07-24
 
