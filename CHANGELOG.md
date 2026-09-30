@@ -2,7 +2,7 @@
 
 ## 5.1.0 - 2026-08-23
 
-- Updated the OpenAI and Anthropic services to accept Yii component config and to read the API key, model and image detail level from the plugin settings when a request is made, rather than caching them at construction.
+- Updated the OpenAI and Anthropic services to accept Yii component config, by initialising in `init()` rather than overriding the constructor.
 
 ## 5.0.0 - 2026-07-24
 

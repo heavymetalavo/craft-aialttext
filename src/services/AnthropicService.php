@@ -18,30 +18,24 @@ use heavymetalavo\craftaialttext\models\api\{AnthropicRequest, AnthropicResponse
  */
 class AnthropicService extends ApiService
 {
+    private string $apiKey;
+    private string $model;
+    private string $detailLevel;
     private string $baseUrl = 'https://api.anthropic.com/v1/messages';
 
-    public function __construct($config = [])
-    {
-        parent::__construct($config);
-    }
-
     /**
-     * Read from the plugin settings at the point of use rather than cached at construction. Note the
-     * settings model itself is cached per process, so this won't see changes saved by another process.
+     * @inheritdoc
+     *
+     * Reads the Anthropic API key, model and image detail level from the plugin settings. This runs
+     * after any component config has been applied, so the constructor is left to the parent class.
      */
-    private function apiKey(): string
+    public function init(): void
     {
-        return (string) App::parseEnv(AiAltText::getInstance()->getSettings()->anthropicApiKey);
-    }
-
-    private function model(): string
-    {
-        return (string) App::parseEnv(AiAltText::getInstance()->getSettings()->anthropicModel);
-    }
-
-    private function detailLevel(): string
-    {
-        return (string) AiAltText::getInstance()->getSettings()->anthropicImageDetailLevel;
+        parent::init();
+        $plugin = AiAltText::getInstance();
+        $this->apiKey = App::parseEnv($plugin->getSettings()->anthropicApiKey);
+        $this->model = App::parseEnv($plugin->getSettings()->anthropicModel);
+        $this->detailLevel = $plugin->getSettings()->anthropicImageDetailLevel;
     }
 
     /**
@@ -54,7 +48,7 @@ class AnthropicService extends ApiService
             return '';
         }
 
-        $targetDimension = match ($this->detailLevel()) {
+        $targetDimension = match ($this->detailLevel) {
             'low' => 500,
             'medium' => 1000,
             'high' => 1568,
@@ -110,7 +104,7 @@ class AnthropicService extends ApiService
             $prompt = $this->resolvePrompt($asset, $siteId);
 
             $requestModel = new AnthropicRequest();
-            $requestModel->model = $this->model();
+            $requestModel->model = $this->model;
             $requestModel->setSystem($prompt);
             $requestModel->setPrompt(self::GENERATE_TRIGGER);
             if ($base64ImageSource) {
@@ -128,7 +122,7 @@ class AnthropicService extends ApiService
 
             $response = $this->client->post($this->baseUrl, [
                 'headers' => [
-                    'x-api-key' => $this->apiKey(),
+                    'x-api-key' => $this->apiKey,
                     'anthropic-version' => '2023-06-01',
                     'content-type' => 'application/json',
                 ],

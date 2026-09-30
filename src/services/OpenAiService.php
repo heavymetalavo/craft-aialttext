@@ -17,35 +17,30 @@ use yii\base\InvalidConfigException;
  * OpenAI API Service
  *
  * Handles all interactions with the OpenAI API, including sending requests and processing responses.
- * This service provides methods for generating alt text using OpenAI's vision models. The API key and
- * model are read from the plugin settings each time a request is made.
+ * This service manages the API configuration and provides methods for generating alt text using OpenAI's vision models.
+ *
+ * @property string $apiKey The OpenAI API key
+ * @property string $model The OpenAI model to use
+ * @property string $baseUrl The base URL for OpenAI API requests
  */
 class OpenAiService extends ApiService
 {
+    private string $apiKey;
+    private string $model;
     private string $baseUrl = 'https://api.openai.com/v1';
 
     /**
-     * Constructor
+     * @inheritdoc
      *
-     * @param array $config Standard Yii component configuration
+     * Reads the OpenAI API key and model from the plugin settings. This runs after any component
+     * config has been applied, so the constructor is left to the parent class.
      */
-    public function __construct($config = [])
+    public function init(): void
     {
-        parent::__construct($config);
-    }
-
-    /**
-     * Read from the plugin settings at the point of use rather than cached at construction. Note the
-     * settings model itself is cached per process, so this won't see changes saved by another process.
-     */
-    private function apiKey(): string
-    {
-        return (string) App::parseEnv(AiAltText::getInstance()->getSettings()->openAiApiKey);
-    }
-
-    private function model(): string
-    {
-        return (string) App::parseEnv(AiAltText::getInstance()->getSettings()->openAiModel);
+        parent::init();
+        $plugin = AiAltText::getInstance();
+        $this->apiKey = App::parseEnv($plugin->getSettings()->openAiApiKey);
+        $this->model = App::parseEnv($plugin->getSettings()->openAiModel);
     }
 
     /**
@@ -71,7 +66,7 @@ class OpenAiService extends ApiService
             $requestStartedAt = microtime(true);
             $response = $this->client->post($this->baseUrl . '/responses', [
                 'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey(),
+                    'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type' => 'application/json',
                 ],
                 'json' => $requestData,
@@ -216,7 +211,7 @@ class OpenAiService extends ApiService
 
         // Create and populate the request model
         $request = new OpenAiRequest();
-        $request->model = $this->model();
+        $request->model = $this->model;
         $request->setInstructions($prompt)
             ->setPrompt(self::GENERATE_TRIGGER)
             ->setImageUrl($imageUrl)
