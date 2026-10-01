@@ -2,7 +2,7 @@
 
 ## 5.1.0 - 2026-10-01
 
-> {tip} Generation failures now mark their queue job as failed, where previously they were logged but the job reported as completed. If your library contains images the provider can't process (for example a format your image driver doesn't support), those will now show up as failed jobs rather than passing silently.
+> {tip} Alt text generation failures now mark their queue job as failed, where previously they were logged but the job reported as completed. If your asset library contains an image format your image driver doesn't support, those will now show up as failed jobs rather than passing silently.
 
 - Changed the HTTP client's request timeout from a static 30 second timeout to Craft's Guzzle client's config timeout
 - Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
