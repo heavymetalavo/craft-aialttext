@@ -81,7 +81,6 @@ class GenerateController extends Controller
         $totalCount = 0;
         $queuedCount = 0;
         $plugin = AiAltText::getInstance();
-        $settings = $plugin->getSettings();
         
         // Check if a specific site ID was provided
         $siteId = $this->request->getParam('siteId');
@@ -158,7 +157,7 @@ class GenerateController extends Controller
                             Craft::debug('Queuing alt text generation for asset: ' . $asset->id . ' (' . $asset->filename . ') in site ' . $site->name, __METHOD__);
                             
                             // Create a job for the asset
-                            $plugin->aiAltTextService->createJob($asset, false, $site->id, false, true, true);
+                            $plugin->aiAltTextService->createJob($asset, false, $site->id, false, true);
                             $queuedCount++;
                         } catch (Exception $e) {
                             Craft::error('Error queuing job for asset ' . $asset->id . ': ' . $e->getMessage(), __METHOD__);
@@ -220,7 +219,6 @@ class GenerateController extends Controller
         $totalCount = 0;
         $queuedCount = 0;
         $plugin = AiAltText::getInstance();
-        $settings = $plugin->getSettings();
         
         // Check if a specific site ID was provided
         $siteId = $this->request->getParam('siteId');
@@ -289,7 +287,7 @@ class GenerateController extends Controller
                             Craft::debug('Queuing alt text generation for asset: ' . $asset->id . ' (' . $asset->filename . ') in site ' . $site->name, __METHOD__);
                             
                             // Set force regeneration to true to regenerate all assets
-                            $plugin->aiAltTextService->createJob($asset, false, $site->id, false, true, true);
+                            $plugin->aiAltTextService->createJob($asset, false, $site->id, false, true);
                             $queuedCount++;
                         } catch (Exception $e) {
                             Craft::error('Error queuing job for asset ' . $asset->id . ': ' . $e->getMessage(), __METHOD__);
