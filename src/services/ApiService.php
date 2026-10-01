@@ -68,14 +68,14 @@ abstract class ApiService extends Component
 
     /**
      * Resolves the configured prompt template into a final instruction string, substituting
-     * {asset.*} and {site.*} placeholders.
+     * {asset.*} and {site.*} variables.
      *
      * {site.languageName} resolves to the site language's display name, e.g. "English (United
      * Kingdom)" — the same value Craft shows in its language dropdown ($locale->getDisplayName(
      * Craft::$app->language)). It needs a dedicated case because it maps to a method chain rather
      * than a property. The BCP 47 language tag itself is available via the ordinary {site.language}
-     * token, so the default prompt pairs them ("{site.languageName} (BCP 47: {site.language})") and
-     * the format stays visible and editable in the prompt. Other {site.*} / {asset.*} tokens resolve
+     * variable, so the default prompt pairs them ("{site.languageName} (BCP 47: {site.language})") and
+     * the format stays visible and editable in the prompt. Other {site.*} / {asset.*} variables resolve
      * to the matching property.
      *
      * @todo Consider making $siteId a required `int` and dropping the null branch below — in
@@ -84,14 +84,14 @@ abstract class ApiService extends Component
      *       generateAltText(), OpenAiService & AnthropicService generateAltText()/sendRequest(),
      *       and AiAltTextService::generateAltText()), with the one genuine guard at the queue job,
      *       whose siteId payload is legitimately nullable (`$this->siteId ?? $asset->siteId`).
-     * @throws Exception If an explicitly requested site no longer exists.
+     * @throws Exception If an explicitly requested site no longer exists, or a prompt variable can't be resolved.
      */
     protected function resolvePrompt(Asset $asset, ?int $siteId): string
     {
         $promptTemplate = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
         $prompt = preg_replace_callback('/{asset\.(.*?)}/', function ($matches) use ($asset) {
-            return $this->resolvePromptToken($asset, $matches[1], $matches[0]);
+            return $this->resolvePromptVariable($asset, $matches[1], $matches[0]);
         }, $promptTemplate);
 
         // A null $siteId means "no particular site requested" — use the asset's own site. But an
@@ -105,53 +105,48 @@ abstract class ApiService extends Component
             if ($matches[1] === 'languageName') {
                 return $site->getLocale()->getDisplayName(Craft::$app->language);
             }
-            return $this->resolvePromptToken($site, $matches[1], $matches[0]);
+            return $this->resolvePromptVariable($site, $matches[1], $matches[0]);
         }, $prompt);
 
         return $prompt;
     }
 
     /**
-     * Resolves a single `{asset.*}` / `{site.*}` prompt token to a string.
+     * Resolves a single `{asset.*}` / `{site.*}` prompt variable to a string.
      *
      * Deliberately not restricted to an allowlist - reading arbitrary properties, including custom
-     * field values, is a legitimate use of the prompt field. But a mistyped token throws
+     * field values, is a legitimate use of the prompt field. But a mistyped variable throws
      * UnknownPropertyException, and an object-valued one (`{asset.volume}`, `{site.locale}`) throws
-     * on string conversion. Either way generation failed with an error an admin would struggle to
-     * connect back to their prompt edit.
+     * on string conversion. Both are settings mistakes that would repeat for every asset, so they
+     * fail before any API call is made, with a message naming the variable and the setting to fix.
+     * A property that is simply empty (null) resolves to an empty string.
      *
-     * So: resolve what can be resolved, and for anything else warn and leave the token in place,
-     * which makes the problem visible in the output without stopping the run.
-     *
-     * @param object $model The asset or site the token refers to
-     * @param string $property The property name from inside the token
-     * @param string $original The full token as written, returned unchanged if it can't be resolved
+     * @param object $model The asset or site the variable refers to
+     * @param string $property The property name from inside the variable
+     * @param string $original The full variable as written, used in the error message
+     * @throws Exception If the variable doesn't resolve to text
      */
-    private function resolvePromptToken(object $model, string $property, string $original): string
+    private function resolvePromptVariable(object $model, string $property, string $original): string
     {
         try {
             $value = $model->$property;
         } catch (\Throwable $e) {
-            Craft::warning(sprintf(
-                'Prompt token "%s" could not be resolved: %s',
-                $original,
-                $e->getMessage()
-            ), __METHOD__);
-
-            return $original;
+            throw new Exception(
+                "Prompt variable \"{$original}\" could not be resolved. Check the Prompt setting.",
+                0,
+                $e
+            );
         }
 
         if ($value === null || is_scalar($value) || $value instanceof \Stringable) {
             return (string) $value;
         }
 
-        Craft::warning(sprintf(
-            'Prompt token "%s" resolved to a %s, which cannot be used in a prompt.',
+        throw new Exception(sprintf(
+            'Prompt variable "%s" resolves to a %s, which cannot be used in a prompt. Check the Prompt setting.',
             $original,
             get_debug_type($value)
-        ), __METHOD__);
-
-        return $original;
+        ));
     }
 
     /**
