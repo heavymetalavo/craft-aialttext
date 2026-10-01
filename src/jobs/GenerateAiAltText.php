@@ -17,7 +17,6 @@ class GenerateAiAltText extends BaseJob
 {
     public ?int $assetId = null;
     public ?int $siteId = null;
-    public bool $forceRegeneration = false;
 
     /**
      * Failures are deliberately allowed to propagate. Craft's queue then records the job as failed
@@ -51,7 +50,7 @@ class GenerateAiAltText extends BaseJob
 
         // Generates the alt text and saves the asset, or throws. It never returns an empty string —
         // generateAltText() throws for that case — so there is no empty result to check for here.
-        $altText = $plugin->aiAltTextService->generateAltText($asset, $this->siteId, $this->forceRegeneration);
+        $altText = $plugin->aiAltTextService->generateAltText($asset, $this->siteId);
 
         Craft::info("Successfully generated alt text for asset $this->assetId: " . $altText, __METHOD__);
     }
