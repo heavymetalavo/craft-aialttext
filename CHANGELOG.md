@@ -9,6 +9,7 @@
 - Changed an empty **OpenAI Image Detail Level** setting to fall back to `low` instead of being sent to the API as an empty value.
 - Changed the HTTP client's request timeout from a static 30 second timeout to Craft's Guzzle client's config timeout
 - Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
+- Changed the error for a mistyped or unsupported prompt variable to name the variable and point to the **Prompt** setting. This covers a typo like `{asset.filenmae}` and a variable that resolves to an object rather than text, like `{asset.volume}`. Previously the raw PHP error was shown.
 - Changed the OpenAI and Anthropic services to accept Yii component config in their constructors.
 - Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model. within bulk actions utility to be translatable.
 - Changed `ai-alt-text/generate` with no action to show the list of available commands instead of printing an exception stack trace.
@@ -27,6 +28,7 @@
 - Fixed the "already being processed" check never matching on single-site installs. It required the site in the job description, which is only named there on multisite installs, so duplicate jobs for the same asset were never caught.
 - Fixed generation falling back to OpenAI when the **AI Provider** setting is empty or unrecognised. It now fails with a message naming what's missing, including when the chosen provider has no API key.
 - Fixed invalid markup in the settings page instructions - an unclosed paragraph wrapping the list, a stray closing tag, and one list item styled differently from its siblings.
+- Fixed the batched bulk actions and console commands paginating without a fixed order, so assets could be processed twice or skipped on large asset libraries. They now order by element ID.
 - Removed the single-asset action passing the response message through the JavaScript translator. The message would already be translated server-side.
 - Removed the unused `forceRegeneration` parameter used by removed `preSaveAsset` setting which was replaced by `propagate`.
 
