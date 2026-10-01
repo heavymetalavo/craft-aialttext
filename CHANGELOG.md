@@ -2,7 +2,7 @@
 
 ## 5.1.0 - 2026-08-23
 
-- Fixed an empty **OpenAI Image Detail Level** setting being sent to the API as an empty value rather than falling back to `low`. The fallback used `??`, but the setting resolves to an empty string rather than null, so it never applied.
+- Changed an empty **OpenAI Image Detail Level** setting to fall back to `low` instead of being sent to the API as an empty value.
 
 ## 5.0.0 - 2026-07-24
 

@@ -200,8 +200,6 @@ class OpenAiService extends ApiService
         $height = $asset->getHeight();
         $detail = null;
         if ($width > 512 || $height > 512) {
-            // ?: not ??  - App::parseEnv() returns '' for an empty setting, never null, so ?? never
-            // fired and an empty detail value was sent straight to the API.
             $detail = App::parseEnv($plugin->getSettings()->openAiImageInputDetailLevel) ?: 'low';
         }
         
