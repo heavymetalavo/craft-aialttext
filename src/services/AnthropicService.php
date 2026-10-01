@@ -137,8 +137,11 @@ class AnthropicService extends ApiService
             }
 
             return $responseModel->getText();
-        } catch (RequestException $e) {
-            $errorResponse = $e->hasResponse() ? (string)$e->getResponse()->getBody() : $e->getMessage();
+        } catch (Exception $e) {
+            // ConnectException (DNS, TLS, connect timeouts) is not a RequestException
+            $errorResponse = ($e instanceof RequestException && $e->hasResponse())
+                ? (string)$e->getResponse()->getBody()
+                : $e->getMessage();
             Craft::error("Anthropic API Error: " . $errorResponse, __METHOD__);
             
             $responseModel = new AnthropicResponse();
