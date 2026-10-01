@@ -54,9 +54,7 @@ class AiAltTextService extends Component
                     continue;
                 }
 
-                // The site is only named in the description when there's more than one site, so
-                // only require it in that case — otherwise this check could never match on a
-                // single-site install and the guard did nothing at all.
+                // The description only names the site on multisite installs, so only match on it there.
                 if ($hasPlusOneSite && !str_contains($job['description'], "Site: $assetSiteId.")) {
                     continue;
                 }
