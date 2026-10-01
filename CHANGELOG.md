@@ -2,7 +2,7 @@
 
 ## 5.1.0 - 2026-08-23
 
-- Fixed a duplicate job being queued for the site being worked in when "Save translated results for each site" was enabled, so that site's alt text was generated (and charged for) twice. This affected uploads and file replacements, as well as the element action, the single-asset action and the `single` console command.
+- Fixed a duplicate job being queued for the site being worked in when "Save translated results for each site" was enabled.
 
 ## 5.0.0 - 2026-07-24
 
