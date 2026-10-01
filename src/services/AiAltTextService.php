@@ -41,24 +41,33 @@ class AiAltTextService extends Component
         if (!$skipExistingJobCheck) {
             $existingJobs = $queue->getJobInfo();
             $hasExistingJob = false;
-            foreach ($existingJobs as $job) {
-                // Only skip if both asset ID AND site ID match an existing job
-                if (isset($job['description'])
-                    && str_contains($job['description'], "ID: $asset->id")
-                    && str_contains($job['description'], "Site: $assetSiteId")
-                    && $job['status'] !== 4) {
-                    $hasExistingJob = true;
-                    break;
-                }
-            }
-
             $hasPlusOneSite = count(Craft::$app->getSites()->getAllSites()) > 1;
 
+            foreach ($existingJobs as $job) {
+                if (!isset($job['description']) || $job['status'] === 4) {
+                    continue;
+                }
+
+                // The trailing period matters: without it "ID: 1" is a substring of "ID: 12", so
+                // queueing asset 1 would be refused whenever asset 12 was already queued.
+                if (!str_contains($job['description'], "ID: $asset->id.")) {
+                    continue;
+                }
+
+                // The description only names the site on multisite installs, so only match on it there.
+                if ($hasPlusOneSite && !str_contains($job['description'], "Site: $assetSiteId.")) {
+                    continue;
+                }
+
+                $hasExistingJob = true;
+                break;
+            }
+
             if ($hasExistingJob) {
-                $message = Craft::t('ai-alt-text', '{filename} (ID: {id}{siteMessageSuffix}) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again.', [
+                $message = Craft::t('ai-alt-text', '{filename} (ID: {id}.{siteMessageSuffix}) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again.', [
                     'filename' => $asset->filename,
                     'id' => $asset->id,
-                    'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $assetSiteId" : "",
+                    'siteMessageSuffix' => $hasPlusOneSite ? " Site: $assetSiteId." : "",
                 ]);
                 
                 // Only use session in web context
@@ -111,10 +120,10 @@ class AiAltTextService extends Component
         // above, in which case queueing it here would generate it a second time.
         if (!$saveCurrentSiteOffQueue) {
             $queue->push(new GenerateAiAltTextJob([
-                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
+                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}.{siteMessageSuffix})', [
                     'filename' => $asset->filename,
                     'id' => $asset->id,
-                    'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $assetSiteId" : "",
+                    'siteMessageSuffix' => $hasPlusOneSite ? " Site: $assetSiteId." : "",
                 ]),
                 'assetId' => $asset->id,
                 'siteId' => $assetSiteId,
@@ -136,10 +145,10 @@ class AiAltTextService extends Component
             }
 
             $queue->push(new GenerateAiAltTextJob([
-                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
+                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}.{siteMessageSuffix})', [
                     'filename' => $asset->filename,
                     'id' => $asset->id,
-                    'siteMessageSuffix' => $hasPlusOneSite ? ", Site: $site->id" : "",
+                    'siteMessageSuffix' => $hasPlusOneSite ? " Site: $site->id." : "",
                 ]),
                 'assetId' => $asset->id,
                 'siteId' => $site->id,
