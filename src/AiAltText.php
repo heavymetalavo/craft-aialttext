@@ -6,8 +6,8 @@ use Craft;
 use craft\base\Element;
 use craft\base\Plugin;
 use craft\elements\Asset;
-use craft\events\{ModelEvent, RegisterElementActionsEvent, DefineMenuItemsEvent, RegisterComponentTypesEvent, RegisterUrlRulesEvent, ReplaceAssetEvent};
-use craft\helpers\Cp;
+use craft\events\{ModelEvent, RegisterElementActionsEvent, DefineMenuItemsEvent, RegisterComponentTypesEvent, RegisterCpAlertsEvent, RegisterUrlRulesEvent, ReplaceAssetEvent};
+use craft\helpers\{Cp, Html, UrlHelper};
 use craft\services\{Assets, Utilities};
 use craft\web\{View, UrlManager};
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
@@ -123,10 +123,12 @@ class AiAltText extends Plugin
                     && $asset->kind === Asset::KIND_IMAGE
                     && $this->getSettings()->generateForNewAssets
                 ) {
-                    // Save current site ID
+                    // Save current site ID. Cp::requestedSite() returns null when the asset is
+                    // saved via a console command / a queue job, which used to fail the save.
+                    // createJob() falls back to the asset's own site, so pass the null through.
                     $currentSite = Cp::requestedSite();
                     // Pass current site ID to create a job
-                    $this->aiAltTextService->createJob($asset, false, $currentSite->id);
+                    $this->aiAltTextService->createJob($asset, false, $currentSite?->id);
                 }
             }
         );
@@ -148,7 +150,7 @@ class AiAltText extends Plugin
                     // own site in that case, so pass it through rather than bailing out.
                     $currentSite = Cp::requestedSite();
                     // Force regeneration so the stale alt text is overwritten
-                    $this->aiAltTextService->createJob($asset, false, $currentSite?->id, false, true);
+                    $this->aiAltTextService->createJob($asset, false, $currentSite?->id);
                 }
             }
         );
@@ -159,6 +161,31 @@ class AiAltText extends Plugin
             Utilities::EVENT_REGISTER_UTILITIES,
             function(RegisterComponentTypesEvent $event) {
                 $event->types[] = AiAltTextUtility::class;
+            }
+        );
+
+        // Warn admins when the provider or its API key isn't configured.
+        Event::on(
+            Cp::class,
+            Cp::EVENT_REGISTER_ALERTS,
+            function(RegisterCpAlertsEvent $event) {
+                if (!Craft::$app->getUser()->getIsAdmin()) {
+                    return;
+                }
+
+                $error = $this->aiAltTextService->getConfigurationError();
+
+                if ($error === null) {
+                    return;
+                }
+
+                $event->alerts[] = Craft::t('ai-alt-text', '{error} {link}', [
+                    'error' => $error,
+                    'link' => Html::a(
+                        Craft::t('ai-alt-text', 'Open the settings'),
+                        UrlHelper::cpUrl('settings/plugins/ai-alt-text')
+                    ),
+                ]);
             }
         );
     }

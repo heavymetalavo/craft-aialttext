@@ -17,42 +17,30 @@ class GenerateAiAltText extends BaseJob
 {
     public ?int $assetId = null;
     public ?int $siteId = null;
-    public bool $forceRegeneration = false;
 
     /**
+     * Errors are not caught so Craft marks the job as failed and offers a retry.
+     *
      * @throws ElementNotFoundException
      * @throws Exception
      * @throws Throwable
      */
     function execute($queue): void
     {
-        try {
-            // query for the asset
-            $asset = Asset::find()->id($this->assetId)->siteId($this->siteId)->one();
+        // query for the asset
+        $asset = Asset::find()->id($this->assetId)->siteId($this->siteId)->one();
 
-            // check if the asset exists
-            if (!$asset) {
-                throw new ElementNotFoundException("Asset not found: $this->assetId");
-            }
-
-            $plugin = AiAltText::getInstance();
-
-            // Generate alt text - now returns a string and saves the asset if successful
-            $altText = $plugin->aiAltTextService->generateAltText($asset, $this->siteId, $this->forceRegeneration);
-
-            // Log the result
-            if (!empty($altText)) {
-                Craft::info("Successfully generated alt text for asset $this->assetId: " . $altText, __METHOD__);
-            } else {
-                Craft::warning("Failed to generate alt text for asset $this->assetId", __METHOD__);
-                // Set the description to indicate failure
-                $this->description = "Failed to generate alt text";
-            }
-        } catch (Exception $e) {
-            Craft::error("Error in GenerateAiAltText job: " . $e->getMessage(), __METHOD__);
-            // Set the description to indicate error
-            $this->description = "Error: " . $e->getMessage();
+        // check if the asset exists
+        if (!$asset) {
+            throw new ElementNotFoundException("Asset not found: $this->assetId");
         }
+
+        $plugin = AiAltText::getInstance();
+
+        // Generates the alt text and saves the asset, or throws
+        $altText = $plugin->aiAltTextService->generateAltText($asset, $this->siteId);
+
+        Craft::info("Successfully generated alt text for asset $this->assetId: " . $altText, __METHOD__);
     }
 
     protected function defaultDescription(): ?string

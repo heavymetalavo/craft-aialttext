@@ -49,6 +49,18 @@ class OpenAiResponse extends Model
                 return false;
             }
 
+            // A reasoning model can spend its entire output budget on reasoning tokens and return
+            // no text at all. Without this the failure surfaced as the generic "Empty alt text
+            // generated for asset", which gives an admin nothing to act on.
+            if (($responseData['status'] ?? null) === 'incomplete') {
+                $reason = $responseData['incomplete_details']['reason'] ?? 'unknown';
+                $this->setError(
+                    sprintf('OpenAI returned an incomplete response (reason: %s).', $reason),
+                    $responseData['incomplete_details'] ?? null
+                );
+                return false;
+            }
+
             if (isset($responseData['output']) && is_array($responseData['output'])) {
                 $this->output = $responseData['output'];
 
@@ -57,17 +69,24 @@ class OpenAiResponse extends Model
                         $this->content = $outputItem['content'];
 
                         foreach ($outputItem['content'] as $contentItem) {
+                            // A refusal is a distinct outcome from an empty response, and worth
+                            // reporting as such.
+                            if (($contentItem['type'] ?? null) === 'refusal') {
+                                $this->setError('OpenAI refused the request: ' . ($contentItem['refusal'] ?? 'no reason given'));
+                                return false;
+                            }
+
                             if (isset($contentItem['type']) && $contentItem['type'] === 'output_text' && isset($contentItem['text'])) {
-                                $this->outputText = $contentItem['text'];
+                                $this->outputText = trim($contentItem['text']);
                                 break 2;
                             }
                         }
                     }
                 }
             } elseif (isset($responseData['output_text'])) {
-                $this->outputText = $responseData['output_text'];
+                $this->outputText = trim($responseData['output_text']);
             } elseif (isset($responseData['choices'][0]['message']['content'])) {
-                $this->outputText = $responseData['choices'][0]['message']['content'];
+                $this->outputText = trim($responseData['choices'][0]['message']['content']);
                 $this->content = [
                     ['type' => 'output_text', 'text' => $this->outputText],
                 ];
