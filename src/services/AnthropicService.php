@@ -23,13 +23,19 @@ class AnthropicService extends ApiService
     private string $detailLevel;
     private string $baseUrl = 'https://api.anthropic.com/v1/messages';
 
-    public function __construct()
+    /**
+     * Initializes the service with the Anthropic API key, model and image detail level from the plugin settings.
+     *
+     * @param array $config Standard Yii component configuration. The parent constructor is called last,
+     * per Yii convention, so that config is applied after the defaults set here.
+     */
+    public function __construct($config = [])
     {
-        parent::__construct();
         $plugin = AiAltText::getInstance();
         $this->apiKey = App::parseEnv($plugin->getSettings()->anthropicApiKey);
         $this->model = App::parseEnv($plugin->getSettings()->anthropicModel);
         $this->detailLevel = $plugin->getSettings()->anthropicImageDetailLevel;
+        parent::__construct($config);
     }
 
     /**
@@ -132,10 +138,7 @@ class AnthropicService extends ApiService
 
             return $responseModel->getText();
         } catch (Exception $e) {
-            // Catch Exception, not just RequestException: Guzzle throws ConnectException (which
-            // extends TransferException, not RequestException) for DNS failures, TLS failures and
-            // connect timeouts, so those previously escaped unhandled with a raw Guzzle message
-            // and no base64 fallback. OpenAiService already catches Exception here.
+            // ConnectException (DNS, TLS, connect timeouts) is not a RequestException
             $errorResponse = ($e instanceof RequestException && $e->hasResponse())
                 ? (string)$e->getResponse()->getBody()
                 : $e->getMessage();
