@@ -101,7 +101,7 @@ class AiAltTextService extends Component
         $hasPlusOneSite = count($sites) > 1;
 
         // Queue the current site's job — unless generateAltText() already handled it off queue
-        // above, in which case queueing it here would generate (and pay for) it a second time.
+        // above, in which case queueing it here would generate it a second time.
         if (!$saveCurrentSiteOffQueue) {
             $queue->push(new GenerateAiAltTextJob([
                 'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}{siteMessageSuffix})', [
