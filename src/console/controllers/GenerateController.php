@@ -192,7 +192,7 @@ class GenerateController extends Controller
     public function actionStats(): int
     {
         $this->success("Asset Alt Text Statistics");
-        $this->note("Image assets only. Videos, PDFs and audio are excluded, as are disabled assets. Formats the provider can't yet process are still counted.");
+        $this->note("Image assets only. Videos, PDFs and audio are excluded. Formats the provider can't yet process are still counted.");
         
         $sites = $this->siteId ? [Craft::$app->getSites()->getSiteById($this->siteId)] : Craft::$app->getSites()->getAllSites();
         
