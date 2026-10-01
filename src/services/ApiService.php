@@ -37,6 +37,12 @@ abstract class ApiService extends Component
     protected const GENERATE_TRIGGER = 'Generate the alt text for this image now.';
 
     /**
+     * @var int Default request timeout in seconds, used unless the project sets its own `timeout`
+     * in config/guzzle.php.
+     */
+    public const DEFAULT_TIMEOUT = 30;
+
+    /**
      * @var Client
      */
     protected Client $client;
@@ -44,7 +50,16 @@ abstract class ApiService extends Component
     public function __construct($config = [])
     {
         parent::__construct($config);
-        $this->client = Craft::createGuzzleClient(['timeout' => 30]);
+
+        // Craft::createGuzzleClient() merges as ArrayHelper::merge($defaults, $guzzleConfig,
+        // $config) - the array passed here goes LAST. Passing a timeout unconditionally therefore
+        // overrode whatever the project set in config/guzzle.php, making the timeout impossible to
+        // change. Only supply a default when the project hasn't specified one.
+        $guzzleConfig = Craft::$app->getConfig()->getConfigFromFile('guzzle');
+
+        $this->client = Craft::createGuzzleClient(
+            isset($guzzleConfig['timeout']) ? [] : ['timeout' => self::DEFAULT_TIMEOUT]
+        );
     }
     /**
      * Required implementation for child services to generate their specific payloads.
