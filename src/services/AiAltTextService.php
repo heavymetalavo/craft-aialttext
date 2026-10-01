@@ -157,6 +157,33 @@ class AiAltTextService extends Component
     }
 
     /**
+     * Returns a message describing what's missing from the provider configuration, or null if
+     * generation can proceed. A missing or unrecognised provider must never fall through to OpenAI.
+     */
+    public function getConfigurationError(): ?string
+    {
+        $settings = AiAltText::getInstance()->getSettings();
+        $provider = App::parseEnv($settings->aiProvider);
+
+        if ($provider === '' || $provider === null) {
+            return 'No AI provider is configured. Choose one in the AI Alt Text plugin settings.';
+        }
+
+        if (!in_array($provider, ['openai', 'anthropic'], true)) {
+            return sprintf('"%s" is not a supported AI provider. Choose OpenAI or Anthropic in the AI Alt Text plugin settings.', $provider);
+        }
+
+        $isAnthropic = $provider === 'anthropic';
+        $apiKey = App::parseEnv($isAnthropic ? $settings->anthropicApiKey : $settings->openAiApiKey);
+
+        if ($apiKey === '' || $apiKey === null) {
+            return sprintf('No API key is configured for the %s provider. Add one in the AI Alt Text plugin settings.', $isAnthropic ? 'Anthropic' : 'OpenAI');
+        }
+
+        return null;
+    }
+
+    /**
      * Generates alt text for an asset using AI.
      *
      * This method:
@@ -177,13 +204,15 @@ class AiAltTextService extends Component
         
         $plugin = AiAltText::getInstance();
 
-        $provider = App::parseEnv($plugin->getSettings()->aiProvider);
+        $error = $this->getConfigurationError();
 
-        if ($provider === 'anthropic') {
-            $altText = $plugin->anthropicService->generateAltText($asset, $siteId);
-        } else {
-            $altText = $plugin->openAiService->generateAltText($asset, $siteId);
+        if ($error !== null) {
+            throw new Exception($error);
         }
+
+        $altText = App::parseEnv($plugin->getSettings()->aiProvider) === 'anthropic'
+            ? $plugin->anthropicService->generateAltText($asset, $siteId)
+            : $plugin->openAiService->generateAltText($asset, $siteId);
 
         if (empty($altText)) {
             throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
