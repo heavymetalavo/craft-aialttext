@@ -7,7 +7,7 @@ use craft\base\Element;
 use craft\base\Plugin;
 use craft\elements\Asset;
 use craft\events\{ModelEvent, RegisterElementActionsEvent, DefineMenuItemsEvent, RegisterComponentTypesEvent, RegisterCpAlertsEvent, RegisterUrlRulesEvent, ReplaceAssetEvent};
-use craft\helpers\{App, Cp, Html, UrlHelper};
+use craft\helpers\{Cp, Html, UrlHelper};
 use craft\services\{Assets, Utilities};
 use craft\web\{View, UrlManager};
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
@@ -164,7 +164,7 @@ class AiAltText extends Plugin
             }
         );
 
-        // Warn admins when no AI provider is chosen.
+        // Warn admins when the provider or its API key isn't configured.
         Event::on(
             Cp::class,
             Cp::EVENT_REGISTER_ALERTS,
@@ -173,13 +173,16 @@ class AiAltText extends Plugin
                     return;
                 }
 
-                if (App::parseEnv($this->getSettings()->aiProvider) !== '') {
+                $error = $this->aiAltTextService->getConfigurationError();
+
+                if ($error === null) {
                     return;
                 }
 
-                $event->alerts[] = Craft::t('ai-alt-text', 'No AI provider is configured for AI Alt Text, so no alt text can be generated. {link}', [
+                $event->alerts[] = Craft::t('ai-alt-text', '{error} {link}', [
+                    'error' => $error,
                     'link' => Html::a(
-                        Craft::t('ai-alt-text', 'Choose a provider'),
+                        Craft::t('ai-alt-text', 'Open the settings'),
                         UrlHelper::cpUrl('settings/plugins/ai-alt-text')
                     ),
                 ]);

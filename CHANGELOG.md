@@ -4,7 +4,7 @@
 
 > {tip} Images the provider can't process now appear as failed jobs in the queue, where you can retry them.
 
-- Added a control panel warning for admins when no AI provider is chosen.
+- Added a control panel warning for admins when no AI provider or API key is configured.
 - Changed the HTTP client's request timeout from a static 30 second timeout to Craft's Guzzle client's config timeout
 - Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
 - Changed the OpenAI and Anthropic services to accept Yii component config in their constructors.
