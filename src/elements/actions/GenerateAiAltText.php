@@ -68,15 +68,14 @@ class GenerateAiAltText extends ElementAction
                 continue;
             }
 
-            // ElementQuery::$siteId is mixed - an int, an array of ints, or '*' when the index is
-            // showing several sites. Passing an array or '*' straight through returns whichever
-            // site row the database happens to order first, so alt text would be generated for an
-            // arbitrary site. Resolve one concrete site instead.
+            // The query's siteId can be an array or '*' when the index shows several sites, which
+            // would load an arbitrary site's row. Resolve a single site: the query's, else the
+            // requested control panel site, else the asset's own.
             $siteId = is_numeric($query->siteId)
                 ? (int)$query->siteId
                 : (Cp::requestedSite()?->id ?? $asset->siteId);
 
-            // Set the current site id on asset
+            // Reload the asset in that site
             $asset = Asset::find()->id($asset->id)->siteId($siteId)->one();
 
             if (!$asset) {
