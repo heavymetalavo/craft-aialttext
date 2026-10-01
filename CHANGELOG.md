@@ -2,6 +2,8 @@
 
 ## 5.1.0 - 2026-10-01
 
+> {tip} Images the provider can't process now appear as failed jobs in the queue, where you can retry them.
+
 - Changed the HTTP client's request timeout from a static 30 second timeout to Craft's Guzzle client's config timeout
 - Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
 - Changed the OpenAI and Anthropic services to accept Yii component config in their constructors.
@@ -15,6 +17,7 @@
 - Fixed every label and instruction on the plugin settings page to use the correct translation category (`ai-alt-text`).
 - Fixed an error that could fail an image asset's save when "Generate for new image assets" was enabled and the asset was saved via a console command / a queue job. Generation now falls back to the asset's own site.
 - Fixed existing alt text being lost if a save failed. When **Propagate** is off, generation blanks the alt value in a preliminary save before writing the new one; if that second save failed, the asset was left with an empty alt value instead of what it had before. Both saves now run in one transaction, so a failure leaves the previous value intact.
+- Fixed failed alt text generations showing as completed in the queue. The error was logged, but the job still reported success, so there was no error message and no way to retry it. The job now fails with the error message, which appears in the control panel and can be retried from there.
 - Removed the single-asset action passing the response message through the JavaScript translator. The message would already be translated server-side.
 - Removed the unused `forceRegeneration` parameter used by removed `preSaveAsset` setting which was replaced by `propagate`.
 
