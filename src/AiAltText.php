@@ -123,10 +123,12 @@ class AiAltText extends Plugin
                     && $asset->kind === Asset::KIND_IMAGE
                     && $this->getSettings()->generateForNewAssets
                 ) {
-                    // Save current site ID
+                    // Save current site ID. Cp::requestedSite() returns null when the asset is
+                    // saved via a console command / a queue job, which used to fail the save.
+                    // createJob() falls back to the asset's own site, so pass the null through.
                     $currentSite = Cp::requestedSite();
                     // Pass current site ID to create a job
-                    $this->aiAltTextService->createJob($asset, false, $currentSite->id);
+                    $this->aiAltTextService->createJob($asset, false, $currentSite?->id);
                 }
             }
         );
