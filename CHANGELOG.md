@@ -8,8 +8,6 @@
 - Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model. within bulk actions utility to be translatable.
 - Changed `ai-alt-text/generate` with no action to show the list of available commands instead of printing an exception stack trace.
 - Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model.
-- Removed the single-asset action passing the response message through the JavaScript translator. The message would already be translated server-side.
-- Removed the unused `forceRegeneration` parameter used by removed `preSaveAsset` setting which was replaced by `propagate`.
 - Fixed a duplicate job being queued for the site being worked in when "Save translated results for each site" was enabled.
 - Fixed the reasoning parameter being sent to models that don't accept one. The check matched any model whose name began with `o` (so `omni-...` and similar), and matched `gpt-5` chat variants such as `gpt-5-chat-latest`. Both were rejected by the API, and the resulting error was misread as the provider being unable to reach the image, triggering a pointless base64 retry before the request finally failed.
 - Fixed two control panel notices being built as interpolated strings before being passed to the translator, which meant they could never match a translation entry. They now use placeholders.
@@ -17,6 +15,8 @@
 - Fixed every label and instruction on the plugin settings page to use the correct translation category (`ai-alt-text`).
 - Fixed an error that could fail an image asset's save when "Generate for new image assets" was enabled and the asset was saved via a console command / a queue job. Generation now falls back to the asset's own site.
 - Fixed existing alt text being lost if a save failed. When **Propagate** is off, generation blanks the alt value in a preliminary save before writing the new one; if that second save failed, the asset was left with an empty alt value instead of what it had before. Both saves now run in one transaction, so a failure leaves the previous value intact.
+- Removed the single-asset action passing the response message through the JavaScript translator. The message would already be translated server-side.
+- Removed the unused `forceRegeneration` parameter used by removed `preSaveAsset` setting which was replaced by `propagate`.
 
 ## 5.0.0 - 2026-07-24
 
