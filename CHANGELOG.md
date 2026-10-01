@@ -24,6 +24,7 @@
 - Fixed the "already being processed" check refusing the wrong assets. It matched the asset ID as a substring of the queue job's description, so `ID: 1` also matched `ID: 12`, `ID: 100` and so on - queueing asset 1 was refused whenever a higher-numbered asset was already queued. The IDs in job descriptions are now delimited, so they match exactly.
 - Fixed the "already being processed" check never matching on single-site installs. It required the site in the job description, which is only named there on multisite installs, so duplicate jobs for the same asset were never caught.
 - Fixed generation falling back to OpenAI when the **AI Provider** setting is empty or unrecognised. It now fails with a message naming what's missing, including when the chosen provider has no API key.
+- Fixed the batched bulk actions and console commands paginating without a fixed order, so assets could be processed twice or skipped on large asset libraries. They now order by element ID.
 - Removed the single-asset action passing the response message through the JavaScript translator. The message would already be translated server-side.
 - Removed the unused `forceRegeneration` parameter used by removed `preSaveAsset` setting which was replaced by `propagate`.
 
