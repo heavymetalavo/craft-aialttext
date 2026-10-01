@@ -192,7 +192,7 @@ class GenerateController extends Controller
     public function actionStats(): int
     {
         $this->success("Asset Alt Text Statistics");
-        $this->note("Image assets only. Videos, PDFs and audio are excluded. Formats the provider can't yet process are still counted.");
+        $this->note("Image assets only. Videos, PDFs and audio are excluded, as are disabled assets. Formats the provider can't yet process are still counted.");
         
         $sites = $this->siteId ? [Craft::$app->getSites()->getSiteById($this->siteId)] : Craft::$app->getSites()->getAllSites();
         
@@ -211,7 +211,6 @@ class GenerateController extends Controller
             $siteTotal = Asset::find()
                 ->kind(Asset::KIND_IMAGE)
                 ->siteId($site->id)
-                ->status(null)
                 ->count();
 
             // Count assets with alt text. hasAlt() reads the per-site alt value (falling back to
@@ -220,7 +219,6 @@ class GenerateController extends Controller
             $siteWithAlt = Asset::find()
                 ->kind(Asset::KIND_IMAGE)
                 ->siteId($site->id)
-                ->status(null)
                 ->hasAlt(true)
                 ->count();
             
@@ -343,8 +341,7 @@ class GenerateController extends Controller
             foreach ($sites as $site) {
                 $query = Asset::find()
                     ->kind(Asset::KIND_IMAGE)
-                    ->siteId($site->id)
-                    ->status(null);
+                    ->siteId($site->id);
                 
                 if (!$includeWithAltText) {
                     $query->hasAlt(false);
@@ -390,7 +387,6 @@ class GenerateController extends Controller
                     $query = Asset::find()
                         ->kind(Asset::KIND_IMAGE)
                         ->siteId($site->id)
-                        ->status(null)
                         ->orderBy(['elements.id' => SORT_ASC])
                         ->offset($offset)
                         ->limit($this->batchSize);
