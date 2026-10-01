@@ -8,6 +8,7 @@
 - Changed an empty **OpenAI Image Detail Level** setting to fall back to `low` instead of being sent to the API as an empty value.
 - Changed the HTTP client's request timeout from a static 30 second timeout to Craft's Guzzle client's config timeout
 - Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
+- Changed the error for a mistyped or unsupported prompt variable to name the variable and point to the **Prompt** setting. This covers a typo like `{asset.filenmae}` and a variable that resolves to an object rather than text, like `{asset.volume}`. Previously the raw PHP error was shown.
 - Changed the OpenAI and Anthropic services to accept Yii component config in their constructors.
 - Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model. within bulk actions utility to be translatable.
 - Changed `ai-alt-text/generate` with no action to show the list of available commands instead of printing an exception stack trace.
