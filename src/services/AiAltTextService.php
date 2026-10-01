@@ -156,10 +156,6 @@ class AiAltTextService extends Component
         }
     }
 
-    /**
-     * Returns a message describing what's missing from the provider configuration, or null if
-     * generation can proceed. A missing or unrecognised provider must never fall through to OpenAI.
-     */
     public function getConfigurationError(): ?string
     {
         $settings = AiAltText::getInstance()->getSettings();

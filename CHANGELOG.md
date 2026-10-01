@@ -5,6 +5,7 @@
 > {tip} Images the provider can't process now appear as failed jobs in the queue, where you can retry them.
 
 - Added a control panel warning for admins when no AI provider or API key is configured.
+- Changed generation to fail with a message naming what's missing when the **AI Provider** setting is empty or unrecognised, or the chosen provider has no API key, rather than defaulting to OpenAI.
 - Changed the HTTP client's request timeout from a static 30 second timeout to Craft's Guzzle client's config timeout
 - Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
 - Changed the OpenAI and Anthropic services to accept Yii component config in their constructors.
@@ -21,7 +22,6 @@
 - Fixed failed alt text generations showing as completed in the queue. The error was logged, but the job still reported success, so there was no error message and no way to retry it. The job now fails with the error message, which appears in the control panel and can be retried from there.
 - Fixed the "already being processed" check refusing the wrong assets. It matched the asset ID as a substring of the queue job's description, so `ID: 1` also matched `ID: 12`, `ID: 100` and so on - queueing asset 1 was refused whenever a higher-numbered asset was already queued. The IDs in job descriptions are now delimited, so they match exactly.
 - Fixed the "already being processed" check never matching on single-site installs. It required the site in the job description, which is only named there on multisite installs, so duplicate jobs for the same asset were never caught.
-- Fixed generation falling back to OpenAI when the **AI Provider** setting is empty or unrecognised. It now fails with a message naming what's missing, including when the chosen provider has no API key.
 - Removed the single-asset action passing the response message through the JavaScript translator. The message would already be translated server-side.
 - Removed the unused `forceRegeneration` parameter used by removed `preSaveAsset` setting which was replaced by `propagate`.
 
