@@ -435,7 +435,6 @@ class GenerateController extends Controller
                                 false, 
                                 $site->id, 
                                 false, 
-                                true, 
                                 true
                             );
                             
