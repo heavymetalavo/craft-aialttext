@@ -33,13 +33,16 @@ class OpenAiService extends ApiService
      * Constructor
      *
      * Initializes the service with the OpenAI API key and model from the plugin settings.
+     *
+     * @param array $config Standard Yii component configuration. The parent constructor is called last,
+     * per Yii convention, so that config is applied after the defaults set here.
      */
-    public function __construct()
+    public function __construct($config = [])
     {
-        parent::__construct();
         $plugin = AiAltText::getInstance();
         $this->apiKey = App::parseEnv($plugin->getSettings()->openAiApiKey);
         $this->model = App::parseEnv($plugin->getSettings()->openAiModel);
+        parent::__construct($config);
     }
 
     /**
@@ -200,7 +203,7 @@ class OpenAiService extends ApiService
         $height = $asset->getHeight();
         $detail = null;
         if ($width > 512 || $height > 512) {
-            $detail = App::parseEnv($plugin->getSettings()->openAiImageInputDetailLevel) ?? 'low';
+            $detail = App::parseEnv($plugin->getSettings()->openAiImageInputDetailLevel) ?: 'low';
         }
         
         $prompt = $this->resolvePrompt($asset, $siteId);

@@ -74,7 +74,7 @@ class GenerateAiAltTextForAssets extends BaseJob
                         // Queue only (no off-queue generation), skipping the
                         // saveTranslatedResultsToEachSite fan-out: the caller has already decided
                         // exactly which sites to process.
-                        $service->createJob($asset, false, $siteId, false, true, true);
+                        $service->createJob($asset, false, $siteId, false, true);
                     } catch (Throwable $e) {
                         Craft::error(
                             "Error queueing alt text generation for asset {$asset->id}: " . $e->getMessage(),
