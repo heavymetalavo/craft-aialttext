@@ -7,7 +7,7 @@ use craft\base\Component;
 use craft\elements\Asset;
 use craft\helpers\{App, Json};
 use Exception;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\{GuzzleException, RequestException};
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\api\{AnthropicRequest, AnthropicResponse};
 
@@ -137,7 +137,7 @@ class AnthropicService extends ApiService
             }
 
             return $responseModel->getText();
-        } catch (Exception $e) {
+        } catch (GuzzleException $e) {
             // ConnectException (DNS, TLS, connect timeouts) is not a RequestException
             $errorResponse = ($e instanceof RequestException && $e->hasResponse())
                 ? (string)$e->getResponse()->getBody()
