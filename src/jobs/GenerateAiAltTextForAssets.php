@@ -38,8 +38,6 @@ class GenerateAiAltTextForAssets extends BaseBatchedJob
             Asset::find()
                 ->kind(Asset::KIND_IMAGE)
                 ->siteId($this->siteId)
-                // Include disabled assets, matching the figures the utility and `stats` report.
-                ->status(null)
                 ->orderBy(['elements.id' => SORT_ASC])
         );
     }
