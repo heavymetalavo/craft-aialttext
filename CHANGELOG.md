@@ -27,7 +27,6 @@
 - Fixed the "Generate AI Alt Text" asset actions and the `ai-alt-text/generate/single` console command saying alt text had been queued, when the asset's own site is generated immediately. The messages now say what happened, including when other sites have been queued because **Save translated results for each site** is enabled.
 - Fixed the "Generate AI Alt Text" asset actions and the `ai-alt-text/generate/single` console command reporting success when nothing was generated, because the asset was already queued, was not an image, or was an SVG while SVG processing was off. They now say so, and the asset index action counts those assets as skipped.
 - Fixed the `ai-alt-text/generate/missing` console command announcing that it was generating alt text, when it only queues jobs for the queue to run.
-- Changed the queue job description from "Generating alt text for…" to "Alt text generation for…", since a job waiting in the queue isn't generating yet.
 - Removed the single-asset action passing the response message through the JavaScript translator. The message would already be translated server-side.
 - Removed the unused `forceRegeneration` parameter used by removed `preSaveAsset` setting which was replaced by `propagate`.
 
