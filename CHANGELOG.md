@@ -14,6 +14,7 @@
 - Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model. within bulk actions utility to be translatable.
 - Changed `ai-alt-text/generate` with no action to show the list of available commands instead of printing an exception stack trace.
 - Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model.
+- Changed the GIF animation check to use less memory. The whole file was previously read into memory - a full download for remote volumes, and enough to exhaust a queue worker on a large GIF. Only the start of the file is scanned now, and a GIF that is still undecided after that is treated as animated so it is always sent as a first-frame JPG.
 - Changed the height of the **Prompt** field to be taller, since it previously showed roughly three lines and clipped the default prompt mid-sentence.
 - Changed the "Generate AI Alt Text" asset actions and `ai-alt-text/generate/single` to clearly say whether alt text was generated, queued for other sites, or skipped, instead of always saying "queued".
 - Changed `ai-alt-text/generate/missing` to say it is queueing jobs, not generating alt text.
