@@ -2,6 +2,7 @@
 
 ## 5.1.0 - 2026-10-01
 
+- Added support for only showing the relevant AI provider's settings fields. The fields swap as the **AI Provider** dropdown changes, and all providers' fields stay visible when the provider is set from an environment variable.
 > {tip} Images the provider can't process now appear as failed jobs in the queue, where you can retry them.
 
 - Added a control panel warning for admins when no AI provider or API key is configured.
@@ -32,7 +33,6 @@
 - Fixed generation falling back to OpenAI when the **AI Provider** setting is empty or unrecognised. It now fails with a message naming what's missing, including when the chosen provider has no API key.
 - Fixed invalid markup in the settings page instructions - an unclosed paragraph wrapping the list, a stray closing tag, and one list item styled differently from its siblings.
 - Fixed the batched bulk actions and console commands paginating without a fixed order, so assets could be processed twice or skipped on large asset libraries. They now order by element ID.
-- Fixed the plugin settings page showing every AI provider's settings at once. Only the selected provider's fields are shown now, and they swap as the **AI Provider** dropdown changes. If the provider is set from an environment variable, all providers' fields stay visible.
 - Removed the single-asset action passing the response message through the JavaScript translator. The message would already be translated server-side.
 - Removed the unused `forceRegeneration` parameter used by removed `preSaveAsset` setting which was replaced by `propagate`.
 

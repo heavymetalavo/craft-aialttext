@@ -32,17 +32,10 @@
 ] %}
 {% set providerValues = providerOptions|map(o => o.value) %}
 
-{# The dropdown also accepts an env var (e.g. `$AI_PROVIDER`), which can't be resolved to one of the
-   options while rendering — in that case leave every provider's settings visible rather than hiding
-   all of them. When a provider is picked, Craft's field toggle (`toggle` / `targetPrefix` below)
-   swaps the visible block as the dropdown changes. #}
 {% set hiddenProviders = settings.aiProvider in providerValues
     ? providerValues|filter(v => v != settings.aiProvider)
     : [] %}
 
-{# Craft namespaces this template's ids with `settings-` after rendering, but not `targetPrefix`
-   (it only prefixes a non-empty one), so the prefix is spelled out here and the blocks below use
-   un-namespaced ids. #}
 {{ forms.selectizeField({
     label: "AI Provider"|t("ai-alt-text"),
     instructions: "Choose which AI service to use for generating alt text. Only the chosen provider's settings are shown below."|t("ai-alt-text"),
