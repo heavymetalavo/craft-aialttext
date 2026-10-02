@@ -59,13 +59,11 @@ class AiAltTextUtility extends Utility
                 $totalImageAssets = Asset::find()
                     ->kind(Asset::KIND_IMAGE)
                     ->siteId($site->id)
-                    ->status(null)
                     ->count();
                 
                 $withAltCount = Asset::find()
                     ->kind(Asset::KIND_IMAGE)
                     ->siteId($site->id)
-                    ->status(null)
                     ->hasAlt(true)
                     ->count();
                 

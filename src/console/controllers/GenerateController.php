@@ -121,15 +121,24 @@ class GenerateController extends Controller
         try {
             $this->note("Processing: {$asset->filename} (ID: {$asset->id})");
             
-            AiAltText::getInstance()->aiAltTextService->createJob($asset, true, $targetSiteId);
-            
-            $this->success("Alt text generation queued successfully");
-            $this->tip("Check the queue status with: ./craft queue/info");
+            $service = AiAltText::getInstance()->aiAltTextService;
+
+            if (!$service->createJob($asset, true, $targetSiteId)) {
+                $this->failure("Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off");
+                return ExitCode::DATAERR;
+            }
+
+            $this->success("Alt text generated");
+
+            if ($service->queuesOtherSites()) {
+                $this->note("The other sites have been queued.");
+                $this->tip("Check the queue status with: ./craft queue/info");
+            }
             
             return ExitCode::OK;
             
         } catch (Exception $e) {
-            $this->failure("Error queueing alt text generation: {$e->getMessage()}");
+            $this->failure("Error processing alt text generation: {$e->getMessage()}");
             return ExitCode::SOFTWARE;
         }
     }
@@ -147,7 +156,7 @@ class GenerateController extends Controller
      */
     public function actionMissing(): int
     {
-        $this->success("Generating AI alt text for assets without existing alt text...");
+        $this->success("Queueing AI alt text generation for assets without existing alt text...");
         
         return $this->processAssets(false);
     }
@@ -211,7 +220,6 @@ class GenerateController extends Controller
             $siteTotal = Asset::find()
                 ->kind(Asset::KIND_IMAGE)
                 ->siteId($site->id)
-                ->status(null)
                 ->count();
 
             // Count assets with alt text. hasAlt() reads the per-site alt value (falling back to
@@ -220,7 +228,6 @@ class GenerateController extends Controller
             $siteWithAlt = Asset::find()
                 ->kind(Asset::KIND_IMAGE)
                 ->siteId($site->id)
-                ->status(null)
                 ->hasAlt(true)
                 ->count();
             
@@ -389,6 +396,7 @@ class GenerateController extends Controller
                     $query = Asset::find()
                         ->kind(Asset::KIND_IMAGE)
                         ->siteId($site->id)
+                        ->orderBy(['elements.id' => SORT_ASC])
                         ->offset($offset)
                         ->limit($this->batchSize);
                     
