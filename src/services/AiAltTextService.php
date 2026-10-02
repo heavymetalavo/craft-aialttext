@@ -358,7 +358,7 @@ $('#' + $id).on('activate', () => {
   })
   .catch((error) => {
     console.log('catch', JSON.stringify(error));
-    Craft.cp.displayError(Craft.t('ai-alt-text', 'Failed to generate alt text: ') + 
+    Craft.cp.displayError(Craft.t('ai-alt-text', 'Failed to process alt text generation: ') + 
       (error?.message || 'Unknown error'));
   });
 });

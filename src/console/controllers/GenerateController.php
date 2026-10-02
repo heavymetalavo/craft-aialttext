@@ -138,7 +138,7 @@ class GenerateController extends Controller
             return ExitCode::OK;
             
         } catch (Exception $e) {
-            $this->failure("Error generating alt text: {$e->getMessage()}");
+            $this->failure("Error processing alt text generation: {$e->getMessage()}");
             return ExitCode::SOFTWARE;
         }
     }

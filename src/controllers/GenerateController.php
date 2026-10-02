@@ -67,7 +67,7 @@ class GenerateController extends Controller
                     : Craft::t('ai-alt-text', 'Alt text generated'),
             ]);
         } catch (Exception $e) {
-            Craft::error('Error generating alt text: ' . $e->getMessage(), __METHOD__);
+            Craft::error('Error processing alt text generation: ' . $e->getMessage(), __METHOD__);
 
             return $this->asJson([
                 'success' => false,
