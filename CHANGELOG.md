@@ -34,7 +34,7 @@
 - Fixed the batched bulk actions and console commands paginating without a fixed order, so assets could be processed twice or skipped on large asset libraries. They now order by element ID.
 - Fixed an empty **OpenAI Image Detail Level** setting being sent to the API as an empty value. It now falls back to `low`.
 - Fixed `ai-alt-text/generate` with no action printing an exception stack trace. It now shows the list of available commands.
-- Removed the single-asset action passing the response message through the JavaScript translator. The message would already be translated server-side.
+- Fixed the single-asset action passing the server's response message through the JavaScript translator. The message is already translated server-side, so it could never match a translation entry.
 - Removed the unused `forceRegeneration` parameter used by removed `preSaveAsset` setting which was replaced by `propagate`.
 
 ## 5.0.0 - 2026-07-24
