@@ -12,7 +12,7 @@
 - Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model. within bulk actions utility to be translatable.
 - Changed `ai-alt-text/generate` with no action to show the list of available commands instead of printing an exception stack trace.
 - Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model.
-- Changed the GIF animation check to use less memory. The whole file was previously read into memory - a full download for remote volumes, and enough to exhaust a queue worker on a large GIF. Only the start of the file is scanned now.
+- Changed the GIF animation check to use less memory. The whole file was previously read into memory - a full download for remote volumes, and enough to exhaust a queue worker on a large GIF. Only the start of the file is scanned now, and a GIF that is still undecided after that is treated as animated so it is always sent as a first-frame JPG.
 - Fixed a duplicate job being queued for the site being worked in when "Save translated results for each site" was enabled.
 - Fixed the reasoning parameter being sent to models that don't accept one. The check matched any model whose name began with `o` (so `omni-...` and similar), and matched `gpt-5` chat variants such as `gpt-5-chat-latest`. Both were rejected by the API, and the resulting error was misread as the provider being unable to reach the image, triggering a pointless base64 retry before the request finally failed.
 - Fixed two control panel notices being built as interpolated strings before being passed to the translator, which meant they could never match a translation entry. They now use placeholders.

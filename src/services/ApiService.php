@@ -43,7 +43,8 @@ abstract class ApiService extends Component
     public const DEFAULT_TIMEOUT = 30;
 
     /**
-     * @var int How much of a GIF to scan when checking for multiple frames.
+     * @var int How much of a GIF to scan when checking for multiple frames. A GIF still unresolved
+     * after this much is assumed to be animated; see isAnimatedGif().
      */
     private const GIF_FRAME_SCAN_BYTES = 2097152;
 
@@ -202,6 +203,11 @@ abstract class ApiService extends Component
     /**
      * Checks if a GIF asset contains multiple frames (animated).
      *
+     * Only the head of the file is read, so a GIF larger than GIF_FRAME_SCAN_BYTES with no second
+     * frame found in that window is reported as animated rather than static. The caller converts
+     * animated GIFs to a first-frame JPG, which is harmless for a large static GIF, whereas sending
+     * a large animated GIF on unconverted would be rejected by the provider.
+     *
      * @param Asset $asset The asset to check
      * @return bool Whether the GIF is animated
      */
@@ -217,9 +223,9 @@ abstract class ApiService extends Component
         // download on top of the transform fetch that follows, and a large GIF could exhaust a
         // queue worker's memory limit.
         //
-        // A second Graphic Control Extension means more than one frame. It normally appears soon
-        // after the first frame's data, so a bounded scan is enough; if we reach the cap without
-        // finding one, treat the GIF as static.
+        // A second Graphic Control Extension means more than one frame. It follows the first
+        // frame's data, so a large first frame can push it past the cap. If we reach the cap
+        // with file left unread, we can't rule out animation, so assume it.
         $stream = $asset->getStream();
 
         try {
@@ -245,11 +251,11 @@ abstract class ApiService extends Component
 
                 $carry = substr($chunk, -2);
             }
+
+            return $read >= self::GIF_FRAME_SCAN_BYTES && !feof($stream);
         } finally {
             fclose($stream);
         }
-
-        return false;
     }
 
     /**
