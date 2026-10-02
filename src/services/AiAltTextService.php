@@ -121,7 +121,7 @@ class AiAltTextService extends Component
         // above, in which case queueing it here would generate it a second time.
         if (!$saveCurrentSiteOffQueue) {
             $queue->push(new GenerateAiAltTextJob([
-                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}.{siteMessageSuffix})', [
+                'description' => Craft::t('ai-alt-text', 'Alt text generation for {filename} (ID: {id}.{siteMessageSuffix})', [
                     'filename' => $asset->filename,
                     'id' => $asset->id,
                     'siteMessageSuffix' => $hasPlusOneSite ? " Site: $assetSiteId." : "",
@@ -146,7 +146,7 @@ class AiAltTextService extends Component
             }
 
             $queue->push(new GenerateAiAltTextJob([
-                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}.{siteMessageSuffix})', [
+                'description' => Craft::t('ai-alt-text', 'Alt text generation for {filename} (ID: {id}.{siteMessageSuffix})', [
                     'filename' => $asset->filename,
                     'id' => $asset->id,
                     'siteMessageSuffix' => $hasPlusOneSite ? " Site: $site->id." : "",
