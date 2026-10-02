@@ -156,7 +156,7 @@ class GenerateController extends Controller
      */
     public function actionMissing(): int
     {
-        $this->success("Generating AI alt text for assets without existing alt text...");
+        $this->success("Queueing AI alt text generation for assets without existing alt text...");
         
         return $this->processAssets(false);
     }
