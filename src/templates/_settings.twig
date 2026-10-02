@@ -26,26 +26,34 @@
 
 <h2 id="settings">Settings</h2>
 
+{% set providerOptions = [
+    { label: 'Anthropic', value: 'anthropic' },
+    { label: 'OpenAI', value: 'openai' }
+] %}
+{% set providerValues = providerOptions|map(o => o.value) %}
+
+{% set hiddenProviders = settings.aiProvider in providerValues
+    ? providerValues|filter(v => v != settings.aiProvider)
+    : [] %}
+
 {{ forms.selectizeField({
     label: "AI Provider"|t("ai-alt-text"),
-    instructions: "Choose which AI service to use for generating alt text"|t("ai-alt-text"),
+    instructions: "Choose which AI service to use for generating alt text. Only the chosen provider's settings are shown below."|t("ai-alt-text"),
     id: "aiProvider",
     name: "aiProvider",
-    options: [
-        { label: 'Anthropic', value: 'anthropic' },
-        { label: 'OpenAI', value: 'openai' }
-    ],
+    options: providerOptions,
     includeEnvVars: true,
     allowedEnvValues: null,
     value: settings.aiProvider,
-    errors: settings.getErrors("aiProvider")
+    errors: settings.getErrors("aiProvider"),
+    toggle: true,
+    targetPrefix: '#provider-',
 }) }}
 
 
-<hr />
+<div id="provider-anthropic" class="{{ 'anthropic' in hiddenProviders ? 'hidden' }}">
+    <hr />
 
-
-<div id="settings-provider-anthropic">
     <h3>Anthropic Settings</h3>
 
     {{ forms.autosuggestField({
@@ -88,10 +96,9 @@
 </div>
 
 
-<hr />
+<div id="provider-openai" class="{{ 'openai' in hiddenProviders ? 'hidden' }}">
+    <hr />
 
-
-<div id="settings-provider-openai">
     <h3>OpenAI Settings</h3>
 
     {{ forms.autosuggestField({
