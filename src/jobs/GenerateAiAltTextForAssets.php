@@ -12,7 +12,7 @@ use Throwable;
 
 /**
  * Queues a per-asset alt text job for each image asset on one site, in batches, so the bulk
- * actions don't have to walk the library inside the web request.
+ * actions don't have to walk every asset inside the web request.
  */
 class GenerateAiAltTextForAssets extends BaseBatchedJob
 {

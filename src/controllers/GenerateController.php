@@ -99,7 +99,7 @@ class GenerateController extends Controller
 
     /**
      * Queues a batched job per site that fans out into one job per asset, so the request returns
-     * immediately however large the library is.
+     * immediately whatever the number of assets.
      *
      * @param bool $includeExisting Whether to include assets that already have alt text
      */
