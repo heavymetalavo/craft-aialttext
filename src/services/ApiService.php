@@ -43,8 +43,7 @@ abstract class ApiService extends Component
     public const DEFAULT_TIMEOUT = 30;
 
     /**
-     * @var int How much of a GIF to scan when checking for multiple frames. A GIF still unresolved
-     * after this much is assumed to be animated; see isAnimatedGif().
+     * @var int How many bytes of a GIF to scan for multiple frames (2MB). See isAnimatedGif().
      */
     private const GIF_FRAME_SCAN_BYTES = 2097152;
 
@@ -203,57 +202,59 @@ abstract class ApiService extends Component
     /**
      * Checks if a GIF asset contains multiple frames (animated).
      *
-     * Only the head of the file is read, so a GIF larger than GIF_FRAME_SCAN_BYTES with no second
-     * frame found in that window is reported as animated rather than static. The caller converts
-     * animated GIFs to a first-frame JPG, which is harmless for a large static GIF, whereas sending
-     * a large animated GIF on unconverted would be rejected by the provider.
+     * Only the first GIF_FRAME_SCAN_BYTES of the file are read, a small piece at a time. If that
+     * isn't enough to decide, the GIF is reported as animated: converting a static GIF to a JPG is
+     * harmless, but sending an animated one on unconverted would be rejected by the provider.
      *
      * @param Asset $asset The asset to check
      * @return bool Whether the GIF is animated
      */
     protected function isAnimatedGif(Asset $asset): bool
     {
+        // Only GIFs can be animated, so anything else is a quick "no".
         $mimeType = $asset->getMimeType();
         if ($mimeType !== 'image/gif') {
             return false;
         }
 
-        // Scan the head of the file in chunks rather than pulling the whole thing into memory:
-        // getContents() loads the entire file as a string, which for a remote volume is a full
-        // download on top of the transform fetch that follows, and a large GIF could exhaust a
-        // queue worker's memory limit.
-        //
-        // A second Graphic Control Extension means more than one frame. It follows the first
-        // frame's data, so a large first frame can push it past the cap. If we reach the cap
-        // with file left unread, we can't rule out animation, so assume it.
+        // Open the file as a stream so it can be read in small pieces, never all at once.
         $stream = $asset->getStream();
 
         try {
-            $found = 0;
-            $read = 0;
-            $carry = '';
+            $found = 0;     // How many frame markers have been seen so far.
+            $read = 0;      // How many bytes have been read so far.
+            $carry = '';    // The last 2 bytes of the previous piece (see below).
 
+            // Keep reading until we hit the size limit or the end of the file.
             while ($read < self::GIF_FRAME_SCAN_BYTES && !feof($stream)) {
+                // Read the next 8KB piece. Only this piece is held in memory.
                 $chunk = fread($stream, 8192);
 
+                // Nothing came back, so there is no more file to read.
                 if ($chunk === false || $chunk === '') {
                     break;
                 }
 
                 $read += strlen($chunk);
-                // Prepend the tail of the previous chunk so a marker split across the boundary is
-                // still matched.
+
+                // Every frame starts with this 3-byte marker. The leftover bytes from the last piece
+                // are put in front so a marker split across two pieces is still counted.
                 $found += substr_count($carry . $chunk, "\x21\xF9\x04");
 
+                // Two markers means two frames, so it's animated and we can stop reading.
                 if ($found > 1) {
                     return true;
                 }
 
-                $carry = substr($chunk, -2);
+                // Remember the last 2 bytes for the next piece, even if this piece was very short.
+                $carry = substr($carry . $chunk, -2);
             }
 
+            // Stopped at the size limit with file left unread: we can't rule out animation, so assume it.
+            // Stopped at the end of the file with fewer than two markers: it's a single-frame GIF.
             return $read >= self::GIF_FRAME_SCAN_BYTES && !feof($stream);
         } finally {
+            // Always close the file, however the function exits.
             fclose($stream);
         }
     }
