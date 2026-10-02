@@ -29,9 +29,10 @@ class AiAltTextService extends Component
      * @param bool $saveCurrentSiteOffQueue Whether to process the current site off queue
      * @param int|null $currentSiteId The current site ID
      * @param bool $skipExistingJobCheck Whether to skip the check for existing jobs (useful for bulk operations)
+     * @return bool Whether anything was generated or queued, false if the asset was skipped
      * @throws Exception
      */
-    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $skipSaveTranslatedResultsToEachSiteSetting = false): void
+    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $skipSaveTranslatedResultsToEachSiteSetting = false): bool
     {
         $queue = Craft::$app->getQueue();
 
@@ -76,7 +77,7 @@ class AiAltTextService extends Component
                 } else {
                     Craft::$app->getSession()->setNotice($message);
                 }
-                return;
+                return false;
             }
         }
 
@@ -92,13 +93,13 @@ class AiAltTextService extends Component
             } else {
                 Craft::$app->getSession()->setNotice($message);
             }
-            return;
+            return false;
         }
 
         // Skip SVG assets if SVG processing is disabled
         if ($this->isSvg($asset) && !AiAltText::getInstance()->getSettings()->processSvgs) {
             Craft::debug("Skipping alt text generation for SVG asset {$asset->id} because SVG processing is disabled.", __METHOD__);
-            return;
+            return false;
         }
 
         // Get the $saveTranslatedResultsToEachSite setting value
@@ -109,7 +110,7 @@ class AiAltTextService extends Component
             $this->generateAltText($asset, $assetSiteId);
     
             if (!$saveTranslatedResultsToEachSite) {
-                return;
+                return true;
             }
         }
 
@@ -132,7 +133,7 @@ class AiAltTextService extends Component
 
         // return early if we're not saving translated results to each site
         if (!$saveTranslatedResultsToEachSite) {
-            return;
+            return true;
         }
 
         // Queue a job for each of the *other* sites. The current site is always already handled
@@ -154,6 +155,18 @@ class AiAltTextService extends Component
                 'siteId' => $site->id,
             ]));
         }
+
+        return true;
+    }
+
+    /**
+     * Whether createJob() queues jobs for sites other than the one it was called for, so callers
+     * that generate the current site inline can say the rest is still pending.
+     */
+    public function queuesOtherSites(): bool
+    {
+        return Craft::$app->getIsMultiSite()
+            && AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
     }
 
     /**
@@ -314,7 +327,7 @@ class AiAltTextService extends Component
             $view->registerJsWithVars(fn($id, $assetId, $siteId) => <<<JS
 $('#' + $id).on('activate', () => {
   // Show a loading spinner in the UI
-  Craft.cp.displayNotice(Craft.t('ai-alt-text', 'Queueing AI alt text generation...'));
+  Craft.cp.displayNotice(Craft.t('ai-alt-text', 'Generating AI alt text...'));
   
   // Make an AJAX request to your controller action
   Craft.sendActionRequest('POST', 'ai-alt-text/generate/single-asset', {
@@ -345,7 +358,7 @@ $('#' + $id).on('activate', () => {
   })
   .catch((error) => {
     console.log('catch', JSON.stringify(error));
-    Craft.cp.displayError(Craft.t('ai-alt-text', 'Failed to queue alt text generation: ') + 
+    Craft.cp.displayError(Craft.t('ai-alt-text', 'Failed to process alt text generation: ') + 
       (error?.message || 'Unknown error'));
   });
 });

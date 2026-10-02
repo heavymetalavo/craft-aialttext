@@ -49,15 +49,25 @@ class GenerateController extends Controller
         }
 
         try {
-            AiAltText::getInstance()->aiAltTextService->createJob($asset, true);
+            $service = AiAltText::getInstance()->aiAltTextService;
 
-            // Return success
+            if (!$service->createJob($asset, true)) {
+                return $this->asJson([
+                    'success' => false,
+                    'message' => Craft::t('ai-alt-text', 'Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off'),
+                ]);
+            }
+
+            // This site is generated inline, but the other sites are queued when translated
+            // results are saved to each site, so say so rather than imply it's all done.
             return $this->asJson([
                 'success' => true,
-                'message' => Craft::t('ai-alt-text', 'Alt text generation has been queued'),
+                'message' => $service->queuesOtherSites()
+                    ? Craft::t('ai-alt-text', 'Alt text generated. The other sites have been queued.')
+                    : Craft::t('ai-alt-text', 'Alt text generated'),
             ]);
         } catch (Exception $e) {
-            Craft::error('Error queueing alt text generation: ' . $e->getMessage(), __METHOD__);
+            Craft::error('Error processing alt text generation: ' . $e->getMessage(), __METHOD__);
 
             return $this->asJson([
                 'success' => false,
