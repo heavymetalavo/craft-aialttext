@@ -5,13 +5,19 @@
 > {tip} Images the provider can't process now appear as failed jobs in the queue, where you can retry them.
 
 - Added a control panel warning for admins when no AI provider or API key is configured.
+- Added a note to the **Process SVGs** setting when Craft's `transformSvgs` setting is disabled, since SVGs are skipped in that case even with the plugin setting enabled.
 - Changed an empty **OpenAI Image Detail Level** setting to fall back to `low` instead of being sent to the API as an empty value.
 - Changed the HTTP client's request timeout from a static 30 second timeout to Craft's Guzzle client's config timeout
 - Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
+- Changed the error for a mistyped or unsupported prompt variable to name the variable and point to the **Prompt** setting. This covers a typo like `{asset.filenmae}` and a variable that resolves to an object rather than text, like `{asset.volume}`. Previously the raw PHP error was shown.
 - Changed the OpenAI and Anthropic services to accept Yii component config in their constructors.
 - Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model. within bulk actions utility to be translatable.
 - Changed `ai-alt-text/generate` with no action to show the list of available commands instead of printing an exception stack trace.
 - Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model.
+- Changed the GIF animation check to use less memory. The whole file was previously read into memory - a full download for remote volumes, and enough to exhaust a queue worker on a large GIF. Only the start of the file is scanned now, and a GIF that is still undecided after that is treated as animated so it is always sent as a first-frame JPG.
+- Changed the height of the **Prompt** field to be taller, since it previously showed roughly three lines and clipped the default prompt mid-sentence.
+- Changed the "Generate AI Alt Text" asset actions and `ai-alt-text/generate/single` to clearly say whether alt text was generated, queued for other sites, or skipped, instead of always saying "queued".
+- Changed `ai-alt-text/generate/missing` to say it is queueing jobs, not generating alt text.
 - Changed the bulk actions utility to queue a batched job per site that fans out into one job per asset, instead of walking the whole library inside the web request. Large asset libraries no longer time out part-way through with no indication of how much was queued, and progress is visible in the queue. Disabled assets are now included, matching the figures the utility reports.
 - Fixed a duplicate job being queued for the site being worked in when "Save translated results for each site" was enabled.
 - Fixed the reasoning parameter being sent to models that don't accept one. The check matched any model whose name began with `o` (so `omni-...` and similar), and matched `gpt-5` chat variants such as `gpt-5-chat-latest`. Both were rejected by the API, and the resulting error was misread as the provider being unable to reach the image, triggering a pointless base64 retry before the request finally failed.
@@ -25,6 +31,8 @@
 - Fixed the "already being processed" check refusing the wrong assets. It matched the asset ID as a substring of the queue job's description, so `ID: 1` also matched `ID: 12`, `ID: 100` and so on - queueing asset 1 was refused whenever a higher-numbered asset was already queued. The IDs in job descriptions are now delimited, so they match exactly.
 - Fixed the "already being processed" check never matching on single-site installs. It required the site in the job description, which is only named there on multisite installs, so duplicate jobs for the same asset were never caught.
 - Fixed generation falling back to OpenAI when the **AI Provider** setting is empty or unrecognised. It now fails with a message naming what's missing, including when the chosen provider has no API key.
+- Fixed invalid markup in the settings page instructions - an unclosed paragraph wrapping the list, a stray closing tag, and one list item styled differently from its siblings.
+- Fixed the batched bulk actions and console commands paginating without a fixed order, so assets could be processed twice or skipped on large asset libraries. They now order by element ID.
 - Removed the single-asset action passing the response message through the JavaScript translator. The message would already be translated server-side.
 - Removed the unused `forceRegeneration` parameter used by removed `preSaveAsset` setting which was replaced by `propagate`.
 
