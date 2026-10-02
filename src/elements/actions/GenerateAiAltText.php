@@ -59,7 +59,7 @@ class GenerateAiAltText extends ElementAction
             throw new InvalidConfigException('User not logged in');
         }
 
-        $processedCount = 0;
+        $generatedOrQueuedCount = 0;
         $skippedCount = 0;
 
         foreach ($query->all() as $asset) {
@@ -83,7 +83,7 @@ class GenerateAiAltText extends ElementAction
 
             // Generates the current site inline and queues any other sites. False means it skipped the asset.
             if (AiAltText::getInstance()->aiAltTextService->createJob($asset, true)) {
-                $processedCount++;
+                $generatedOrQueuedCount++;
             } else {
                 $skippedCount++;
             }
@@ -92,9 +92,9 @@ class GenerateAiAltText extends ElementAction
         // Skipping is otherwise invisible: without this the user gets an unqualified
         // success notice even when nothing they selected was processed.
         if ($skippedCount > 0) {
-            $this->setMessage(Craft::t('ai-alt-text', 'Processed {processed} of {total} assets; {skipped} skipped.', [
-                'processed' => $processedCount,
-                'total' => $processedCount + $skippedCount,
+            $this->setMessage(Craft::t('ai-alt-text', 'Generated or queued alt text for {count} of {total} assets; {skipped} skipped.', [
+                'count' => $generatedOrQueuedCount,
+                'total' => $generatedOrQueuedCount + $skippedCount,
                 'skipped' => $skippedCount,
             ]));
         }
