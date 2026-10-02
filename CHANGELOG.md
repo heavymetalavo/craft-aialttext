@@ -9,34 +9,26 @@
 - Changed the HTTP client's request timeout from a static 30 second timeout to Craft's Guzzle client's config timeout
 - Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
 - Changed the error for a mistyped or unsupported prompt variable to name the variable and point to the **Prompt** setting. This covers a typo like `{asset.filenmae}` and a variable that resolves to an object rather than text, like `{asset.volume}`. Previously the raw PHP error was shown.
-- Changed the OpenAI and Anthropic services to accept Yii component config in their constructors.
-- Changed the majority of text within bulk actions utility to be translatable.
 - Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model.
 - Changed the GIF animation check to use less memory. The whole file was previously read into memory - a full download for remote volumes, and enough to exhaust a queue worker on a large GIF. Only the start of the file is scanned now, and a GIF that is still undecided after that is treated as animated so it is always sent as a first-frame JPG.
 - Changed the height of the **Prompt** field to be taller, since it previously showed roughly three lines and clipped the default prompt mid-sentence.
 - Changed the "Generate AI Alt Text" asset action to queue jobs when more than one asset is selected, instead of making one blocking provider request per asset within the web request. A single asset is still generated straight away.
-- Changed the "Generate AI Alt Text" asset actions and `ai-alt-text/generate/single` to clearly say whether alt text was generated, queued for other sites, or skipped, instead of always saying "queued".
-- Changed `ai-alt-text/generate/missing` to say it is queueing jobs, not generating alt text.
+- Changed the "Generate AI Alt Text" asset actions and `ai-alt-text/generate/single` to clearly say whether alt text was generated, queued for other sites, or skipped, instead of always saying "queued", and `ai-alt-text/generate/missing` to say it is queueing jobs rather than generating alt text.
 - Changed the bulk actions utility to queue a batched job per site that fans out into one job per asset, instead of walking every asset inside the web request. The bulk actions no longer time out part-way through with no indication of how much was queued, and progress is visible in the queue.
 - Changed the plugin settings page to only show the selected AI provider's fields, swapping them as the **AI Provider** dropdown changes. All providers' fields stay visible when the provider is set from an environment variable.
 - Changed generation to fail with a message naming what's missing when the **AI Provider** setting is empty or unrecognised, or when the chosen provider has no API key, instead of silently falling back to OpenAI.
 - Fixed a duplicate job being queued for the site being worked in when "Save translated results for each site" was enabled.
 - Fixed the reasoning parameter being sent to models that don't accept one. The check matched any model whose name began with `o` (so `omni-...` and similar), and matched `gpt-5` chat variants such as `gpt-5-chat-latest`. Both were rejected by the API, and the resulting error was misread as the provider being unable to reach the image, triggering a pointless base64 retry before the request finally failed.
-- Fixed two control panel notices being built as interpolated strings before being passed to the translator, which meant they could never match a translation entry. They now use placeholders.
-- Fixed alt text generated via OpenAI being saved with any surrounding whitespace the model returned, such as a trailing newline. It is now trimmed, matching what the Anthropic provider already did.
-- Fixed every label and instruction on the plugin settings page to use the correct translation category (`ai-alt-text`).
+- Fixed text that could never match a translation entry: two control panel notices built as interpolated strings, the single-asset action's already-translated server message being passed through the JavaScript translator again, and settings page labels using the wrong translation category (`ai-alt-text`). The bulk actions utility's text is now translatable too.
+- Fixed alt text generated via OpenAI being saved with surrounding whitespace, such as a trailing newline.
 - Fixed an error that could fail an image asset's save when "Generate for new image assets" was enabled and the asset was saved via a console command / a queue job. Generation now falls back to the asset's own site.
 - Fixed Anthropic connection failures (DNS, TLS and connect timeouts) so they are logged and reported with a clear plugin error, matching the OpenAI provider.
 - Fixed existing alt text being lost if a save failed. When **Propagate** is off, generation blanks the alt value in a preliminary save before writing the new one; if that second save failed, the asset was left with an empty alt value instead of what it had before. Both saves now run in one transaction, so a failure leaves the previous value intact.
 - Fixed failed alt text generations showing as completed in the queue. The error was logged, but the job still reported success, so there was no error message and no way to retry it. The job now fails with the error message, which appears in the control panel and can be retried from there.
-- Fixed the "already being processed" check refusing the wrong assets. It matched the asset ID as a substring of the queue job's description, so `ID: 1` also matched `ID: 12`, `ID: 100` and so on - queueing asset 1 was refused whenever a higher-numbered asset was already queued. Job descriptions now end with an untranslated, delimited ID marker that is matched exactly, so the check no longer depends on translations or on what a filename contains.
-- Fixed the "already being processed" check never matching on single-site installs. It required the site in the job description, which is only named there on multisite installs, so duplicate jobs for the same asset were never caught.
-- Fixed invalid markup in the settings page instructions - an unclosed paragraph wrapping the list, a stray closing tag, and one list item styled differently from its siblings.
+- Fixed the "already being processed" check refusing the wrong assets. It matched the asset ID as a substring of the queue job's description, so `ID: 1` also matched `ID: 12`, `ID: 100` and so on - queueing asset 1 was refused whenever a higher-numbered asset was already queued. It also never matched on single-site installs, where the description doesn't name the site, so duplicate jobs for the same asset were never caught. Job descriptions now end with an untranslated, delimited ID marker that is matched exactly, so the check no longer depends on translations or on what a filename contains.
 - Fixed the batched bulk actions and console commands paginating without a fixed order, so assets could be processed twice or skipped on large asset libraries. They now order by element ID.
 - Fixed an empty **OpenAI Image Detail Level** setting being sent to the API as an empty value. It now falls back to `low`.
-- Fixed `ai-alt-text/generate` with no action printing an exception stack trace. It now shows the list of available commands.
-- Fixed the single-asset action passing the server's response message through the JavaScript translator. The message is already translated server-side, so it could never match a translation entry.
-- Removed the unused `forceRegeneration` parameter used by removed `preSaveAsset` setting which was replaced by `propagate`.
+- Fixed `ai-alt-text/generate` with no action printing an exception stack trace instead of the list of available commands.
 
 ## 5.0.0 - 2026-07-24
 
