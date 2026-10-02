@@ -16,6 +16,9 @@ use Throwable;
  */
 class GenerateAiAltTextForAssets extends BaseBatchedJob
 {
+    /**
+     * @var int The site to queue assets for.
+     */
     public int $siteId = 0;
 
     /**
