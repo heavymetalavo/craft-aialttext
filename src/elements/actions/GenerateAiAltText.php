@@ -59,10 +59,16 @@ class GenerateAiAltText extends ElementAction
             throw new InvalidConfigException('User not logged in');
         }
 
-        $queuedCount = 0;
+        $generatedOrQueuedCount = 0;
         $skippedCount = 0;
 
-        foreach ($query->all() as $asset) {
+        $assets = $query->all();
+
+        // A single asset is generated inline for immediate feedback. More than one is a bulk action,
+        // queued so the request isn't one blocking provider call per asset.
+        $generateInline = count($assets) === 1;
+
+        foreach ($assets as $asset) {
             if (!$asset instanceof Asset) {
                 continue;
             }
@@ -81,17 +87,31 @@ class GenerateAiAltText extends ElementAction
                 continue;
             }
 
-            // Create a job for the asset
-            AiAltText::getInstance()->aiAltTextService->createJob($asset, true);
-            $queuedCount++;
+            // Generates the current site inline (single asset) or queues it, and queues any other sites.
+            // False means it skipped the asset.
+            if (AiAltText::getInstance()->aiAltTextService->createJob($asset, $generateInline)) {
+                $generatedOrQueuedCount++;
+            } else {
+                $skippedCount++;
+            }
         }
 
         // Skipping is otherwise invisible: without this the user gets an unqualified
         // success notice even when nothing they selected was processed.
-        if ($skippedCount > 0) {
-            $this->setMessage(Craft::t('ai-alt-text', 'Queued {queued} of {total} assets for alt text generation; {skipped} skipped (no permission to save).', [
-                'queued' => $queuedCount,
-                'total' => $queuedCount + $skippedCount,
+        if (!$generateInline) {
+            $this->setMessage($skippedCount > 0
+                ? Craft::t('ai-alt-text', 'Queued alt text generation for {count} of {total} assets; {skipped} skipped. Watch the queue for progress.', [
+                    'count' => $generatedOrQueuedCount,
+                    'total' => $generatedOrQueuedCount + $skippedCount,
+                    'skipped' => $skippedCount,
+                ])
+                : Craft::t('ai-alt-text', 'Queued alt text generation for {count} assets. Watch the queue for progress.', [
+                    'count' => $generatedOrQueuedCount,
+                ]));
+        } elseif ($skippedCount > 0) {
+            $this->setMessage(Craft::t('ai-alt-text', 'Generated or queued alt text for {count} of {total} assets; {skipped} skipped.', [
+                'count' => $generatedOrQueuedCount,
+                'total' => $generatedOrQueuedCount + $skippedCount,
                 'skipped' => $skippedCount,
             ]));
         }
