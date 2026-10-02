@@ -220,7 +220,6 @@ class GenerateController extends Controller
             $siteTotal = Asset::find()
                 ->kind(Asset::KIND_IMAGE)
                 ->siteId($site->id)
-                ->status(null)
                 ->count();
 
             // Count assets with alt text. hasAlt() reads the per-site alt value (falling back to
@@ -229,7 +228,6 @@ class GenerateController extends Controller
             $siteWithAlt = Asset::find()
                 ->kind(Asset::KIND_IMAGE)
                 ->siteId($site->id)
-                ->status(null)
                 ->hasAlt(true)
                 ->count();
             
@@ -398,6 +396,7 @@ class GenerateController extends Controller
                     $query = Asset::find()
                         ->kind(Asset::KIND_IMAGE)
                         ->siteId($site->id)
+                        ->orderBy(['elements.id' => SORT_ASC])
                         ->offset($offset)
                         ->limit($this->batchSize);
                     

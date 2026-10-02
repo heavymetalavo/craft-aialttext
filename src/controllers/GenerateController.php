@@ -139,6 +139,7 @@ class GenerateController extends Controller
                         ->kind(Asset::KIND_IMAGE)
                         ->siteId($site->id)
                         ->hasAlt(false)
+                        ->orderBy(['elements.id' => SORT_ASC])
                         ->offset($offset)
                         ->limit($limit)
                         ->all();
@@ -272,6 +273,7 @@ class GenerateController extends Controller
                     $assets = Asset::find()
                         ->kind(Asset::KIND_IMAGE)
                         ->siteId($site->id)
+                        ->orderBy(['elements.id' => SORT_ASC])
                         ->offset($offset)
                         ->limit($limit)
                         ->all();
