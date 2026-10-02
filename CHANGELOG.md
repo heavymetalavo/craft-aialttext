@@ -6,7 +6,6 @@
 
 - Added a control panel warning for admins when no AI provider or API key is configured.
 - Added a note to the **Process SVGs** setting when Craft's `transformSvgs` setting is disabled, since SVGs are skipped in that case even with the plugin setting enabled.
-- Added support for only showing the relevant AI provider's settings fields. The fields swap as the **AI Provider** dropdown changes, and all providers' fields stay visible when the provider is set from an environment variable.
 - Changed an empty **OpenAI Image Detail Level** setting to fall back to `low` instead of being sent to the API as an empty value.
 - Changed the HTTP client's request timeout from a static 30 second timeout to Craft's Guzzle client's config timeout
 - Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
@@ -20,6 +19,7 @@
 - Changed the "Generate AI Alt Text" asset actions and `ai-alt-text/generate/single` to clearly say whether alt text was generated, queued for other sites, or skipped, instead of always saying "queued".
 - Changed `ai-alt-text/generate/missing` to say it is queueing jobs, not generating alt text.
 - Changed the bulk actions utility to queue a batched job per site that fans out into one job per asset, instead of walking every asset inside the web request. The bulk actions no longer time out part-way through with no indication of how much was queued, and progress is visible in the queue.
+- Changed the plugin settings page to only show the selected AI provider's fields, swapping them as the **AI Provider** dropdown changes. All providers' fields stay visible when the provider is set from an environment variable.
 - Fixed a duplicate job being queued for the site being worked in when "Save translated results for each site" was enabled.
 - Fixed the reasoning parameter being sent to models that don't accept one. The check matched any model whose name began with `o` (so `omni-...` and similar), and matched `gpt-5` chat variants such as `gpt-5-chat-latest`. Both were rejected by the API, and the resulting error was misread as the provider being unable to reach the image, triggering a pointless base64 retry before the request finally failed.
 - Fixed two control panel notices being built as interpolated strings before being passed to the translator, which meant they could never match a translation entry. They now use placeholders.
