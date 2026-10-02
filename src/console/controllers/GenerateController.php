@@ -121,11 +121,16 @@ class GenerateController extends Controller
         try {
             $this->note("Processing: {$asset->filename} (ID: {$asset->id})");
             
-            AiAltText::getInstance()->aiAltTextService->createJob($asset, true, $targetSiteId);
-            
+            $service = AiAltText::getInstance()->aiAltTextService;
+
+            if (!$service->createJob($asset, true, $targetSiteId)) {
+                $this->failure("Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off");
+                return ExitCode::DATAERR;
+            }
+
             $this->success("Alt text generated");
 
-            if (AiAltText::getInstance()->aiAltTextService->queuesOtherSites()) {
+            if ($service->queuesOtherSites()) {
                 $this->note("The other sites have been queued.");
                 $this->tip("Check the queue status with: ./craft queue/info");
             }

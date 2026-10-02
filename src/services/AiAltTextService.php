@@ -29,9 +29,10 @@ class AiAltTextService extends Component
      * @param bool $saveCurrentSiteOffQueue Whether to process the current site off queue
      * @param int|null $currentSiteId The current site ID
      * @param bool $skipExistingJobCheck Whether to skip the check for existing jobs (useful for bulk operations)
+     * @return bool Whether anything was generated or queued, false if the asset was skipped
      * @throws Exception
      */
-    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $skipSaveTranslatedResultsToEachSiteSetting = false): void
+    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $skipSaveTranslatedResultsToEachSiteSetting = false): bool
     {
         $queue = Craft::$app->getQueue();
 
@@ -76,7 +77,7 @@ class AiAltTextService extends Component
                 } else {
                     Craft::$app->getSession()->setNotice($message);
                 }
-                return;
+                return false;
             }
         }
 
@@ -92,13 +93,13 @@ class AiAltTextService extends Component
             } else {
                 Craft::$app->getSession()->setNotice($message);
             }
-            return;
+            return false;
         }
 
         // Skip SVG assets if SVG processing is disabled
         if ($this->isSvg($asset) && !AiAltText::getInstance()->getSettings()->processSvgs) {
             Craft::debug("Skipping alt text generation for SVG asset {$asset->id} because SVG processing is disabled.", __METHOD__);
-            return;
+            return false;
         }
 
         // Get the $saveTranslatedResultsToEachSite setting value
@@ -109,7 +110,7 @@ class AiAltTextService extends Component
             $this->generateAltText($asset, $assetSiteId);
     
             if (!$saveTranslatedResultsToEachSite) {
-                return;
+                return true;
             }
         }
 
@@ -132,7 +133,7 @@ class AiAltTextService extends Component
 
         // return early if we're not saving translated results to each site
         if (!$saveTranslatedResultsToEachSite) {
-            return;
+            return true;
         }
 
         // Queue a job for each of the *other* sites. The current site is always already handled
@@ -154,6 +155,8 @@ class AiAltTextService extends Component
                 'siteId' => $site->id,
             ]));
         }
+
+        return true;
     }
 
     /**
