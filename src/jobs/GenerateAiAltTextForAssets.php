@@ -3,28 +3,20 @@
 namespace heavymetalavo\craftaialttext\jobs;
 
 use Craft;
+use craft\base\Batchable;
+use craft\db\QueryBatcher;
 use craft\elements\Asset;
-use craft\queue\BaseJob;
+use craft\queue\BaseBatchedJob;
 use heavymetalavo\craftaialttext\AiAltText;
 use Throwable;
 
 /**
- * Queues a per-asset alt text job for every matching asset.
- *
- * The bulk actions used to walk the whole library inside the web request that triggered them. That
- * is fine on a small site and a guaranteed timeout on a large one, leaving an unknown number of
- * jobs queued and a 504 instead of a flash message.
- *
- * This job does the walking instead, so the request returns immediately and the batching happens
- * in a queue worker where there is no request timeout. It's the same shape Craft uses for resaving
- * elements: one job whose work is to create the real jobs.
+ * Queues a per-asset alt text job for each image asset on one site, in batches, so the bulk
+ * actions don't have to walk the library inside the web request.
  */
-class GenerateAiAltTextForAssets extends BaseJob
+class GenerateAiAltTextForAssets extends BaseBatchedJob
 {
-    /**
-     * @var int[] Site IDs to queue assets for.
-     */
-    public array $siteIds = [];
+    public int $siteId = 0;
 
     /**
      * @var bool Whether to include assets that already have alt text.
@@ -32,85 +24,43 @@ class GenerateAiAltTextForAssets extends BaseJob
     public bool $includeExisting = false;
 
     /**
-     * @var int How many assets to load at a time.
+     * @inheritdoc
      */
-    public int $batchSize = 100;
+    protected function loadData(): Batchable
+    {
+        // Not filtered on hasAlt(false): batches are read by offset, and the per-asset jobs queued
+        // by one batch run before the next batch does, so a shrinking result set would skip assets.
+        // Assets that already have alt text are skipped in processItem() instead.
+        return new QueryBatcher(
+            Asset::find()
+                ->kind(Asset::KIND_IMAGE)
+                ->siteId($this->siteId)
+                // Include disabled assets, matching the figures the utility and `stats` report.
+                ->status(null)
+                ->orderBy(['elements.id' => SORT_ASC])
+        );
+    }
 
     /**
      * @inheritdoc
      */
-    public function execute($queue): void
+    protected function processItem(mixed $item): void
     {
-        $service = AiAltText::getInstance()->aiAltTextService;
-
-        $total = 0;
-        foreach ($this->siteIds as $siteId) {
-            $total += $this->query($siteId)->count();
-        }
-
-        if ($total === 0) {
-            Craft::info('No assets matched the bulk alt text request.', __METHOD__);
+        if (!$this->includeExisting && !empty($item->alt)) {
             return;
         }
 
-        $processed = 0;
-
-        foreach ($this->siteIds as $siteId) {
-            $offset = 0;
-
-            while (true) {
-                $assets = $this->query($siteId)
-                    ->orderBy(['elements.id' => SORT_ASC])
-                    ->offset($offset)
-                    ->limit($this->batchSize)
-                    ->all();
-
-                if (!$assets) {
-                    break;
-                }
-
-                foreach ($assets as $asset) {
-                    try {
-                        // Queue only (no off-queue generation), skipping the
-                        // saveTranslatedResultsToEachSite fan-out: the caller has already decided
-                        // exactly which sites to process.
-                        $service->createJob($asset, false, $siteId, false, true);
-                    } catch (Throwable $e) {
-                        Craft::error(
-                            "Error queueing alt text generation for asset {$asset->id}: " . $e->getMessage(),
-                            __METHOD__
-                        );
-                    }
-
-                    $processed++;
-                    $this->setProgress($queue, $processed / $total);
-                }
-
-                $offset += $this->batchSize;
-            }
+        try {
+            // Queue only: the caller has already chosen the sites, so skip the
+            // saveTranslatedResultsToEachSite fan-out.
+            AiAltText::getInstance()->aiAltTextService->createJob(
+                $item,
+                currentSiteId: $this->siteId,
+                skipSaveTranslatedResultsToEachSiteSetting: true,
+            );
+        } catch (Throwable $e) {
+            Craft::error("Error queueing alt text generation for asset {$item->id}: " . $e->getMessage(), __METHOD__);
         }
-
-        Craft::info("Queued alt text generation for {$processed} assets.", __METHOD__);
-    }
-
-    /**
-     * The asset query for one site.
-     *
-     * `status(null)` so disabled assets are included, matching the figures the utility and the
-     * `stats` console command report.
-     */
-    private function query(int $siteId): \craft\elements\db\AssetQuery
-    {
-        $query = Asset::find()
-            ->kind(Asset::KIND_IMAGE)
-            ->siteId($siteId)
-            ->status(null);
-
-        if (!$this->includeExisting) {
-            $query->hasAlt(false);
-        }
-
-        return $query;
     }
 
     /**
@@ -118,6 +68,13 @@ class GenerateAiAltTextForAssets extends BaseJob
      */
     protected function defaultDescription(): ?string
     {
-        return Craft::t('ai-alt-text', 'Queueing AI alt text generation');
+        $description = Craft::t('ai-alt-text', 'Queueing AI alt text generation');
+
+        if (count(Craft::$app->getSites()->getAllSites()) > 1) {
+            $site = Craft::$app->getSites()->getSiteById($this->siteId);
+            $description .= $site ? " ({$site->name})" : '';
+        }
+
+        return $description;
     }
 }

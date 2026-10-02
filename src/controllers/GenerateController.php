@@ -88,12 +88,8 @@ class GenerateController extends Controller
     }
 
     /**
-     * Queues a single job that fans out into one job per asset.
-     *
-     * Previously both actions walked every asset on every site inside this request, 100 at a time.
-     * On a large library that is a guaranteed timeout, leaving an unknown number of jobs queued and
-     * a 504 instead of a flash message. Handing the walking to a queue worker keeps the request
-     * fast regardless of library size.
+     * Queues a batched job per site that fans out into one job per asset, so the request returns
+     * immediately however large the library is.
      *
      * @param bool $includeExisting Whether to include assets that already have alt text
      */
@@ -118,20 +114,19 @@ class GenerateController extends Controller
                 return $redirect;
             }
 
-            $siteIds = [$site->id];
+            $sites = [$site];
             $siteName = $site->name;
         } else {
-            $siteIds = array_map(
-                static fn($site) => $site->id,
-                Craft::$app->getSites()->getAllSites()
-            );
+            $sites = Craft::$app->getSites()->getAllSites();
         }
 
         try {
-            Craft::$app->getQueue()->push(new GenerateAiAltTextForAssets([
-                'siteIds' => $siteIds,
-                'includeExisting' => $includeExisting,
-            ]));
+            foreach ($sites as $site) {
+                Craft::$app->getQueue()->push(new GenerateAiAltTextForAssets([
+                    'siteId' => $site->id,
+                    'includeExisting' => $includeExisting,
+                ]));
+            }
         } catch (Exception $e) {
             Craft::error('Error queueing bulk alt text generation: ' . $e->getMessage(), __METHOD__);
 
