@@ -2,11 +2,11 @@
 
 ## 5.1.0 - 2026-10-01
 
-- Added support for only showing the relevant AI provider's settings fields. The fields swap as the **AI Provider** dropdown changes, and all providers' fields stay visible when the provider is set from an environment variable.
 > {tip} Images the provider can't process now appear as failed jobs in the queue, where you can retry them.
 
 - Added a control panel warning for admins when no AI provider or API key is configured.
 - Added a note to the **Process SVGs** setting when Craft's `transformSvgs` setting is disabled, since SVGs are skipped in that case even with the plugin setting enabled.
+- Added support for only showing the relevant AI provider's settings fields. The fields swap as the **AI Provider** dropdown changes, and all providers' fields stay visible when the provider is set from an environment variable.
 - Changed an empty **OpenAI Image Detail Level** setting to fall back to `low` instead of being sent to the API as an empty value.
 - Changed the HTTP client's request timeout from a static 30 second timeout to Craft's Guzzle client's config timeout
 - Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
