@@ -157,6 +157,16 @@ class AiAltTextService extends Component
     }
 
     /**
+     * Whether createJob() queues jobs for sites other than the one it was called for, so callers
+     * that generate the current site inline can say the rest is still pending.
+     */
+    public function queuesOtherSites(): bool
+    {
+        return Craft::$app->getIsMultiSite()
+            && AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
+    }
+
+    /**
      * Returns a message describing what's missing from the provider configuration, or null if
      * generation can proceed. A missing or unrecognised provider must never fall through to OpenAI.
      */
@@ -314,7 +324,7 @@ class AiAltTextService extends Component
             $view->registerJsWithVars(fn($id, $assetId, $siteId) => <<<JS
 $('#' + $id).on('activate', () => {
   // Show a loading spinner in the UI
-  Craft.cp.displayNotice(Craft.t('ai-alt-text', 'Generating AI alt text\u2026'));
+  Craft.cp.displayNotice(Craft.t('ai-alt-text', 'Generating AI alt text...'));
   
   // Make an AJAX request to your controller action
   Craft.sendActionRequest('POST', 'ai-alt-text/generate/single-asset', {
@@ -345,7 +355,7 @@ $('#' + $id).on('activate', () => {
   })
   .catch((error) => {
     console.log('catch', JSON.stringify(error));
-    Craft.cp.displayError(Craft.t('ai-alt-text', 'Failed to queue alt text generation: ') + 
+    Craft.cp.displayError(Craft.t('ai-alt-text', 'Failed to generate alt text: ') + 
       (error?.message || 'Unknown error'));
   });
 });

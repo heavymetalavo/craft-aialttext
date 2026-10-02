@@ -123,13 +123,17 @@ class GenerateController extends Controller
             
             AiAltText::getInstance()->aiAltTextService->createJob($asset, true, $targetSiteId);
             
-            $this->success("Alt text generation queued successfully");
-            $this->tip("Check the queue status with: ./craft queue/info");
+            $this->success("Alt text generated");
+
+            if (AiAltText::getInstance()->aiAltTextService->queuesOtherSites()) {
+                $this->note("The other sites have been queued.");
+                $this->tip("Check the queue status with: ./craft queue/info");
+            }
             
             return ExitCode::OK;
             
         } catch (Exception $e) {
-            $this->failure("Error queueing alt text generation: {$e->getMessage()}");
+            $this->failure("Error generating alt text: {$e->getMessage()}");
             return ExitCode::SOFTWARE;
         }
     }

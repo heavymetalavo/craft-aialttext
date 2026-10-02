@@ -51,20 +51,16 @@ class GenerateController extends Controller
         try {
             AiAltText::getInstance()->aiAltTextService->createJob($asset, true);
 
-            // This site is generated inline, but createJob() queues the other sites when
-            // translated results are saved to each site, so say so rather than imply it's all done.
-            $queuesOtherSites = Craft::$app->getIsMultiSite()
-                && AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
-
-            // Return success
+            // Return success. This site is generated inline, but createJob() queues the other sites
+            // when translated results are saved to each site, so say so rather than imply it's all done.
             return $this->asJson([
                 'success' => true,
-                'message' => $queuesOtherSites
+                'message' => AiAltText::getInstance()->aiAltTextService->queuesOtherSites()
                     ? Craft::t('ai-alt-text', 'Alt text generated. The other sites have been queued.')
                     : Craft::t('ai-alt-text', 'Alt text generated'),
             ]);
         } catch (Exception $e) {
-            Craft::error('Error queueing alt text generation: ' . $e->getMessage(), __METHOD__);
+            Craft::error('Error generating alt text: ' . $e->getMessage(), __METHOD__);
 
             return $this->asJson([
                 'success' => false,
