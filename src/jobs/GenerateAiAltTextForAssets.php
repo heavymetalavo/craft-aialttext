@@ -27,6 +27,28 @@ class GenerateAiAltTextForAssets extends BaseBatchedJob
     public bool $includeExisting = false;
 
     /**
+     * @var array|null The queue's job info, fetched once per batch for the duplicate-job check. Cleared
+     * after each batch because the next batch's job is a clone of this one and gets serialized.
+     */
+    private ?array $existingJobs = null;
+
+    /**
+     * @inheritdoc
+     */
+    protected function beforeBatch(): void
+    {
+        $this->existingJobs = Craft::$app->getQueue()->getJobInfo();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function afterBatch(): void
+    {
+        $this->existingJobs = null;
+    }
+
+    /**
      * @inheritdoc
      */
     protected function loadData(): Batchable
@@ -58,6 +80,7 @@ class GenerateAiAltTextForAssets extends BaseBatchedJob
                 $item,
                 currentSiteId: $this->siteId,
                 skipSaveTranslatedResultsToEachSiteSetting: true,
+                existingJobs: $this->existingJobs,
             );
         } catch (Throwable $e) {
             Craft::error("Error queueing alt text generation for asset {$item->id}: " . $e->getMessage(), __METHOD__);

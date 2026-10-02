@@ -29,10 +29,11 @@ class AiAltTextService extends Component
      * @param bool $saveCurrentSiteOffQueue Whether to process the current site off queue
      * @param int|null $currentSiteId The current site ID
      * @param bool $skipExistingJobCheck Whether to skip the check for existing jobs (useful for bulk operations)
+     * @param array|null $existingJobs Queue job info to check against, so bulk callers can fetch it once instead of per asset
      * @return bool Whether anything was generated or queued, false if the asset was skipped
      * @throws Exception
      */
-    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $skipSaveTranslatedResultsToEachSiteSetting = false): bool
+    public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $skipSaveTranslatedResultsToEachSiteSetting = false, ?array $existingJobs = null): bool
     {
         $queue = Craft::$app->getQueue();
 
@@ -40,7 +41,7 @@ class AiAltTextService extends Component
 
         // Check if there's already a job for this element
         if (!$skipExistingJobCheck) {
-            $existingJobs = $queue->getJobInfo();
+            $existingJobs ??= $queue->getJobInfo();
             $hasExistingJob = false;
             $hasPlusOneSite = count(Craft::$app->getSites()->getAllSites()) > 1;
 
@@ -49,19 +50,12 @@ class AiAltTextService extends Component
                     continue;
                 }
 
-                // The trailing period matters: without it "ID: 1" is a substring of "ID: 12", so
-                // queueing asset 1 would be refused whenever asset 12 was already queued.
-                if (!str_contains($job['description'], "ID: $asset->id.")) {
-                    continue;
+                // The untranslated marker is always the end of the description (see jobDescription()),
+                // so a translation or a filename can't affect the match, and "ID: 1" can't match "ID: 12".
+                if (str_ends_with($job['description'], $this->jobMarker($asset->id, $assetSiteId, $hasPlusOneSite))) {
+                    $hasExistingJob = true;
+                    break;
                 }
-
-                // The description only names the site on multisite installs, so only match on it there.
-                if ($hasPlusOneSite && !str_contains($job['description'], "Site: $assetSiteId.")) {
-                    continue;
-                }
-
-                $hasExistingJob = true;
-                break;
             }
 
             if ($hasExistingJob) {
@@ -121,11 +115,7 @@ class AiAltTextService extends Component
         // above, in which case queueing it here would generate it a second time.
         if (!$saveCurrentSiteOffQueue) {
             $queue->push(new GenerateAiAltTextJob([
-                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}.{siteMessageSuffix})', [
-                    'filename' => $asset->filename,
-                    'id' => $asset->id,
-                    'siteMessageSuffix' => $hasPlusOneSite ? " Site: $assetSiteId." : "",
-                ]),
+                'description' => $this->jobDescription($asset, $assetSiteId, $hasPlusOneSite),
                 'assetId' => $asset->id,
                 'siteId' => $assetSiteId,
             ]));
@@ -146,17 +136,32 @@ class AiAltTextService extends Component
             }
 
             $queue->push(new GenerateAiAltTextJob([
-                'description' => Craft::t('ai-alt-text', 'Generating alt text for {filename} (ID: {id}.{siteMessageSuffix})', [
-                    'filename' => $asset->filename,
-                    'id' => $asset->id,
-                    'siteMessageSuffix' => $hasPlusOneSite ? " Site: $site->id." : "",
-                ]),
+                'description' => $this->jobDescription($asset, $site->id, $hasPlusOneSite),
                 'assetId' => $asset->id,
                 'siteId' => $site->id,
             ]));
         }
 
         return true;
+    }
+
+    /**
+     * The untranslated, machine-matchable end of a queued job's description, which the
+     * duplicate-job check in createJob() compares against. The site is only named on multisite installs.
+     */
+    private function jobMarker(int $assetId, int $siteId, bool $multiSite): string
+    {
+        return " (ID: $assetId." . ($multiSite ? " Site: $siteId." : '') . ')';
+    }
+
+    /**
+     * A queued job's description: translated text, then the untranslated marker.
+     */
+    private function jobDescription(Asset $asset, int $siteId, bool $multiSite): string
+    {
+        return Craft::t('ai-alt-text', 'Generating alt text for {filename}', [
+            'filename' => $asset->filename,
+        ]) . $this->jobMarker($asset->id, $siteId, $multiSite);
     }
 
     /**
@@ -179,18 +184,18 @@ class AiAltTextService extends Component
         $provider = App::parseEnv($settings->aiProvider);
 
         if ($provider === '' || $provider === null) {
-            return 'No AI provider is configured. Choose one in the AI Alt Text plugin settings.';
+            return Craft::t('ai-alt-text', 'No AI provider is configured. Choose one in the AI Alt Text plugin settings.');
         }
 
         if (!in_array($provider, ['openai', 'anthropic'], true)) {
-            return sprintf('"%s" is not a supported AI provider. Choose OpenAI or Anthropic in the AI Alt Text plugin settings.', $provider);
+            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI or Anthropic in the AI Alt Text plugin settings.', ['provider' => $provider]);
         }
 
         $isAnthropic = $provider === 'anthropic';
         $apiKey = App::parseEnv($isAnthropic ? $settings->anthropicApiKey : $settings->openAiApiKey);
 
         if ($apiKey === '' || $apiKey === null) {
-            return sprintf('No API key is configured for the %s provider. Add one in the AI Alt Text plugin settings.', $isAnthropic ? 'Anthropic' : 'OpenAI');
+            return Craft::t('ai-alt-text', 'No API key is configured for the {provider} provider. Add one in the AI Alt Text plugin settings.', ['provider' => $isAnthropic ? 'Anthropic' : 'OpenAI']);
         }
 
         return null;

@@ -149,7 +149,7 @@ class AiAltText extends Plugin
                     // resolvable CP site context) — createJob() falls back to the asset's
                     // own site in that case, so pass it through rather than bailing out.
                     $currentSite = Cp::requestedSite();
-                    // Force regeneration so the stale alt text is overwritten
+                    // generateAltText() always overwrites the site's alt, so the stale alt text is replaced
                     $this->aiAltTextService->createJob($asset, false, $currentSite?->id);
                 }
             }
@@ -180,7 +180,7 @@ class AiAltText extends Plugin
                 }
 
                 $event->alerts[] = Craft::t('ai-alt-text', '{error} {link}', [
-                    'error' => $error,
+                    'error' => Html::encode($error),
                     'link' => Html::a(
                         Craft::t('ai-alt-text', 'Open the settings'),
                         UrlHelper::cpUrl('settings/plugins/ai-alt-text')
