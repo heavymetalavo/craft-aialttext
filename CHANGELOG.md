@@ -1,5 +1,9 @@
 # Release Notes for AI Alt Text
 
+## 5.2.0 - 2026-10-06
+
+- Added [Langdock](https://langdock.com/) as an AI provider, using either its Anthropic-compatible or OpenAI-compatible API. Configure the API key, API format, region and model in the plugin settings.
+
 ## 5.1.0 - 2026-10-05
 
 > {warning} [OpenAI is retiring](https://developers.openai.com/api/docs/deprecations#2026-06-11-gpt-5-and-o3-model-deprecations) the model behind `gpt-5-nano` (`gpt-5-nano-2025-08-07`) on December 11, 2026, after which requests using it will fail. If your **OpenAI Model** setting is `gpt-5-nano`, switch to `gpt-6-luna`, OpenAI's recommended replacement, before then. Luna doesn't accept the `minimal` reasoning effort, so also change **OpenAI Reasoning Effort** to `low`.

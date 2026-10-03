@@ -186,18 +186,44 @@ class AiAltTextService extends Component
             return Craft::t('ai-alt-text', 'No AI provider is configured. Choose one in the AI Alt Text plugin settings.');
         }
 
-        if (!in_array($provider, ['openai', 'anthropic'], true)) {
-            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI or Anthropic in the AI Alt Text plugin settings.', ['provider' => $provider]);
+        if (!in_array($provider, ['openai', 'anthropic', 'langdock'], true)) {
+            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic or Langdock in the AI Alt Text plugin settings.', ['provider' => $provider]);
         }
 
-        $isAnthropic = $provider === 'anthropic';
-        $apiKey = App::parseEnv($isAnthropic ? $settings->anthropicApiKey : $settings->openAiApiKey);
+        [$label, $apiKey] = match ($provider) {
+            'anthropic' => ['Anthropic', $settings->anthropicApiKey],
+            'langdock' => ['Langdock', $settings->langdockApiKey],
+            default => ['OpenAI', $settings->openAiApiKey],
+        };
+
+        $apiKey = App::parseEnv($apiKey);
 
         if ($apiKey === '' || $apiKey === null) {
-            return Craft::t('ai-alt-text', 'No API key is configured for the {provider} provider. Add one in the AI Alt Text plugin settings.', ['provider' => $isAnthropic ? 'Anthropic' : 'OpenAI']);
+            return Craft::t('ai-alt-text', 'No API key is configured for the {provider} provider. Add one in the AI Alt Text plugin settings.', ['provider' => $label]);
+        }
+
+        if ($provider === 'langdock' && !in_array(App::parseEnv($settings->langdockApiFormat), ['anthropic', 'openai'], true)) {
+            return Craft::t('ai-alt-text', 'The Langdock API format must be Anthropic or OpenAI. Choose one in the AI Alt Text plugin settings.');
         }
 
         return null;
+    }
+
+    /**
+     * Returns the service for the configured provider. Only call once getConfigurationError() is null.
+     */
+    private function getProviderService(): ApiService
+    {
+        $plugin = AiAltText::getInstance();
+        $settings = $plugin->getSettings();
+
+        return match (App::parseEnv($settings->aiProvider)) {
+            'anthropic' => $plugin->anthropicService,
+            'langdock' => App::parseEnv($settings->langdockApiFormat) === 'openai'
+                ? $plugin->langdockOpenAiService
+                : $plugin->langdockAnthropicService,
+            default => $plugin->openAiService,
+        };
     }
 
     /**
@@ -227,9 +253,7 @@ class AiAltTextService extends Component
             throw new Exception($error);
         }
 
-        $altText = App::parseEnv($plugin->getSettings()->aiProvider) === 'anthropic'
-            ? $plugin->anthropicService->generateAltText($asset, $siteId)
-            : $plugin->openAiService->generateAltText($asset, $siteId);
+        $altText = $this->getProviderService()->generateAltText($asset, $siteId);
 
         if (empty($altText)) {
             throw new Exception('Empty alt text generated for asset: ' . $asset->filename);

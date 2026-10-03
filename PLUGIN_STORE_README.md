@@ -1,6 +1,6 @@
 # 🤖 💬 AI Alt Text
   
-Generate alt text for CraftCMS Asset Images using the Anthropic or OpenAI API.
+Generate alt text for CraftCMS Asset Images using the Anthropic, OpenAI or Langdock API.
 
 🚨 NEW Additional AI Provider support for Anthropic is now available.
 
@@ -17,7 +17,7 @@ Generate alt text for CraftCMS Asset Images using the Anthropic or OpenAI API.
 This plugin requires: 
 - Craft CMS 5.0.0 or later - running Craft 4? [Use the 4.x branch](https://github.com/heavymetalavo/craft-aialttext/blob/4.x/README.md) instead
 - PHP 8.2 or later
-- An Anthropic API key or an OpenAI API key
+- An Anthropic, OpenAI or Langdock API key
 
 ## 📥 Installation
 
@@ -51,6 +51,14 @@ ddev craft plugin/install ai-alt-text
 2. Navigate to **Settings → API Keys**.
 3. Create a new API key and save it to an environment variable (`.env`).
 4. Ensure you have credits in your account under **Billing**.
+
+### Langdock
+
+1. In [Langdock](https://langdock.com/), create a personal API key under **Settings → Account → API keys** (your admin has to give you access first, see [Personal API keys](https://docs.langdock.com/en/using-langdock/account/personal-api-keys)), or ask your workspace admin for a workspace API key with the **Completion API** scope (see the [Completion API overview](https://docs.langdock.com/en/developer/completion-api/completion-overview)).
+2. Save the API key to an environment variable (`.env`).
+3. Choose the **API Format** that matches the model you want to use: `Anthropic` for Claude models, `OpenAI` for GPT models. Both use the same API key.
+
+Langdock serves each vendor's API with a region in the URL (`EU` or `US`).
 
 ### OpenAI
 
@@ -137,9 +145,13 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 | Setting | Description |
 |---------|-------------|
-| **AI Provider** | Choose between OpenAI or Anthropic. |
-| **OpenAI/Anthropic API Key** | Your provider's API key. |
-| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-4-5`). |
+| **AI Provider** | Choose between OpenAI, Anthropic or Langdock. |
+| **OpenAI/Anthropic/Langdock API Key** | Your provider's API key. |
+| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-4-5`). For Langdock, use the model's name in Langdock. |
+| **Langdock API Format** | Langdock only. Whether to use Langdock's Anthropic-compatible API (Claude models) or its OpenAI-compatible API (GPT models). |
+| **Langdock Region** | Langdock only. `EU` or `US`. |
+| **Langdock Image Detail Level** | Langdock with the OpenAI API format only. Works like the OpenAI image detail level, `low`, `high` or `auto`. |
+| **Langdock Reasoning Effort** | Langdock with the OpenAI API format only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). |
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |
 | **OpenAI Reasoning Effort**| The reasoning effort level for OpenAI reasoning models. |
 | **Prompt** | The instructions sent to the AI provider as the system / instruction message (example [below](#default-prompt)). Supports `{asset.property}` and `{site.property}` variables, plus `{site.languageName}` for the language's display name (e.g. `English (United Kingdom)`). |
@@ -184,6 +196,8 @@ Controls how much time the model spends "thinking" before generating a response 
 - `medium`
 - `high`
 - `xhigh`
+
+**Langdock** with the Anthropic API format has no image detail setting: images are scaled to the `low` size (500px x 500px) and always sent as base64, since Langdock does not accept image URLs. With the OpenAI API format, **Langdock Image Detail Level** (`low`, `high` or `auto`) and **Langdock Reasoning Effort** work like the OpenAI settings above (both default to `low`).
 
 For more information, refer to the [OpenAI](https://platform.openai.com/docs/guides/images) and [Anthropic](https://docs.anthropic.com/en/docs/build-with-claude/vision) documentation.
 

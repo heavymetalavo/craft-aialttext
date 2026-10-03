@@ -28,13 +28,20 @@
 
 {% set providerOptions = [
     { label: 'Anthropic', value: 'anthropic' },
-    { label: 'OpenAI', value: 'openai' }
+    { label: 'OpenAI', value: 'openai' },
+    { label: 'Langdock', value: 'langdock' }
 ] %}
 {% set providerValues = providerOptions|map(o => o.value) %}
 
 {% set resolvedProvider = parseEnv(settings.aiProvider) %}
 {% set hiddenProviders = resolvedProvider in providerValues
     ? providerValues|filter(v => v != resolvedProvider)
+    : [] %}
+
+{% set langdockFormats = ['anthropic', 'openai'] %}
+{% set resolvedLangdockFormat = parseEnv(settings.langdockApiFormat) %}
+{% set hiddenLangdockFormats = resolvedLangdockFormat in langdockFormats
+    ? langdockFormats|filter(v => v != resolvedLangdockFormat)
     : [] %}
 
 {{ forms.selectizeField({
@@ -159,6 +166,103 @@
         value: settings.openAiReasoningEffort,
         errors: settings.getErrors('openAiReasoningEffort')
     }) }}
+</div>
+
+
+<div id="provider-langdock" class="{{ 'langdock' in hiddenProviders ? 'hidden' }}">
+    <hr />
+
+    <h3>Langdock Settings</h3>
+
+    {{ forms.autosuggestField({
+        label: "Langdock API Key"|t("ai-alt-text"),
+        instructions: "An API key from your [Langdock workspace](https://docs.langdock.com/en/developer/overview/api-introduction). One key works for both API formats."|t("ai-alt-text"),
+        id: "langdockApiKey",
+        name: "langdockApiKey",
+        placeholder: '$LANGDOCK_API_KEY',
+        suggestEnvVars: true,
+        value: settings.langdockApiKey,
+        errors: settings.getErrors("langdockApiKey"),
+    }) }}
+
+    {{ forms.selectizeField({
+        label: 'Langdock API Format'|t('ai-alt-text'),
+        id: 'langdockApiFormat',
+        name: 'langdockApiFormat',
+        instructions: "Which of Langdock's compatible APIs to send requests to. Pick the one that matches the model below: `Anthropic` for Claude models, `OpenAI` for GPT models. If you choose an environment variable, save and reload to show the matching settings."|t("ai-alt-text"),
+        options: [
+            { label: 'Anthropic (Claude models)', value: 'anthropic' },
+            { label: 'OpenAI (GPT models)', value: 'openai' }
+        ],
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        value: settings.langdockApiFormat,
+        errors: settings.getErrors('langdockApiFormat'),
+        toggle: true,
+        targetPrefix: '#langdock-format-',
+    }) }}
+
+    {{ forms.autosuggestField({
+        label: 'Langdock Model'|t('ai-alt-text'),
+        id: 'langdockModel',
+        name: 'langdockModel',
+        instructions: "The model to use, as named in Langdock. It must have vision capabilities and match the API format above. [See how to list the models in your workspace](https://docs.langdock.com/en/developer/completion-api/anthropic)."|t("ai-alt-text"),
+        value: settings.langdockModel,
+        errors: settings.getErrors('langdockModel'),
+        suggestEnvVars: true,
+    }) }}
+
+    {{ forms.selectizeField({
+        label: 'Langdock Region'|t('ai-alt-text'),
+        id: 'langdockRegion',
+        name: 'langdockRegion',
+        instructions: "The region your Langdock workspace's data is processed in."|t("ai-alt-text"),
+        options: [
+            { label: 'EU', value: 'eu' },
+            { label: 'US', value: 'us' }
+        ],
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        value: settings.langdockRegion,
+        errors: settings.getErrors('langdockRegion')
+    }) }}
+
+    <div id="langdock-format-openai" class="{{ 'openai' in hiddenLangdockFormats ? 'hidden' }}">
+        {{ forms.selectizeField({
+            label: 'Langdock Image Detail Level'|t('ai-alt-text'),
+            id: 'langdockImageInputDetailLevel',
+            name: 'langdockImageInputDetailLevel',
+            instructions: "Controls the [detail level](https://developers.openai.com/api/docs/guides/images-vision#choose-an-image-detail-level) used to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest."|t("ai-alt-text"),
+            options: [
+                { label: 'Low - Fast, low-cost (512px x 512px)', value: 'low' },
+                { label: 'High - Standard high-fidelity understanding', value: 'high' },
+                { label: 'Auto - Let the model choose', value: 'auto' }
+            ],
+            includeEnvVars: true,
+            allowedEnvValues: null,
+            value: settings.langdockImageInputDetailLevel,
+            errors: settings.getErrors('langdockImageInputDetailLevel')
+        }) }}
+
+        {{ forms.selectizeField({
+            label: 'Langdock Reasoning Effort'|t('ai-alt-text'),
+            id: 'langdockReasoningEffort',
+            name: 'langdockReasoningEffort',
+            instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values a model accepts depends on the model, so check the provider's documentation if a value is rejected."|t("ai-alt-text"),
+            options: [
+                { label: 'None', value: 'none' },
+                { label: 'Minimal', value: 'minimal' },
+                { label: 'Low', value: 'low' },
+                { label: 'Medium', value: 'medium' },
+                { label: 'High', value: 'high' },
+                { label: 'Extra High', value: 'xhigh' }
+            ],
+            includeEnvVars: true,
+            allowedEnvValues: null,
+            value: settings.langdockReasoningEffort,
+            errors: settings.getErrors('langdockReasoningEffort')
+        }) }}
+    </div>
 </div>
 
 
