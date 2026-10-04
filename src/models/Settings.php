@@ -13,7 +13,7 @@ use craft\helpers\App;
  * and alt text generation preferences.
  *
  * @property string $openAiApiKey The OpenAI API key
- * @property string $openAiModel The OpenAI model to use (e.g., 'gpt-5-nano')
+ * @property string $openAiModel The OpenAI model to use (e.g., 'gpt-6-luna')
  * @property string $prompt The prompt template for generating alt text
  * @property string $openAiImageInputDetailLevel The detail level for image analysis
  * @property bool $propagate Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
@@ -55,7 +55,7 @@ class Settings extends Model
     /**
      * @var string The OpenAI model to use, must have vision capabilities
      */
-    public string $openAiModel = '';
+    public string $openAiModel = 'gpt-6-luna';
 
     /**
      * @var string The prompt template for generating alt text
@@ -77,7 +77,7 @@ class Settings extends Model
      *
      * Options: none, minimal, low, medium, high, xhigh
      */
-    public string $openAiReasoningEffort = 'minimal';
+    public string $openAiReasoningEffort = 'low';
 
     /**
      * @var bool Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.

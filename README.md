@@ -141,7 +141,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 |---------|-------------|
 | **AI Provider** | Choose between OpenAI or Anthropic. |
 | **OpenAI/Anthropic API Key** | Your provider's API key. |
-| **Model** | The AI model to use (e.g., `gpt-5-nano` or `claude-haiku-4-5`). |
+| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-4-5`). |
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |
 | **OpenAI Reasoning Effort**| The reasoning effort level for OpenAI reasoning models. |
 | **Prompt** | The instructions sent to the AI provider as the system / instruction message (example [below](#default-prompt)). Supports `{asset.property}` and `{site.property}` variables, plus `{site.languageName}` for the language's display name (e.g. `English (United Kingdom)`). |
@@ -154,9 +154,9 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 All vision models should work, these small models seem to hit the sweetspot between quality & cost:
 - `claude-haiku-4-5` - For Anthropic: "The fastest model with near-frontier intelligence"
-- `gpt-5-nano` - For OpenAI: "Fastest, most cost-efficient version of GPT-5"
+- `gpt-6-luna` - For OpenAI: "Our most efficient model for focused, high-volume tasks"
 
-To find out which models are capable of vision, check [the models page](https://platform.openai.com/docs/models), click into a model's detail page (e.g., [gpt-5-nano](https://platform.openai.com/docs/models/gpt-5-nano)) and look for "**Input**: Text, image" in the features columns at the top.
+To find out which models are capable of vision, check [the models page](https://platform.openai.com/docs/models), click into a model's detail page (e.g., [gpt-6-luna](https://platform.openai.com/docs/models/gpt-6-luna)) and look for "**Input**: Text, image" in the features columns at the top.
 
 #### 💬 Default prompt
 
@@ -238,7 +238,7 @@ To add this field:
 
 ## ⚠️ Disclaimer
 
-We've taken some steps to try prevent unexpected costs with default plugin settings (e.g. detail: `low` and model: `gpt-5-nano`) though we take no responsibility for excessive API token usage that may result from mistakes, bugs, or security vulnerabilities within this plugin so use at your own risk.
+We've taken some steps to try prevent unexpected costs with default plugin settings (e.g. detail: `low` and model: `gpt-6-luna`) though we take no responsibility for excessive API token usage that may result from mistakes, bugs, or security vulnerabilities within this plugin so use at your own risk.
 
 If you are concerned about unexpected charges we recommend:
 - Set up rate limits and spending caps at the API account level in your [OpenAI account settings](https://platform.openai.com/account/billing/limits)

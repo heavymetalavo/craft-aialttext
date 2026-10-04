@@ -117,7 +117,8 @@ class OpenAiRequest extends Model
             $payload['instructions'] = $this->instructions;
         }
 
-        if ($this->isReasoningModel()) {
+        // An empty effort is omitted so the model uses its own default, rather than being rejected
+        if ($this->isReasoningModel() && $this->reasoningEffort !== '') {
             $payload['reasoning']['effort'] = $this->reasoningEffort;
         }
 

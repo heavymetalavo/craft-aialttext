@@ -42,21 +42,8 @@ class AiAltTextService extends Component
         // Check if there's already a job for this element
         if (!$skipExistingJobCheck) {
             $existingJobs ??= $queue->getJobInfo();
-            $hasExistingJob = false;
             $hasPlusOneSite = count(Craft::$app->getSites()->getAllSites()) > 1;
-
-            foreach ($existingJobs as $job) {
-                if (!isset($job['description']) || $job['status'] === 4) {
-                    continue;
-                }
-
-                // The untranslated marker is always the end of the description (see jobDescription()),
-                // so a translation or a filename can't affect the match, and "ID: 1" can't match "ID: 12".
-                if (str_ends_with($job['description'], $this->jobMarker($asset->id, $assetSiteId, $hasPlusOneSite))) {
-                    $hasExistingJob = true;
-                    break;
-                }
-            }
+            $hasExistingJob = $this->hasPendingJob($existingJobs, $this->jobMarker($asset->id, $assetSiteId, $hasPlusOneSite));
 
             if ($hasExistingJob) {
                 $message = Craft::t('ai-alt-text', '{filename} (ID: {id}.{siteMessageSuffix}) is already being processed within an existing queued job. Please wait for the existing job to finish before attempting to process it again.', [
@@ -65,12 +52,8 @@ class AiAltTextService extends Component
                     'siteMessageSuffix' => $hasPlusOneSite ? " Site: $assetSiteId." : "",
                 ]);
                 
-                // Only use session in web context
-                if (Craft::$app->getRequest()->getIsConsoleRequest()) {
-                    Craft::info($message, __METHOD__);
-                } else {
-                    Craft::$app->getSession()->setNotice($message);
-                }
+                // Logged rather than flashed: callers report the skip themselves, and this also runs in queue jobs
+                Craft::info($message, __METHOD__);
                 return false;
             }
         }
@@ -81,12 +64,7 @@ class AiAltTextService extends Component
                 'id' => $asset->id,
             ]);
             
-            // Only use session in web context
-            if (Craft::$app->getRequest()->getIsConsoleRequest()) {
-                Craft::info($message, __METHOD__);
-            } else {
-                Craft::$app->getSession()->setNotice($message);
-            }
+            Craft::info($message, __METHOD__);
             return false;
         }
 
@@ -135,6 +113,11 @@ class AiAltTextService extends Component
                 continue;
             }
 
+            // Skip sites that already have a pending job for this asset
+            if ($existingJobs !== null && $this->hasPendingJob($existingJobs, $this->jobMarker($asset->id, $site->id, $hasPlusOneSite))) {
+                continue;
+            }
+
             $queue->push(new GenerateAiAltTextJob([
                 'description' => $this->jobDescription($asset, $site->id, $hasPlusOneSite),
                 'assetId' => $asset->id,
@@ -143,6 +126,22 @@ class AiAltTextService extends Component
         }
 
         return true;
+    }
+
+    /**
+     * Whether any unfailed job in the queue info ends with the given marker. The untranslated marker is
+     * always the end of the description (see jobDescription()), so a translation or a filename can't
+     * affect the match, and "ID: 1" can't match "ID: 12".
+     */
+    private function hasPendingJob(array $jobs, string $marker): bool
+    {
+        foreach ($jobs as $job) {
+            if (isset($job['description']) && $job['status'] !== 4 && str_ends_with($job['description'], $marker)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

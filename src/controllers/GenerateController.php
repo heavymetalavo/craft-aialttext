@@ -111,6 +111,15 @@ class GenerateController extends Controller
         $this->requirePermission(AiAltText::PERMISSION_BULK_ACTIONS);
 
         $redirect = $this->redirect('utilities/ai-alt-text-bulk-actions');
+
+        // Refuse up front rather than queueing jobs that would each fail with the same error
+        $configurationError = AiAltText::getInstance()->aiAltTextService->getConfigurationError();
+
+        if ($configurationError !== null) {
+            Craft::$app->getSession()->setError($configurationError);
+            return $redirect;
+        }
+
         $siteIdParam = $this->request->getParam('siteId');
         $siteName = null;
 

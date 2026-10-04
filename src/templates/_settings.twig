@@ -32,13 +32,14 @@
 ] %}
 {% set providerValues = providerOptions|map(o => o.value) %}
 
-{% set hiddenProviders = settings.aiProvider in providerValues
-    ? providerValues|filter(v => v != settings.aiProvider)
+{% set resolvedProvider = parseEnv(settings.aiProvider) %}
+{% set hiddenProviders = resolvedProvider in providerValues
+    ? providerValues|filter(v => v != resolvedProvider)
     : [] %}
 
 {{ forms.selectizeField({
     label: "AI Provider"|t("ai-alt-text"),
-    instructions: "Choose which AI service to use for generating alt text. Only the chosen provider's settings are shown below."|t("ai-alt-text"),
+    instructions: "Choose which AI service to use for generating alt text. Only the chosen provider's settings are shown below. If you choose an environment variable, save and reload to show its provider's settings."|t("ai-alt-text"),
     id: "aiProvider",
     name: "aiProvider",
     options: providerOptions,
@@ -116,9 +117,9 @@
         label: 'OpenAI Model'|t('ai-alt-text'),
         id: 'openAiModel',
         name: 'openAiModel',
-        instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models) E.g., `gpt-5-nano`."|t("ai-alt-text"),
+        instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models) E.g., `gpt-6-luna`."|t("ai-alt-text"),
         value: settings.openAiModel,
-        placeholder: 'gpt-5-nano',
+        placeholder: 'gpt-6-luna',
         errors: settings.getErrors('openAiModel'),
         suggestEnvVars: true,
     }) }}

@@ -20,15 +20,6 @@ use yii\helpers\BaseConsole;
 class GenerateController extends Controller
 {
     /**
-     * @inheritdoc
-     *
-     * Without this, a bare `ai-alt-text/generate` prints an InvalidRouteException stack trace on
-     * top of the (genuinely useful) "did you mean" suggestions. The default action shows the help
-     * rather than running anything, so a bare command never does work or costs API usage.
-     */
-    public $defaultAction = 'index';
-
-    /**
      * @var int|null Specific site ID to process. If not specified, processes ALL sites.
      */
     public $siteId;
@@ -80,6 +71,9 @@ class GenerateController extends Controller
 
     /**
      * Show the available generate commands
+     *
+     * This is the default action, so a bare `ai-alt-text/generate` prints the help rather than an
+     * InvalidRouteException stack trace, and never does work or costs API usage.
      *
      * @return int Exit code
      */
@@ -327,6 +321,14 @@ class GenerateController extends Controller
      */
     private function processAssets(bool $includeWithAltText): int
     {
+        // Refuse up front rather than queueing jobs that would each fail with the same error
+        $configurationError = AiAltText::getInstance()->aiAltTextService->getConfigurationError();
+
+        if ($configurationError !== null) {
+            $this->failure($configurationError);
+            return ExitCode::CONFIG;
+        }
+
         if ($this->batchSize < 1) {
             $this->failure("Batch size must be at least 1.");
             // USAGE (64): the command was invoked with a bad argument/option value, not a runtime data problem
@@ -388,7 +390,7 @@ class GenerateController extends Controller
                     $this->note("\nProcessing site: {$site->name}");
                 }
                 
-                $offset = 0;
+                $lastId = 0;
                 $hasMore = true;
                 
                 while ($hasMore) {
@@ -397,7 +399,7 @@ class GenerateController extends Controller
                         ->kind(Asset::KIND_IMAGE)
                         ->siteId($site->id)
                         ->orderBy(['elements.id' => SORT_ASC])
-                        ->offset($offset)
+                        ->andWhere(['>', 'elements.id', $lastId])
                         ->limit($this->batchSize);
                     
                     if (!$includeWithAltText) {
@@ -405,6 +407,8 @@ class GenerateController extends Controller
                     }
 
                     $assetIds = $query->ids();
+                    // Read the queue once per batch for the duplicate-job check, rather than once per asset
+                    $existingJobs = Craft::$app->getQueue()->getJobInfo();
                     $batchSize = count($assetIds);
                     
                     if ($batchSize === 0) {
@@ -413,7 +417,7 @@ class GenerateController extends Controller
                     }
                     
                     if ($this->verbose) {
-                        $this->note("Processing batch of {$batchSize} assets (offset: {$offset})");
+                        $this->note("Processing batch of {$batchSize} assets (after ID: {$lastId})");
                     }
                     
                     // Process each asset individually to minimize memory usage
@@ -438,18 +442,23 @@ class GenerateController extends Controller
                             }
                             
                             // Queue the job
-                            AiAltText::getInstance()->aiAltTextService->createJob(
-                                $asset, 
-                                false, 
-                                $site->id, 
-                                false, 
-                                true
+                            $queued = AiAltText::getInstance()->aiAltTextService->createJob(
+                                $asset,
+                                false,
+                                $site->id,
+                                false,
+                                true,
+                                $existingJobs
                             );
-                            
-                            $queuedCount++;
-                            
+
+                            if ($queued) {
+                                $queuedCount++;
+                            }
+
                             if ($this->verbose) {
-                                $this->note("Queued: {$asset->filename} (ID: {$asset->id})");
+                                $this->note($queued
+                                    ? "Queued: {$asset->filename} (ID: {$asset->id})"
+                                    : "Skipped: {$asset->filename} (ID: {$asset->id}) is already queued or not eligible");
                             }
                             
                             // Free memory
@@ -463,7 +472,8 @@ class GenerateController extends Controller
                         Console::updateProgress($processed, $totalCount);
                     }
                     
-                    $offset += $this->batchSize;
+                    // Keyset paging: the hasAlt(false) set shrinks as queued jobs complete, so an offset would skip assets
+                    $lastId = max($assetIds);
                     
                     // Force garbage collection
                     unset($assetIds);

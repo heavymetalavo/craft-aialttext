@@ -6,6 +6,7 @@ use Craft;
 use craft\base\ElementAction;
 use craft\elements\Asset;
 use craft\elements\db\ElementQueryInterface;
+use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use yii\base\InvalidConfigException;
 
@@ -59,6 +60,14 @@ class GenerateAiAltText extends ElementAction
             throw new InvalidConfigException('User not logged in');
         }
 
+        // Refuse up front rather than queueing jobs that would each fail with the same error
+        $configurationError = AiAltText::getInstance()->aiAltTextService->getConfigurationError();
+
+        if ($configurationError !== null) {
+            $this->setMessage($configurationError);
+            return false;
+        }
+
         $generatedOrQueuedCount = 0;
         $skippedCount = 0;
 
@@ -67,6 +76,9 @@ class GenerateAiAltText extends ElementAction
         // A single asset is generated inline for immediate feedback. More than one is a bulk action,
         // queued so the request isn't one blocking provider call per asset.
         $generateInline = count($assets) === 1;
+
+        // Read the queue once for the duplicate-job check, rather than once per asset
+        $existingJobs = $generateInline ? null : Craft::$app->getQueue()->getJobInfo();
 
         foreach ($assets as $asset) {
             if (!$asset instanceof Asset) {
@@ -89,10 +101,18 @@ class GenerateAiAltText extends ElementAction
 
             // Generates the current site inline (single asset) or queues it, and queues any other sites.
             // False means it skipped the asset.
-            if (AiAltText::getInstance()->aiAltTextService->createJob($asset, $generateInline)) {
-                $generatedOrQueuedCount++;
-            } else {
-                $skippedCount++;
+            try {
+                if (AiAltText::getInstance()->aiAltTextService->createJob($asset, $generateInline, existingJobs: $existingJobs)) {
+                    $generatedOrQueuedCount++;
+                } else {
+                    $skippedCount++;
+                }
+            } catch (Exception $e) {
+                // Inline generation throws on provider errors. ElementIndexesController doesn't catch,
+                // so report the message rather than let it become a generic server error.
+                Craft::error('Error processing alt text generation: ' . $e->getMessage(), __METHOD__);
+                $this->setMessage($e->getMessage());
+                return false;
             }
         }
 
@@ -114,6 +134,10 @@ class GenerateAiAltText extends ElementAction
                 'total' => $generatedOrQueuedCount + $skippedCount,
                 'skipped' => $skippedCount,
             ]));
+        } elseif ($generatedOrQueuedCount > 0) {
+            $this->setMessage(AiAltText::getInstance()->aiAltTextService->queuesOtherSites()
+                ? Craft::t('ai-alt-text', 'Alt text generated. The other sites have been queued.')
+                : Craft::t('ai-alt-text', 'Alt text generated'));
         }
 
         return true;
