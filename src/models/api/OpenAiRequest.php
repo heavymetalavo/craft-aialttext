@@ -19,7 +19,7 @@ class OpenAiRequest extends Model
     private string $prompt = '';
     private string $imageUrl = '';
     private string $detail = 'low';
-    private string $reasoningEffort = 'minimal';
+    private string $reasoningEffort = 'low';
 
     public function getDetail(): string
     {
