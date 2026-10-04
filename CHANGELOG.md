@@ -6,14 +6,14 @@
 
 > {warning} [OpenAI is retiring](https://developers.openai.com/api/docs/deprecations#2026-06-11-gpt-5-and-o3-model-deprecations) the model behind `gpt-5-nano` (`gpt-5-nano-2025-08-07`) on December 11, 2026, after which requests using it will fail. If your **OpenAI Model** setting is `gpt-5-nano`, switch to `gpt-6-luna`, OpenAI's recommended replacement, before then. Luna doesn't accept the `minimal` reasoning effort, so also change **OpenAI Reasoning Effort** to `low`.
 
-> {tip} The default OpenAI **Model** is now `gpt-6-luna` and the default **OpenAI Reasoning Effort** is now `low` (previously `minimal`). Existing installs keep the values they've saved.
+> {tip} The default **OpenAI Reasoning Effort** is now `low` (previously `minimal`). Existing installs keep the values they've saved.
 
 - Added a control panel warning for admins when no AI provider or API key is configured.
 - Added a note to the **Process SVGs** setting when Craft's `transformSvgs` setting is disabled, since SVGs are skipped in that case even with the plugin setting enabled.
 - Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
 - Changed the error for a mistyped or unsupported prompt variable to name the variable and point to the **Prompt** setting. This covers a typo like `{asset.filenmae}` and a variable that resolves to an object rather than text, like `{asset.volume}`. Previously the raw PHP error was shown.
 - Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model.
-- Changed the default OpenAI **Model** to `gpt-6-luna` (previously empty) and the default **OpenAI Reasoning Effort** to `low` (previously `minimal`), and updated the documentation's recommended model from `gpt-5-nano` to `gpt-6-luna`.
+- Changed the default **OpenAI Reasoning Effort** to `low` (previously `minimal`), and the suggested OpenAI model in the **OpenAI Model** placeholder and documentation from `gpt-5-nano` to `gpt-6-luna`. The **OpenAI Model** setting itself still has no default.
 - Changed the GIF animation check to use less memory. The whole file was previously read into memory - a full download for remote volumes, and enough to exhaust a queue worker on a large GIF. Only the start of the file is scanned now, and a GIF that is still undecided after that is treated as animated so it is always sent as a first-frame JPG.
 - Changed the height of the **Prompt** field to be taller, since it previously showed roughly three lines and clipped the default prompt mid-sentence.
 - Changed the "Generate AI Alt Text" asset action to queue jobs when more than one asset is selected, instead of making one blocking provider request per asset within the web request. A single asset is still generated straight away.

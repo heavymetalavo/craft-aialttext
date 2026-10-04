@@ -55,7 +55,7 @@ class Settings extends Model
     /**
      * @var string The OpenAI model to use, must have vision capabilities
      */
-    public string $openAiModel = 'gpt-6-luna';
+    public string $openAiModel = '';
 
     /**
      * @var string The prompt template for generating alt text
