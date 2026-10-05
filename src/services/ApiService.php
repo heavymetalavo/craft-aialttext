@@ -37,6 +37,17 @@ abstract class ApiService extends Component
     protected const GENERATE_TRIGGER = 'Generate the alt text for this image now.';
 
     /**
+     * @var int Default request timeout in seconds, used unless the project sets its own `timeout`
+     * in config/guzzle.php.
+     */
+    public const DEFAULT_TIMEOUT = 30;
+
+    /**
+     * @var int How many bytes of a GIF to scan for multiple frames (2MB). See isAnimatedGif().
+     */
+    private const GIF_FRAME_SCAN_BYTES = 2097152;
+
+    /**
      * @var Client
      */
     protected Client $client;
@@ -44,7 +55,16 @@ abstract class ApiService extends Component
     public function __construct($config = [])
     {
         parent::__construct($config);
-        $this->client = Craft::createGuzzleClient(['timeout' => 30]);
+
+        // Craft::createGuzzleClient() merges as ArrayHelper::merge($defaults, $guzzleConfig,
+        // $config) - the array passed here goes LAST. Passing a timeout unconditionally therefore
+        // overrode whatever the project set in config/guzzle.php, making the timeout impossible to
+        // change. Only supply a default when the project hasn't specified one.
+        $guzzleConfig = Craft::$app->getConfig()->getConfigFromFile('guzzle');
+
+        $this->client = Craft::createGuzzleClient(
+            isset($guzzleConfig['timeout']) ? [] : ['timeout' => self::DEFAULT_TIMEOUT]
+        );
     }
     /**
      * Required implementation for child services to generate their specific payloads.
@@ -53,14 +73,14 @@ abstract class ApiService extends Component
 
     /**
      * Resolves the configured prompt template into a final instruction string, substituting
-     * {asset.*} and {site.*} placeholders.
+     * {asset.*} and {site.*} variables.
      *
      * {site.languageName} resolves to the site language's display name, e.g. "English (United
      * Kingdom)" — the same value Craft shows in its language dropdown ($locale->getDisplayName(
      * Craft::$app->language)). It needs a dedicated case because it maps to a method chain rather
      * than a property. The BCP 47 language tag itself is available via the ordinary {site.language}
-     * token, so the default prompt pairs them ("{site.languageName} (BCP 47: {site.language})") and
-     * the format stays visible and editable in the prompt. Other {site.*} / {asset.*} tokens resolve
+     * variable, so the default prompt pairs them ("{site.languageName} (BCP 47: {site.language})") and
+     * the format stays visible and editable in the prompt. Other {site.*} / {asset.*} variables resolve
      * to the matching property.
      *
      * @todo Consider making $siteId a required `int` and dropping the null branch below — in
@@ -69,14 +89,14 @@ abstract class ApiService extends Component
      *       generateAltText(), OpenAiService & AnthropicService generateAltText()/sendRequest(),
      *       and AiAltTextService::generateAltText()), with the one genuine guard at the queue job,
      *       whose siteId payload is legitimately nullable (`$this->siteId ?? $asset->siteId`).
-     * @throws Exception If an explicitly requested site no longer exists.
+     * @throws Exception If an explicitly requested site no longer exists, or a prompt variable can't be resolved.
      */
     protected function resolvePrompt(Asset $asset, ?int $siteId): string
     {
         $promptTemplate = App::parseEnv(AiAltText::getInstance()->getSettings()->prompt);
 
         $prompt = preg_replace_callback('/{asset\.(.*?)}/', function ($matches) use ($asset) {
-            return $asset->{$matches[1]};
+            return $this->resolvePromptVariable($asset, $matches[1], $matches[0]);
         }, $promptTemplate);
 
         // A null $siteId means "no particular site requested" — use the asset's own site. But an
@@ -90,10 +110,48 @@ abstract class ApiService extends Component
             if ($matches[1] === 'languageName') {
                 return $site->getLocale()->getDisplayName(Craft::$app->language);
             }
-            return $site->{$matches[1]};
+            return $this->resolvePromptVariable($site, $matches[1], $matches[0]);
         }, $prompt);
 
         return $prompt;
+    }
+
+    /**
+     * Resolves a single `{asset.*}` / `{site.*}` prompt variable to a string.
+     *
+     * Deliberately not restricted to an allowlist - reading arbitrary properties, including custom
+     * field values, is a legitimate use of the prompt field. But a mistyped variable throws
+     * UnknownPropertyException, and an object-valued one (`{asset.volume}`, `{site.locale}`) throws
+     * on string conversion. Both are settings mistakes that would repeat for every asset, so they
+     * fail before any API call is made, with a message naming the variable and the setting to fix.
+     * A property that is simply empty (null) resolves to an empty string.
+     *
+     * @param object $model The asset or site the variable refers to
+     * @param string $property The property name from inside the variable
+     * @param string $original The full variable as written, used in the error message
+     * @throws Exception If the variable doesn't resolve to text
+     */
+    private function resolvePromptVariable(object $model, string $property, string $original): string
+    {
+        try {
+            $value = $model->$property;
+        } catch (\Throwable $e) {
+            throw new Exception(
+                "Prompt variable \"{$original}\" could not be resolved. Check the Prompt setting.",
+                0,
+                $e
+            );
+        }
+
+        if ($value === null || is_scalar($value) || $value instanceof \Stringable) {
+            return (string) $value;
+        }
+
+        throw new Exception(sprintf(
+            'Prompt variable "%s" resolves to a %s, which cannot be used in a prompt. Check the Prompt setting.',
+            $original,
+            get_debug_type($value)
+        ));
     }
 
     /**
@@ -182,18 +240,61 @@ abstract class ApiService extends Component
     /**
      * Checks if a GIF asset contains multiple frames (animated).
      *
+     * Only the first GIF_FRAME_SCAN_BYTES of the file are read, a small piece at a time. If that
+     * isn't enough to decide, the GIF is reported as animated: converting a static GIF to a JPG is
+     * harmless, but sending an animated one on unconverted would be rejected by the provider.
+     *
      * @param Asset $asset The asset to check
      * @return bool Whether the GIF is animated
      */
     protected function isAnimatedGif(Asset $asset): bool
     {
+        // Only GIFs can be animated, so anything else is a quick "no".
         $mimeType = $asset->getMimeType();
         if ($mimeType !== 'image/gif') {
             return false;
         }
 
-        $fileContents = $asset->getContents();
-        return substr_count($fileContents, "\x21\xF9\x04") > 1;
+        // Open the file as a stream so it can be read in small pieces, never all at once.
+        $stream = $asset->getStream();
+
+        try {
+            $found = 0;     // How many frame markers have been seen so far.
+            $read = 0;      // How many bytes have been read so far.
+            $carry = '';    // The last 2 bytes of the previous piece (see below).
+
+            // Keep reading until we hit the size limit or the end of the file.
+            while ($read < self::GIF_FRAME_SCAN_BYTES && !feof($stream)) {
+                // Read the next 8KB piece. Only this piece is held in memory.
+                $chunk = fread($stream, 8192);
+
+                // Nothing came back, so there is no more file to read.
+                if ($chunk === false || $chunk === '') {
+                    break;
+                }
+
+                $read += strlen($chunk);
+
+                // Every frame starts with this 3-byte marker. The leftover bytes from the last piece
+                // are put in front so a marker split across two pieces is still counted.
+                $found += substr_count($carry . $chunk, "\x21\xF9\x04");
+
+                // Two markers means two frames, so it's animated and we can stop reading.
+                if ($found > 1) {
+                    return true;
+                }
+
+                // Remember the last 2 bytes for the next piece, even if this piece was very short.
+                $carry = substr($carry . $chunk, -2);
+            }
+
+            // Stopped at the size limit with file left unread: we can't rule out animation, so assume it.
+            // Stopped at the end of the file with fewer than two markers: it's a single-frame GIF.
+            return $read >= self::GIF_FRAME_SCAN_BYTES && !feof($stream);
+        } finally {
+            // Always close the file, however the function exits.
+            fclose($stream);
+        }
     }
 
     /**

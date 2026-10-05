@@ -19,7 +19,7 @@ class OpenAiRequest extends Model
     private string $prompt = '';
     private string $imageUrl = '';
     private string $detail = 'low';
-    private string $reasoningEffort = 'minimal';
+    private string $reasoningEffort = 'low';
 
     public function getDetail(): string
     {
@@ -117,15 +117,24 @@ class OpenAiRequest extends Model
             $payload['instructions'] = $this->instructions;
         }
 
-        if ($this->isReasoningModel()) {
+        // An empty effort is omitted so the model uses its own default, rather than being rejected
+        if ($this->isReasoningModel() && $this->reasoningEffort !== '') {
             $payload['reasoning']['effort'] = $this->reasoningEffort;
         }
 
         return $payload;
     }
 
+    /** Whether the configured model takes a `reasoning` parameter (chat variants don't). */
     private function isReasoningModel(): bool
     {
-        return str_starts_with($this->model, 'gpt-5') || str_starts_with($this->model, 'o');
+        // Chat variants don't accept a reasoning parameter, whatever family they're in.
+        if (str_contains($this->model, '-chat')) {
+            return false;
+        }
+
+        // o-series (o1, o3, o4-mini, ...) and the gpt-5 family onwards, including point releases
+        // such as gpt-5.1 and future two-digit majors.
+        return (bool) preg_match('/^(o\d|gpt-([5-9]|\d{2,}))/', $this->model);
     }
 }

@@ -70,6 +70,19 @@ class GenerateController extends Controller
     }
 
     /**
+     * Show the available generate commands
+     *
+     * This is the default action, so a bare `ai-alt-text/generate` prints the help rather than an
+     * InvalidRouteException stack trace, and never does work or costs API usage.
+     *
+     * @return int Exit code
+     */
+    public function actionIndex(): int
+    {
+        return Craft::$app->runAction('help', [$this->getUniqueId()]);
+    }
+
+    /**
      * Generate AI alt text for a single asset
      *
      * This command generates alt text for a specific asset by its ID.
@@ -102,15 +115,24 @@ class GenerateController extends Controller
         try {
             $this->note("Processing: {$asset->filename} (ID: {$asset->id})");
             
-            AiAltText::getInstance()->aiAltTextService->createJob($asset, true, $targetSiteId);
-            
-            $this->success("Alt text generation queued successfully");
-            $this->tip("Check the queue status with: ./craft queue/info");
+            $service = AiAltText::getInstance()->aiAltTextService;
+
+            if (!$service->createJob($asset, true, $targetSiteId)) {
+                $this->failure("Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off");
+                return ExitCode::DATAERR;
+            }
+
+            $this->success("Alt text generated");
+
+            if ($service->queuesOtherSites()) {
+                $this->note("The other sites have been queued.");
+                $this->tip("Check the queue status with: ./craft queue/info");
+            }
             
             return ExitCode::OK;
             
         } catch (Exception $e) {
-            $this->failure("Error queueing alt text generation: {$e->getMessage()}");
+            $this->failure("Error processing alt text generation: {$e->getMessage()}");
             return ExitCode::SOFTWARE;
         }
     }
@@ -128,7 +150,7 @@ class GenerateController extends Controller
      */
     public function actionMissing(): int
     {
-        $this->success("Generating AI alt text for assets without existing alt text...");
+        $this->success("Queueing AI alt text generation for assets without existing alt text...");
         
         return $this->processAssets(false);
     }
@@ -192,7 +214,6 @@ class GenerateController extends Controller
             $siteTotal = Asset::find()
                 ->kind(Asset::KIND_IMAGE)
                 ->siteId($site->id)
-                ->status(null)
                 ->count();
 
             // Count assets with alt text. hasAlt() reads the per-site alt value (falling back to
@@ -201,7 +222,6 @@ class GenerateController extends Controller
             $siteWithAlt = Asset::find()
                 ->kind(Asset::KIND_IMAGE)
                 ->siteId($site->id)
-                ->status(null)
                 ->hasAlt(true)
                 ->count();
             
@@ -301,6 +321,14 @@ class GenerateController extends Controller
      */
     private function processAssets(bool $includeWithAltText): int
     {
+        // Refuse up front rather than queueing jobs that would each fail with the same error
+        $configurationError = AiAltText::getInstance()->aiAltTextService->getConfigurationError();
+
+        if ($configurationError !== null) {
+            $this->failure($configurationError);
+            return ExitCode::CONFIG;
+        }
+
         if ($this->batchSize < 1) {
             $this->failure("Batch size must be at least 1.");
             // USAGE (64): the command was invoked with a bad argument/option value, not a runtime data problem
@@ -362,7 +390,7 @@ class GenerateController extends Controller
                     $this->note("\nProcessing site: {$site->name}");
                 }
                 
-                $offset = 0;
+                $lastId = 0;
                 $hasMore = true;
                 
                 while ($hasMore) {
@@ -370,7 +398,8 @@ class GenerateController extends Controller
                     $query = Asset::find()
                         ->kind(Asset::KIND_IMAGE)
                         ->siteId($site->id)
-                        ->offset($offset)
+                        ->orderBy(['elements.id' => SORT_ASC])
+                        ->andWhere(['>', 'elements.id', $lastId])
                         ->limit($this->batchSize);
                     
                     if (!$includeWithAltText) {
@@ -378,6 +407,8 @@ class GenerateController extends Controller
                     }
 
                     $assetIds = $query->ids();
+                    // Read the queue once per batch for the duplicate-job check, rather than once per asset
+                    $existingJobs = Craft::$app->getQueue()->getJobInfo();
                     $batchSize = count($assetIds);
                     
                     if ($batchSize === 0) {
@@ -386,7 +417,7 @@ class GenerateController extends Controller
                     }
                     
                     if ($this->verbose) {
-                        $this->note("Processing batch of {$batchSize} assets (offset: {$offset})");
+                        $this->note("Processing batch of {$batchSize} assets (after ID: {$lastId})");
                     }
                     
                     // Process each asset individually to minimize memory usage
@@ -411,19 +442,23 @@ class GenerateController extends Controller
                             }
                             
                             // Queue the job
-                            AiAltText::getInstance()->aiAltTextService->createJob(
-                                $asset, 
-                                false, 
-                                $site->id, 
-                                false, 
-                                true, 
-                                true
+                            $queued = AiAltText::getInstance()->aiAltTextService->createJob(
+                                $asset,
+                                false,
+                                $site->id,
+                                false,
+                                true,
+                                $existingJobs
                             );
-                            
-                            $queuedCount++;
-                            
+
+                            if ($queued) {
+                                $queuedCount++;
+                            }
+
                             if ($this->verbose) {
-                                $this->note("Queued: {$asset->filename} (ID: {$asset->id})");
+                                $this->note($queued
+                                    ? "Queued: {$asset->filename} (ID: {$asset->id})"
+                                    : "Skipped: {$asset->filename} (ID: {$asset->id}) is already queued or not eligible");
                             }
                             
                             // Free memory
@@ -437,7 +472,8 @@ class GenerateController extends Controller
                         Console::updateProgress($processed, $totalCount);
                     }
                     
-                    $offset += $this->batchSize;
+                    // Keyset paging: the hasAlt(false) set shrinks as queued jobs complete, so an offset would skip assets
+                    $lastId = max($assetIds);
                     
                     // Force garbage collection
                     unset($assetIds);

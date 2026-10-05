@@ -1,10 +1,46 @@
 # Release Notes for AI Alt Text
 
+## 5.1.0 - 2026-10-01
+
+> {warning} [OpenAI is retiring](https://developers.openai.com/api/docs/deprecations#2026-06-11-gpt-5-and-o3-model-deprecations) the model behind `gpt-5-nano` (`gpt-5-nano-2025-08-07`) on December 11, 2026, after which requests using it will fail. If your **OpenAI Model** setting is `gpt-5-nano`, switch to `gpt-6-luna`, OpenAI's recommended replacement, before then. Luna doesn't accept the `minimal` reasoning effort, so also change **OpenAI Reasoning Effort** to `low`.
+
+> {tip} Images the provider can't process now appear as failed jobs in the queue, where you can retry them.
+
+> {tip} The default **OpenAI Reasoning Effort** is now `low` (previously `minimal`). Existing installs keep the values they've saved.
+
+- Added a control panel warning for admins when no AI provider or API key is configured.
+- Added a note to the **Process SVGs** setting when Craft's `transformSvgs` setting is disabled, since SVGs are skipped in that case even with the plugin setting enabled.
+- Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now report what actually happened.
+- Changed the error for a mistyped or unsupported prompt variable to name the variable and point to the **Prompt** setting. This covers a typo like `{asset.filenmae}` and a variable that resolves to an object rather than text, like `{asset.volume}`. Previously the raw PHP error was shown.
+- Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model.
+- Changed the default **OpenAI Reasoning Effort** to `low` (previously `minimal`), and the suggested OpenAI model in the **OpenAI Model** placeholder and documentation from `gpt-5-nano` to `gpt-6-luna`. The **OpenAI Model** setting itself still has no default.
+- Changed the GIF animation check to use less memory. The whole file was previously read into memory - a full download for remote volumes, and enough to exhaust a queue worker on a large GIF. Only the start of the file is scanned now, and a GIF that is still undecided after that is treated as animated so it is always sent as a first-frame JPG.
+- Changed the height of the **Prompt** field to be taller, since it previously showed roughly three lines and clipped the default prompt mid-sentence.
+- Changed the "Generate AI Alt Text" asset action to queue jobs when more than one asset is selected, instead of making one blocking provider request per asset within the web request. A single asset is still generated straight away.
+- Changed the "Generate AI Alt Text" asset actions and `ai-alt-text/generate/single` to clearly say whether alt text was generated, queued for other sites, or skipped, instead of always saying "queued", and `ai-alt-text/generate/missing` to say it is queueing jobs rather than generating alt text.
+- Changed the bulk actions utility to queue a batched job per site that fans out into one job per asset, instead of walking every asset inside the web request. The bulk actions no longer time out part-way through with no indication of how much was queued, and progress is visible in the queue.
+- Changed the plugin settings page to only show the selected AI provider's fields, swapping them as the **AI Provider** dropdown changes. When the provider is set from an environment variable, the fields for the provider it resolves to are shown after the page is saved and reloaded, or all providers' fields if it doesn't resolve to a known provider.
+- Changed generation to fail with a message naming what's missing when the **AI Provider** setting is empty or unrecognised, or when the chosen provider has no API key, instead of silently falling back to OpenAI. The bulk actions and the `missing` and `all` console commands refuse to queue anything in that case.
+- Fixed a duplicate job being queued for the site being worked in when "Save translated results for each site" was enabled.
+- Fixed the HTTP client ignoring a `timeout` set in `config/guzzle.php`. The plugin's static 30 second timeout overrode it, so the timeout now only defaults to 30 seconds when the project hasn't set one.
+- Fixed the reasoning parameter being sent to models that don't accept one. The check matched any model whose name began with `o` (so `omni-...` and similar), and matched `gpt-5` chat variants such as `gpt-5-chat-latest`. Both were rejected by the API, and the resulting error was misread as the provider being unable to reach the image, triggering a pointless base64 retry before the request finally failed.
+- Fixed text that could never match a translation entry: two control panel notices built as interpolated strings, the single-asset action's already-translated server message being passed through the JavaScript translator again, and settings page labels using the wrong translation category (`ai-alt-text`). The bulk actions utility's text is now translatable too.
+- Fixed alt text generated via OpenAI being saved with surrounding whitespace, such as a trailing newline.
+- Fixed an error that could fail an image asset's save when "Generate for new image assets" was enabled and the asset was saved via a console command / a queue job. Generation now falls back to the asset's own site.
+- Fixed Anthropic connection failures (DNS, TLS and connect timeouts) so they are logged and reported with a clear plugin error, matching the OpenAI provider.
+- Fixed existing alt text being lost if a save failed. When **Propagate** is off, generation blanks the alt value in a preliminary save before writing the new one; if that second save failed, the asset was left with an empty alt value instead of what it had before. Both saves now run in one transaction, so a failure leaves the previous value intact.
+- Fixed failed alt text generations showing as completed in the queue. The error was logged, but the job still reported success, so there was no error message and no way to retry it. The job now fails with the error message, which appears in the control panel and can be retried from there.
+- Fixed the "already being processed" check refusing the wrong assets (`ID: 1` matched `ID: 12`) and never matching on single-site installs. It now also covers the other sites when "Save translated results for each site" is enabled, and skipped assets are logged instead of shown as a control panel notice.
+- Fixed the batched bulk actions and console commands paginating without a fixed order, so assets could be processed twice or skipped on large asset libraries. They now order by element ID.
+- Fixed an empty **OpenAI Image Detail Level** setting being sent to the API as an empty value. It now falls back to `low`. An empty **OpenAI Reasoning Effort** is now left out so the model's default is used.
+- Fixed the "Generate AI Alt Text" asset action showing a generic server error when generating a single asset failed. The error message is shown instead.
+- Fixed `ai-alt-text/generate` with no action printing an exception stack trace instead of the list of available commands.
+
 ## 5.0.0 - 2026-07-24
 
-> {note} **This is not a typical major release.** The jump from 1.10.0 to 5.0.0 is a version-numbering change rather than a rewrite: now that Craft 4 is supported, the plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5. Install the line that matches your Craft version.
+> {tip} **This is not a typical major release.** The jump from 1.10.0 to 5.0.0 is a version-numbering change rather than a rewrite: now that Craft 4 is supported, the plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5. Install the line that matches your Craft version.
 
-> {warning} This release introduces permission checks. Automatic generation on upload or file replacement is unchanged, but users who generate alt text manually now need permission to save the asset in the relevant volume, plus the **AI Alt Text Bulk Actions** utility permission for the utility's "Generate all" / "Generate missing" actions. Grant it under **Settings → Users → (group or user) → Permissions → Utilities**.
+> {tip} This release introduces permission checks. Automatic generation on upload or file replacement is unchanged, but users who generate alt text manually now need permission to save the asset in the relevant volume, plus the **AI Alt Text Bulk Actions** utility permission for the utility's "Generate all" / "Generate missing" actions. Grant it under **Settings → Users → (group or user) → Permissions → Utilities**.
 
 - Added a permission requirement to the "Generate all" / "Generate missing" utility actions: the **AI Alt Text Bulk Actions** utility permission (the one Craft registers automatically for the utility, under **Settings → Users → (group or user) → Permissions → Utilities**). Grant it to the relevant user groups after updating, otherwise those actions will be unavailable. The element action is deliberately not permission-gated beyond being able to save each selected asset, and on-upload generation is controlled by the plugin setting alone.
 - Added a general CP access (`accessCp`) requirement to the "Generate all" / "Generate missing" utility actions, alongside the AI Alt Text Bulk Actions permission.
@@ -36,7 +72,7 @@
 
 ## 1.10.0 - 2026-07-07
 
-> {note} If you have a custom **prompt** value and work with non-English language sites, you might want to update it manually to adopt the `{site.languageName}` variable which can return more reliable results in the desired language. Installs still using any former default prompt values are migrated automatically.
+> {tip} If you have a custom **prompt** value and work with non-English language sites, you might want to update it manually to adopt the `{site.languageName}` variable which can return more reliable results in the desired language. Installs still using any former default prompt values are migrated automatically.
 
 - Changed the default prompt to name the target language explicitly - `{site.languageName} (BCP 47: {site.language})`, e.g. `Norwegian (BCP 47: no)`. The previous default ended in a bare code (`Output in the language: no` for Norwegian), which a model could misread as the English word "no" and answer in the wrong language.
 - Added a `{site.languageName}` prompt variable that resolves to the language's display name only.

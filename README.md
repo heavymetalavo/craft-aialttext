@@ -75,7 +75,7 @@ ddev craft plugin/install ai-alt-text
     2. For individual or a group of specific assets find them in the <strong>Assets</strong> manager section</a> clicking the checkbox on a row, clicking the cog icon to reveal the Element actions menu and select <strong>Generate AI Alt Text</strong>
     3. When viewing a single asset's page, open the action menu and select <strong>Generate AI Alt Text</strong>
     4. Upload a new asset (if the upload setting is enabled)
-5. The plugin will queue jobs to generate alt text for each selected asset
+5. A single asset, selected in the **Assets** manager or on its own page, is generated straight away. Multiple selected assets, the bulk actions, new uploads, and the other sites when **Save translated results for each site** is enabled are queued as jobs instead
 
 ![The Bulk Actions table in the AI Alt Text settings page](src/bulk-actions.png)
 
@@ -92,7 +92,7 @@ Example twig:
 
 ## 🖥️ Console Commands
 
-**Important**: These commands will create **queue** jobs which when run will generate the alt text. By default, all commands process **all sites** unless `--site-id` is specified.
+**Important**: `missing` and `all` create **queue** jobs which when run will generate the alt text, while `single` generates straight away (queueing the other sites when **Save translated results for each site** is enabled). By default, all commands process **all sites** unless `--site-id` is specified.
 
 ### Available Commands
 
@@ -101,7 +101,7 @@ Example twig:
 | `ai-alt-text/generate/stats` | Show alt text coverage statistics |
 | `ai-alt-text/generate/missing` | Queue jobs for assets without alt text (recommended) |
 | `ai-alt-text/generate/all` | Queue jobs for ALL assets (⚠️ overwrites existing alt text) |
-| `ai-alt-text/generate/single <id>` | Queue job for a specific asset ID (use `-s` for one site) |
+| `ai-alt-text/generate/single <id>` | Generate for a specific asset ID straight away (use `-s` for one site) |
 
 ### Options
 
@@ -124,10 +124,10 @@ Example twig:
 # Queue for specific site with verbose output
 ./craft ai-alt-text/generate/missing --site-id=2 --verbose
 
-# Queue for single asset
+# Generate for a single asset
 ./craft ai-alt-text/generate/single 123
 
-# Queue for single asset on a specific site
+# Generate for a single asset on a specific site
 ./craft ai-alt-text/generate/single 123 --site-id=2
 ```
 
@@ -141,7 +141,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 |---------|-------------|
 | **AI Provider** | Choose between OpenAI or Anthropic. |
 | **OpenAI/Anthropic API Key** | Your provider's API key. |
-| **Model** | The AI model to use (e.g., `gpt-5-nano` or `claude-haiku-4-5`). |
+| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-4-5`). |
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |
 | **OpenAI Reasoning Effort**| The reasoning effort level for OpenAI reasoning models. |
 | **Prompt** | The instructions sent to the AI provider as the system / instruction message (example [below](#default-prompt)). Supports `{asset.property}` and `{site.property}` variables, plus `{site.languageName}` for the language's display name (e.g. `English (United Kingdom)`). |
@@ -154,9 +154,9 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 All vision models should work, these small models seem to hit the sweetspot between quality & cost:
 - `claude-haiku-4-5` - For Anthropic: "The fastest model with near-frontier intelligence"
-- `gpt-5-nano` - For OpenAI: "Fastest, most cost-efficient version of GPT-5"
+- `gpt-6-luna` - For OpenAI: "Our most efficient model for focused, high-volume tasks"
 
-To find out which models are capable of vision, check [the models page](https://platform.openai.com/docs/models), click into a model's detail page (e.g., [gpt-5-nano](https://platform.openai.com/docs/models/gpt-5-nano)) and look for "**Input**: Text, image" in the features columns at the top.
+To find out which models are capable of vision, check [the models page](https://platform.openai.com/docs/models), click into a model's detail page (e.g., [gpt-6-luna](https://platform.openai.com/docs/models/gpt-6-luna)) and look for "**Input**: Text, image" in the features columns at the top.
 
 #### 💬 Default prompt
 
@@ -179,7 +179,7 @@ This is sent to the provider as the system / instruction message (Anthropic `sys
 
 #### 🧠 OpenAI Reasoning Effort options
 
-Controls how much time the model spends "thinking" before generating a response (only applicable to OpenAI reasoning models like `o*` (e.g. `o1`) and `gpt-5*`).
+Controls how much time the model spends "thinking" before generating a response (only applicable to OpenAI reasoning models like `o*` (e.g. `o1`) and `gpt-5*`). The default is `low`.
 - `none`
 - `minimal`
 - `low`
@@ -238,7 +238,7 @@ To add this field:
 
 ## ⚠️ Disclaimer
 
-We've taken some steps to try prevent unexpected costs with default plugin settings (e.g. detail: `low` and model: `gpt-5-nano`) though we take no responsibility for excessive API token usage that may result from mistakes, bugs, or security vulnerabilities within this plugin so use at your own risk.
+We've taken some steps to try prevent unexpected costs with default plugin settings (e.g. detail: `low` and the suggested small model `gpt-6-luna`) though we take no responsibility for excessive API token usage that may result from mistakes, bugs, or security vulnerabilities within this plugin so use at your own risk.
 
 If you are concerned about unexpected charges we recommend:
 - Set up rate limits and spending caps at the API account level in your [OpenAI account settings](https://platform.openai.com/account/billing/limits)
