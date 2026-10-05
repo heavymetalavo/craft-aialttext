@@ -73,7 +73,7 @@ ddev craft plugin/install ai-alt-text
     2. For individual or a group of specific assets find them in the <strong>Assets</strong> manager section</a> clicking the checkbox on a row, clicking the cog icon to reveal the Element actions menu and select <strong>Generate AI Alt Text</strong>
     3. When viewing a single asset's page, open the action menu and select <strong>Generate AI Alt Text</strong>
     4. Upload a new asset (if the upload setting is enabled)
-5. The plugin will queue jobs to generate alt text for each selected asset
+5. A single asset, selected in the **Assets** manager or on its own page, is generated straight away. Multiple selected assets, the bulk actions, new uploads, and the other sites when **Save translated results for each site** is enabled are queued as jobs instead
 
 ![The Bulk Actions table in the AI Alt Text settings page](src/bulk-actions.png)
 
@@ -90,7 +90,7 @@ Example twig:
 
 ## 🖥️ Console Commands
 
-**Important**: These commands will create **queue** jobs which when run will generate the alt text. By default, all commands process **all sites** unless `--site-id` is specified.
+**Important**: `missing` and `all` create **queue** jobs which when run will generate the alt text, while `single` generates straight away (queueing the other sites when **Save translated results for each site** is enabled). By default, all commands process **all sites** unless `--site-id` is specified.
 
 ### Available Commands
 
@@ -99,7 +99,7 @@ Example twig:
 | `ai-alt-text/generate/stats` | Show alt text coverage statistics |
 | `ai-alt-text/generate/missing` | Queue jobs for assets without alt text (recommended) |
 | `ai-alt-text/generate/all` | Queue jobs for ALL assets (⚠️ overwrites existing alt text) |
-| `ai-alt-text/generate/single <id>` | Queue job for a specific asset ID (use `-s` for one site) |
+| `ai-alt-text/generate/single <id>` | Generate for a specific asset ID straight away (use `-s` for one site) |
 
 ### Options
 
@@ -122,10 +122,10 @@ Example twig:
 # Queue for specific site with verbose output
 ./craft ai-alt-text/generate/missing --site-id=2 --verbose
 
-# Queue for single asset
+# Generate for a single asset
 ./craft ai-alt-text/generate/single 123
 
-# Queue for single asset on a specific site
+# Generate for a single asset on a specific site
 ./craft ai-alt-text/generate/single 123 --site-id=2
 ```
 
@@ -177,7 +177,7 @@ This is sent to the provider as the system / instruction message (Anthropic `sys
 
 #### 🧠 OpenAI Reasoning Effort options
 
-Controls how much time the model spends "thinking" before generating a response (only applicable to OpenAI reasoning models like `o*` (e.g. `o1`) and `gpt-5*`).
+Controls how much time the model spends "thinking" before generating a response (only applicable to OpenAI reasoning models like `o*` (e.g. `o1`) and `gpt-5*`). The default is `low`.
 - `none`
 - `minimal`
 - `low`

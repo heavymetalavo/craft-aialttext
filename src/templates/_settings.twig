@@ -199,7 +199,7 @@
     id: 'processSvgs',
     name: 'processSvgs',
     instructions: "Attempt to generate alt text for SVG files when they are uploaded or batched processed. This requires Craft's global `transformSvgs` setting to be enabled."|t("ai-alt-text")
-        ~ (craft.app.config.general.transformSvgs ? "" : "\n\n" ~ "**Craft's `transformSvgs` setting is currently disabled, so SVGs will be skipped even with this enabled.**"|t("ai-alt-text")),
+        ~ (craft.app.config.general.transformSvgs ? "" : "\n\n⚠️ " ~ "**Craft's `transformSvgs` setting is currently disabled, so SVGs will be skipped even with this enabled.**"|t("ai-alt-text")),
     on: settings.processSvgs,
     errors: settings.getErrors('processSvgs'),
 }) }}

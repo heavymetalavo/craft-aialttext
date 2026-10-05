@@ -2,15 +2,15 @@
 
 ## 5.1.0 - 2026-10-01
 
-> {tip} Images the provider can't process now appear as failed jobs in the queue, where you can retry them.
-
 > {warning} [OpenAI is retiring](https://developers.openai.com/api/docs/deprecations#2026-06-11-gpt-5-and-o3-model-deprecations) the model behind `gpt-5-nano` (`gpt-5-nano-2025-08-07`) on December 11, 2026, after which requests using it will fail. If your **OpenAI Model** setting is `gpt-5-nano`, switch to `gpt-6-luna`, OpenAI's recommended replacement, before then. Luna doesn't accept the `minimal` reasoning effort, so also change **OpenAI Reasoning Effort** to `low`.
+
+> {tip} Images the provider can't process now appear as failed jobs in the queue, where you can retry them.
 
 > {tip} The default **OpenAI Reasoning Effort** is now `low` (previously `minimal`). Existing installs keep the values they've saved.
 
 - Added a control panel warning for admins when no AI provider or API key is configured.
 - Added a note to the **Process SVGs** setting when Craft's `transformSvgs` setting is disabled, since SVGs are skipped in that case even with the plugin setting enabled.
-- Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now reports what actually happened.
+- Changed error reporting when OpenAI returns no usable text, e.g. `incomplete` and `refusal` responses. A response cut short by the output token limit, or an outright refusal, previously surfaced as a generic "empty alt text" error; both now report what actually happened.
 - Changed the error for a mistyped or unsupported prompt variable to name the variable and point to the **Prompt** setting. This covers a typo like `{asset.filenmae}` and a variable that resolves to an object rather than text, like `{asset.volume}`. Previously the raw PHP error was shown.
 - Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model.
 - Changed the default **OpenAI Reasoning Effort** to `low` (previously `minimal`), and the suggested OpenAI model in the **OpenAI Model** placeholder and documentation from `gpt-5-nano` to `gpt-6-luna`. The **OpenAI Model** setting itself still has no default.
