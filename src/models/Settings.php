@@ -24,6 +24,12 @@ use craft\helpers\App;
  * @property string $anthropicModel The Anthropic Model
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
  * @property string $openAiReasoningEffort The reasoning effort level for OpenAI models
+ * @property string $langdockApiKey The Langdock API key
+ * @property string $langdockApiFormat The Langdock API to use ('anthropic' or 'openai')
+ * @property string $langdockRegion The Langdock data region ('eu' or 'us')
+ * @property string $langdockModel The Langdock model to use
+ * @property string $langdockImageInputDetailLevel The image detail level for Langdock's OpenAI API
+ * @property string $langdockReasoningEffort The reasoning effort level for Langdock's OpenAI API
  */
 class Settings extends Model
 {
@@ -80,6 +86,44 @@ class Settings extends Model
     public string $openAiReasoningEffort = 'low';
 
     /**
+     * @var string The Langdock API key
+     */
+    public string $langdockApiKey = '';
+
+    /**
+     * @var string Which of Langdock's compatible APIs to use
+     *
+     * Options: anthropic, openai
+     */
+    public string $langdockApiFormat = 'anthropic';
+
+    /**
+     * @var string The Langdock data region
+     *
+     * Options: eu, us
+     */
+    public string $langdockRegion = 'eu';
+
+    /**
+     * @var string The Langdock model to use, must have vision capabilities
+     */
+    public string $langdockModel = '';
+
+    /**
+     * @var string The image detail level for Langdock's OpenAI API, ignored by its Anthropic API
+     *
+     * Options: low, high, auto
+     */
+    public string $langdockImageInputDetailLevel = 'low';
+
+    /**
+     * @var string The reasoning effort level for Langdock's OpenAI API, ignored by its Anthropic API
+     *
+     * Options: none, minimal, low, medium, high, xhigh
+     */
+    public string $langdockReasoningEffort = 'low';
+
+    /**
      * @var bool Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
      */
     public bool $propagate = false;
@@ -110,7 +154,7 @@ class Settings extends Model
                 ['aiProvider'],
                 function($attribute) {
                     $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['openai', 'anthropic'], true)) {
+                    if (!in_array($val, ['openai', 'anthropic', 'langdock'], true)) {
                         $this->addError($attribute, 'Invalid AI Provider configured.');
                     }
                 }
@@ -147,6 +191,45 @@ class Settings extends Model
                     $val = App::parseEnv($this->$attribute);
                     if (!in_array($val, ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], true)) {
                         $this->addError($attribute, 'Invalid OpenAI Reasoning Effort configured.');
+                    }
+                }
+            ],
+            [['langdockApiKey', 'langdockModel'], 'string'],
+            [
+                ['langdockApiFormat'],
+                function($attribute) {
+                    $val = App::parseEnv($this->$attribute);
+                    if (!in_array($val, ['anthropic', 'openai'], true)) {
+                        $this->addError($attribute, 'Invalid Langdock API Format configured.');
+                    }
+                }
+            ],
+            ['langdockImageInputDetailLevel', 'string'],
+            [
+                ['langdockImageInputDetailLevel'],
+                function($attribute) {
+                    $val = App::parseEnv($this->$attribute);
+                    if (!in_array($val, ['low', 'high', 'auto', ''], true)) {
+                        $this->addError($attribute, 'Invalid Langdock Image Input Detail Level configured.');
+                    }
+                }
+            ],
+            ['langdockReasoningEffort', 'string'],
+            [
+                ['langdockReasoningEffort'],
+                function($attribute) {
+                    $val = App::parseEnv($this->$attribute);
+                    if (!in_array($val, ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], true)) {
+                        $this->addError($attribute, 'Invalid Langdock Reasoning Effort configured.');
+                    }
+                }
+            ],
+            [
+                ['langdockRegion'],
+                function($attribute) {
+                    $val = App::parseEnv($this->$attribute);
+                    if (!in_array($val, ['eu', 'us'], true)) {
+                        $this->addError($attribute, 'Invalid Langdock Region configured.');
                     }
                 }
             ],

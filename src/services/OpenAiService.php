@@ -25,9 +25,9 @@ use yii\base\InvalidConfigException;
  */
 class OpenAiService extends ApiService
 {
-    private string $apiKey;
-    private string $model;
-    private string $baseUrl = 'https://api.openai.com/v1';
+    protected string $apiKey;
+    protected string $model;
+    protected string $baseUrl = 'https://api.openai.com/v1';
 
     /**
      * Constructor
@@ -43,6 +43,22 @@ class OpenAiService extends ApiService
         $this->apiKey = App::parseEnv($plugin->getSettings()->openAiApiKey);
         $this->model = App::parseEnv($plugin->getSettings()->openAiModel);
         parent::__construct($config);
+    }
+
+    /**
+     * The `detail` value sent for images larger than 512px on either side.
+     */
+    protected function imageDetailLevel(): string
+    {
+        return App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel) ?: 'low';
+    }
+
+    /**
+     * The `reasoning.effort` value sent to reasoning models.
+     */
+    protected function reasoningEffort(): string
+    {
+        return (string) App::parseEnv(AiAltText::getInstance()->getSettings()->openAiReasoningEffort);
     }
 
     /**
@@ -162,7 +178,6 @@ class OpenAiService extends ApiService
      */
     public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceBase64 = false): string
     {
-        $plugin = AiAltText::getInstance();
         // Validate image support using the parent base service method
         if (!$this->validateImageSupport($asset)) {
             return '';
@@ -203,7 +218,7 @@ class OpenAiService extends ApiService
         $height = $asset->getHeight();
         $detail = null;
         if ($width > 512 || $height > 512) {
-            $detail = App::parseEnv($plugin->getSettings()->openAiImageInputDetailLevel) ?: 'low';
+            $detail = $this->imageDetailLevel();
         }
         
         $prompt = $this->resolvePrompt($asset, $siteId);
@@ -217,7 +232,7 @@ class OpenAiService extends ApiService
         $request->setInstructions($prompt)
             ->setPrompt(self::GENERATE_TRIGGER)
             ->setImageUrl($imageUrl)
-            ->setReasoningEffort((string) App::parseEnv($plugin->getSettings()->openAiReasoningEffort));
+            ->setReasoningEffort($this->reasoningEffort());
             
         // Only set detail if the image is large enough
         if ($detail !== null) {

@@ -18,10 +18,10 @@ use heavymetalavo\craftaialttext\models\api\{AnthropicRequest, AnthropicResponse
  */
 class AnthropicService extends ApiService
 {
-    private string $apiKey;
-    private string $model;
-    private string $detailLevel;
-    private string $baseUrl = 'https://api.anthropic.com/v1/messages';
+    protected string $apiKey;
+    protected string $model;
+    protected string $detailLevel;
+    protected string $baseUrl = 'https://api.anthropic.com/v1/messages';
 
     /**
      * Initializes the service with the Anthropic API key, model and image detail level from the plugin settings.
@@ -36,6 +36,18 @@ class AnthropicService extends ApiService
         $this->model = App::parseEnv($plugin->getSettings()->anthropicModel);
         $this->detailLevel = $plugin->getSettings()->anthropicImageDetailLevel;
         parent::__construct($config);
+    }
+
+    /**
+     * The headers sent with every request.
+     */
+    protected function requestHeaders(): array
+    {
+        return [
+            'x-api-key' => $this->apiKey,
+            'anthropic-version' => '2023-06-01',
+            'content-type' => 'application/json',
+        ];
     }
 
     /**
@@ -121,11 +133,7 @@ class AnthropicService extends ApiService
             $requestArray = $requestModel->toArray();
 
             $response = $this->client->post($this->baseUrl, [
-                'headers' => [
-                    'x-api-key' => $this->apiKey,
-                    'anthropic-version' => '2023-06-01',
-                    'content-type' => 'application/json',
-                ],
+                'headers' => $this->requestHeaders(),
                 'json' => $requestArray,
             ]);
 
