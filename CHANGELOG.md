@@ -1,8 +1,8 @@
 # Release Notes for AI Alt Text
 
-## 5.2.0 - 2026-10-06
+## 5.2.0 - 2026-10-11
 
-- Added [Langdock](https://langdock.com/) as an AI provider, using either its Anthropic-compatible or OpenAI-compatible API. Configure the API key, API format, region and model in the plugin settings.
+- Added [Langdock](https://langdock.com/) as an AI provider, using either its Anthropic-compatible or OpenAI-compatible API. Configure the API key, API format, region and model in the plugin settings, plus the image detail level and reasoning effort for the OpenAI-compatible API.
 
 ## 5.1.0 - 2026-10-05
 

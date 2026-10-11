@@ -29,7 +29,7 @@ class LangdockAnthropicService extends AnthropicService
         $this->apiKey = App::parseEnv($settings->langdockApiKey);
         $this->model = App::parseEnv($settings->langdockModel);
         // Langdock has no image detail setting of its own, so use the plugin's default
-        $this->detailLevel = (new Settings())->anthropicImageDetailLevel;
+        $this->detailLevel = Settings::DEFAULT_ANTHROPIC_IMAGE_DETAIL_LEVEL;
         $this->baseUrl = 'https://api.langdock.com/anthropic/' . App::parseEnv($settings->langdockRegion) . '/v1/messages';
 
         ApiService::__construct($config);

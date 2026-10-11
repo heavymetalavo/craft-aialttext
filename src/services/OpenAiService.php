@@ -46,7 +46,8 @@ class OpenAiService extends ApiService
     }
 
     /**
-     * The `detail` value sent for images larger than 512px on either side.
+     * The `detail` value used for images larger than 512px on either side.
+     * Smaller images are sent as `low`, the request model's default.
      */
     protected function imageDetailLevel(): string
     {

@@ -206,7 +206,7 @@
         label: 'Langdock Model'|t('ai-alt-text'),
         id: 'langdockModel',
         name: 'langdockModel',
-        instructions: "The model to use, as named in Langdock. It must have vision capabilities and match the API format above. [See how to list the models in your workspace](https://docs.langdock.com/en/developer/completion-api/anthropic)."|t("ai-alt-text"),
+        instructions: "The model to use, as named in Langdock. It must have vision capabilities and match the API format above. See how to list the models in your workspace for the [Anthropic](https://docs.langdock.com/en/developer/completion-api/anthropic) or [OpenAI](https://docs.langdock.com/en/developer/completion-api/openai) API."|t("ai-alt-text"),
         value: settings.langdockModel,
         errors: settings.getErrors('langdockModel'),
         suggestEnvVars: true,
@@ -236,7 +236,7 @@
             options: [
                 { label: 'Low - Fast, low-cost (512px x 512px)', value: 'low' },
                 { label: 'High - Standard high-fidelity understanding', value: 'high' },
-                { label: 'Auto - Let the model choose', value: 'auto' }
+                { label: 'Auto - Let the model choose (may use more tokens)', value: 'auto' }
             ],
             includeEnvVars: true,
             allowedEnvValues: null,

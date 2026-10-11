@@ -193,7 +193,7 @@ class AiAltTextService extends Component
         [$label, $apiKey] = match ($provider) {
             'anthropic' => ['Anthropic', $settings->anthropicApiKey],
             'langdock' => ['Langdock', $settings->langdockApiKey],
-            default => ['OpenAI', $settings->openAiApiKey],
+            'openai' => ['OpenAI', $settings->openAiApiKey],
         };
 
         $apiKey = App::parseEnv($apiKey);
@@ -222,7 +222,7 @@ class AiAltTextService extends Component
             'langdock' => App::parseEnv($settings->langdockApiFormat) === 'openai'
                 ? $plugin->langdockOpenAiService
                 : $plugin->langdockAnthropicService,
-            default => $plugin->openAiService,
+            'openai' => $plugin->openAiService,
         };
     }
 

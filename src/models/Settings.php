@@ -34,6 +34,11 @@ use craft\helpers\App;
 class Settings extends Model
 {
     /**
+     * @var string The default Anthropic image detail level, also used by Langdock's Anthropic API
+     */
+    public const DEFAULT_ANTHROPIC_IMAGE_DETAIL_LEVEL = 'low';
+
+    /**
      * @var string The API provider to use
      */
     public string $aiProvider = '';
@@ -51,7 +56,7 @@ class Settings extends Model
     /**
      * @var string The Anthropic image detail level
      */
-    public string $anthropicImageDetailLevel = 'low';
+    public string $anthropicImageDetailLevel = self::DEFAULT_ANTHROPIC_IMAGE_DETAIL_LEVEL;
 
     /**
      * @var string The OpenAI API key
