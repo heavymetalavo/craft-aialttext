@@ -211,6 +211,7 @@ class AiAltTextService extends Component
 
     /**
      * Returns the service for the configured provider. Only call once getConfigurationError() is null.
+     * An unrecognised provider throws an UnhandledMatchError rather than falling back to OpenAI.
      */
     private function getProviderService(): ApiService
     {

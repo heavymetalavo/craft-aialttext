@@ -200,48 +200,26 @@ class Settings extends Model
                 }
             ],
             [['langdockApiKey', 'langdockModel'], 'string'],
-            [
-                ['langdockApiFormat'],
-                function($attribute) {
-                    $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['anthropic', 'openai'], true)) {
-                        $this->addError($attribute, 'Invalid Langdock API Format configured.');
-                    }
-                }
-            ],
+            [['langdockApiFormat'], 'validateOneOf', 'params' => ['allowed' => ['anthropic', 'openai'], 'message' => 'Invalid Langdock API Format configured.']],
             ['langdockImageInputDetailLevel', 'string'],
-            [
-                ['langdockImageInputDetailLevel'],
-                function($attribute) {
-                    $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['low', 'high', 'auto', ''], true)) {
-                        $this->addError($attribute, 'Invalid Langdock Image Input Detail Level configured.');
-                    }
-                }
-            ],
+            [['langdockImageInputDetailLevel'], 'validateOneOf', 'params' => ['allowed' => ['low', 'high', 'auto', ''], 'message' => 'Invalid Langdock Image Input Detail Level configured.']],
             ['langdockReasoningEffort', 'string'],
-            [
-                ['langdockReasoningEffort'],
-                function($attribute) {
-                    $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], true)) {
-                        $this->addError($attribute, 'Invalid Langdock Reasoning Effort configured.');
-                    }
-                }
-            ],
-            [
-                ['langdockRegion'],
-                function($attribute) {
-                    $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['eu', 'us'], true)) {
-                        $this->addError($attribute, 'Invalid Langdock Region configured.');
-                    }
-                }
-            ],
+            [['langdockReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid Langdock Reasoning Effort configured.']],
+            [['langdockRegion'], 'validateOneOf', 'params' => ['allowed' => ['eu', 'us'], 'message' => 'Invalid Langdock Region configured.']],
             ['propagate', 'boolean'],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
         ];
+    }
+
+    /**
+     * Inline validator: the attribute, once any environment variable is resolved, must be one of `params['allowed']`.
+     */
+    public function validateOneOf(string $attribute, array $params): void
+    {
+        if (!in_array(App::parseEnv($this->$attribute), $params['allowed'], true)) {
+            $this->addError($attribute, $params['message']);
+        }
     }
 }

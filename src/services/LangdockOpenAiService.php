@@ -31,6 +31,8 @@ class LangdockOpenAiService extends OpenAiService
     }
 
     /**
+     * Uses the Langdock Image Detail Level setting, not the OpenAI one.
+     *
      * @inheritdoc
      */
     protected function imageDetailLevel(): string
@@ -39,6 +41,8 @@ class LangdockOpenAiService extends OpenAiService
     }
 
     /**
+     * Uses the Langdock Reasoning Effort setting, not the OpenAI one.
+     *
      * @inheritdoc
      */
     protected function reasoningEffort(): string
