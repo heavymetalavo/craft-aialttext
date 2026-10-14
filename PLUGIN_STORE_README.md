@@ -58,7 +58,7 @@ ddev craft plugin/install ai-alt-text
 2. Copy the new key and save it to an environment variable (`.env`).
 3. Choose the **Model Family** that matches the model you want to use: `Claude (Anthropic API)` for Claude models, `GPT (OpenAI API)` for GPT models. Both use the same API key.
 
-Langdock serves each vendor's API with a region in the URL (`EU` or `US`).
+Langdock serves each vendor's API with a region in the URL (`EU` or `US`). Dedicated Langdock deployments are not supported yet: requests always go to `api.langdock.com`.
 
 ### OpenAI
 
