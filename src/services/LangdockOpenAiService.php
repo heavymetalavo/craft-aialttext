@@ -43,12 +43,12 @@ class LangdockOpenAiService extends OpenAiService
     }
 
     /**
-     * Wrong-model errors usually mean the Model Family doesn't match the model, so say so. The hint is only
+     * Wrong-model errors usually mean the Model Family or Region doesn't suit the model, so say so. The hint is only
      * added once, since a failed attempt can be retried through this method.
      */
     private function withModelFamilyHint(Exception $e): Exception
     {
-        $hint = Craft::t('ai-alt-text', 'Check the model name, and that the Langdock Model Family matches it: Claude (Anthropic API) for Claude models, GPT (OpenAI API) for GPT models.');
+        $hint = Craft::t('ai-alt-text', 'Check the model name, and that the Langdock Model Family and Region suit it: Claude (Anthropic API) for Claude models, GPT (OpenAI API) for GPT models. Not every model is available in every region.');
 
         if (stripos($e->getMessage(), 'model') === false || str_contains($e->getMessage(), $hint)) {
             return $e;

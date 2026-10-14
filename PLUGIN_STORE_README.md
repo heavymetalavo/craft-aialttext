@@ -149,7 +149,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **OpenAI/Anthropic/Langdock API Key** | Your provider's API key. |
 | **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-4-5`). For Langdock, use the model's name in Langdock. |
 | **Langdock Model Family** | Langdock only. `Claude (Anthropic API)` or `GPT (OpenAI API)`. It must match the model, and decides which of Langdock's compatible APIs requests are sent to. |
-| **Langdock Region** | Langdock only. `EU` or `US`. |
+| **Langdock Region** | Langdock only. `EU` or `US`. Not every model is available in every region, so pick one your model is offered in. |
 | **Langdock Image Detail Level** | Langdock with the `GPT (OpenAI API)` model family only. Works like the OpenAI image detail level, `low`, `high` or `auto`. |
 | **Langdock Reasoning Effort** | Langdock with the `GPT (OpenAI API)` model family only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). |
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |

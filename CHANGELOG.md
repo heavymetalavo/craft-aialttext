@@ -3,6 +3,7 @@
 ## 5.2.0 - 2026-10-11
 
 - Added [Langdock](https://langdock.com/) as an AI provider, using either its Anthropic-compatible or OpenAI-compatible API. Configure the API key, model family, region and model in the plugin settings, plus the image detail level and reasoning effort for the OpenAI-compatible API.
+- Added a log line for each provider API request showing the endpoint (host and path only), the HTTP status and how long it took, to make it clear which endpoint a request went to.
 
 ## 5.1.0 - 2026-10-05
 
