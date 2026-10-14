@@ -5,7 +5,6 @@ namespace heavymetalavo\craftaialttext\services;
 use craft\elements\Asset;
 use craft\helpers\App;
 use Exception;
-use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\Settings;
 
 /**
@@ -17,22 +16,17 @@ use heavymetalavo\craftaialttext\models\Settings;
 class LangdockAnthropicService extends AnthropicService
 {
     /**
-     * Reads the Langdock settings in place of the Anthropic ones. The constructor chain skips
-     * AnthropicService::__construct(), which only reads the Anthropic settings, so that the component
-     * config is still applied last, as in the other provider services.
+     * Reads the Langdock settings in place of the Anthropic ones.
      *
-     * @param array $config Standard Yii component configuration.
+     * @inheritdoc
      */
-    public function __construct($config = [])
+    protected function applySettings(Settings $settings): void
     {
-        $settings = AiAltText::getInstance()->getSettings();
         $this->apiKey = App::parseEnv($settings->langdockApiKey);
         $this->model = App::parseEnv($settings->langdockModel);
         // Langdock has no image detail setting of its own, so use the plugin's default
         $this->detailLevel = Settings::DEFAULT_ANTHROPIC_IMAGE_DETAIL_LEVEL;
         $this->baseUrl = 'https://api.langdock.com/anthropic/' . App::parseEnv($settings->langdockRegion) . '/v1/messages';
-
-        ApiService::__construct($config);
     }
 
     /**

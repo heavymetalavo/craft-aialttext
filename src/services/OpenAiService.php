@@ -11,6 +11,7 @@ use Exception;
 use GuzzleHttp\Exception\{GuzzleException, RequestException};
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\api\{OpenAiRequest, OpenAiResponse};
+use heavymetalavo\craftaialttext\models\Settings;
 use yii\base\InvalidConfigException;
 
 /**
@@ -39,10 +40,18 @@ class OpenAiService extends ApiService
      */
     public function __construct($config = [])
     {
-        $plugin = AiAltText::getInstance();
-        $this->apiKey = App::parseEnv($plugin->getSettings()->openAiApiKey);
-        $this->model = App::parseEnv($plugin->getSettings()->openAiModel);
+        $this->applySettings(AiAltText::getInstance()->getSettings());
         parent::__construct($config);
+    }
+
+    /**
+     * Reads the API key and model from the plugin settings. Providers that speak the OpenAI Responses API
+     * through another host override this to read their own settings.
+     */
+    protected function applySettings(Settings $settings): void
+    {
+        $this->apiKey = App::parseEnv($settings->openAiApiKey);
+        $this->model = App::parseEnv($settings->openAiModel);
     }
 
     /**

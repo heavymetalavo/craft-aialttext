@@ -4,6 +4,7 @@ namespace heavymetalavo\craftaialttext\services;
 
 use craft\helpers\App;
 use heavymetalavo\craftaialttext\AiAltText;
+use heavymetalavo\craftaialttext\models\Settings;
 
 /**
  * Langdock OpenAI API Service
@@ -14,20 +15,15 @@ use heavymetalavo\craftaialttext\AiAltText;
 class LangdockOpenAiService extends OpenAiService
 {
     /**
-     * Reads the Langdock settings in place of the OpenAI ones. The constructor chain skips
-     * OpenAiService::__construct(), which only reads the OpenAI settings, so that the component
-     * config is still applied last, as in the other provider services.
+     * Reads the Langdock settings in place of the OpenAI ones.
      *
-     * @param array $config Standard Yii component configuration.
+     * @inheritdoc
      */
-    public function __construct($config = [])
+    protected function applySettings(Settings $settings): void
     {
-        $settings = AiAltText::getInstance()->getSettings();
         $this->apiKey = App::parseEnv($settings->langdockApiKey);
         $this->model = App::parseEnv($settings->langdockModel);
         $this->baseUrl = 'https://api.langdock.com/openai/' . App::parseEnv($settings->langdockRegion) . '/v1';
-
-        ApiService::__construct($config);
     }
 
     /**

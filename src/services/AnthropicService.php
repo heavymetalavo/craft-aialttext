@@ -10,6 +10,7 @@ use Exception;
 use GuzzleHttp\Exception\{GuzzleException, RequestException};
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\api\{AnthropicRequest, AnthropicResponse};
+use heavymetalavo\craftaialttext\models\Settings;
 
 /**
  * Anthropic API Service
@@ -31,11 +32,19 @@ class AnthropicService extends ApiService
      */
     public function __construct($config = [])
     {
-        $plugin = AiAltText::getInstance();
-        $this->apiKey = App::parseEnv($plugin->getSettings()->anthropicApiKey);
-        $this->model = App::parseEnv($plugin->getSettings()->anthropicModel);
-        $this->detailLevel = $plugin->getSettings()->anthropicImageDetailLevel;
+        $this->applySettings(AiAltText::getInstance()->getSettings());
         parent::__construct($config);
+    }
+
+    /**
+     * Reads the API key, model and image detail level from the plugin settings. Providers that speak the
+     * Anthropic Messages API through another host override this to read their own settings.
+     */
+    protected function applySettings(Settings $settings): void
+    {
+        $this->apiKey = App::parseEnv($settings->anthropicApiKey);
+        $this->model = App::parseEnv($settings->anthropicModel);
+        $this->detailLevel = $settings->anthropicImageDetailLevel;
     }
 
     /**
