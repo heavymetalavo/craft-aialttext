@@ -2,6 +2,7 @@
 
 namespace heavymetalavo\craftaialttext\services;
 
+use Craft;
 use craft\elements\Asset;
 use craft\helpers\App;
 use Exception;
@@ -48,6 +49,25 @@ class LangdockAnthropicService extends AnthropicService
      */
     public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceBase64 = false): string
     {
-        return parent::generateAltText($asset, $siteId, true);
+        try {
+            return parent::generateAltText($asset, $siteId, true);
+        } catch (Exception $e) {
+            throw $this->withModelFamilyHint($e);
+        }
+    }
+
+    /**
+     * Wrong-model errors usually mean the Model Family doesn't match the model, so say so. The hint is only
+     * added once, since a failed attempt can be retried through this method.
+     */
+    private function withModelFamilyHint(Exception $e): Exception
+    {
+        $hint = Craft::t('ai-alt-text', 'Check the model name, and that the Langdock Model Family matches it: Claude (Anthropic API) for Claude models, GPT (OpenAI API) for GPT models.');
+
+        if (stripos($e->getMessage(), 'model') === false || str_contains($e->getMessage(), $hint)) {
+            return $e;
+        }
+
+        return new Exception($e->getMessage() . ' ' . $hint, (int) $e->getCode(), $e);
     }
 }

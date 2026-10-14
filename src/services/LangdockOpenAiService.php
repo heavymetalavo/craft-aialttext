@@ -2,7 +2,10 @@
 
 namespace heavymetalavo\craftaialttext\services;
 
+use Craft;
+use craft\elements\Asset;
 use craft\helpers\App;
+use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\Settings;
 
@@ -24,6 +27,34 @@ class LangdockOpenAiService extends OpenAiService
         $this->apiKey = App::parseEnv($settings->langdockApiKey);
         $this->model = App::parseEnv($settings->langdockModel);
         $this->baseUrl = 'https://api.langdock.com/openai/' . App::parseEnv($settings->langdockRegion) . '/v1';
+    }
+
+    /**
+     * @inheritdoc
+     * @throws Exception
+     */
+    public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceBase64 = false): string
+    {
+        try {
+            return parent::generateAltText($asset, $siteId, $forceBase64);
+        } catch (Exception $e) {
+            throw $this->withModelFamilyHint($e);
+        }
+    }
+
+    /**
+     * Wrong-model errors usually mean the Model Family doesn't match the model, so say so. The hint is only
+     * added once, since a failed attempt can be retried through this method.
+     */
+    private function withModelFamilyHint(Exception $e): Exception
+    {
+        $hint = Craft::t('ai-alt-text', 'Check the model name, and that the Langdock Model Family matches it: Claude (Anthropic API) for Claude models, GPT (OpenAI API) for GPT models.');
+
+        if (stripos($e->getMessage(), 'model') === false || str_contains($e->getMessage(), $hint)) {
+            return $e;
+        }
+
+        return new Exception($e->getMessage() . ' ' . $hint, (int) $e->getCode(), $e);
     }
 
     /**

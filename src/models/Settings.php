@@ -25,7 +25,7 @@ use craft\helpers\App;
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
  * @property string $openAiReasoningEffort The reasoning effort level for OpenAI models
  * @property string $langdockApiKey The Langdock API key
- * @property string $langdockApiFormat The Langdock API to use ('anthropic' or 'openai')
+ * @property string $langdockModelFamily The Langdock model family, which picks its API ('anthropic' for Claude models or 'openai' for GPT models)
  * @property string $langdockRegion The Langdock data region ('eu' or 'us')
  * @property string $langdockModel The Langdock model to use
  * @property string $langdockImageInputDetailLevel The image detail level for Langdock's OpenAI API
@@ -96,11 +96,11 @@ class Settings extends Model
     public string $langdockApiKey = '';
 
     /**
-     * @var string Which of Langdock's compatible APIs to use
+     * @var string The family of the Langdock model, which decides the compatible API requests are sent to
      *
-     * Options: anthropic, openai
+     * Options: anthropic (Claude models), openai (GPT models)
      */
-    public string $langdockApiFormat = 'anthropic';
+    public string $langdockModelFamily = 'anthropic';
 
     /**
      * @var string The Langdock data region
@@ -200,7 +200,7 @@ class Settings extends Model
                 }
             ],
             [['langdockApiKey', 'langdockModel'], 'string'],
-            [['langdockApiFormat'], 'validateOneOf', 'params' => ['allowed' => ['anthropic', 'openai'], 'message' => 'Invalid Langdock API Format configured.']],
+            [['langdockModelFamily'], 'validateOneOf', 'params' => ['allowed' => ['anthropic', 'openai'], 'message' => 'Invalid Langdock Model Family configured.']],
             ['langdockImageInputDetailLevel', 'string'],
             [['langdockImageInputDetailLevel'], 'validateOneOf', 'params' => ['allowed' => ['low', 'high', 'auto', ''], 'message' => 'Invalid Langdock Image Input Detail Level configured.']],
             ['langdockReasoningEffort', 'string'],

@@ -38,10 +38,10 @@
     ? providerValues|filter(v => v != resolvedProvider)
     : [] %}
 
-{% set langdockFormats = ['anthropic', 'openai'] %}
-{% set resolvedLangdockFormat = parseEnv(settings.langdockApiFormat) %}
-{% set hiddenLangdockFormats = resolvedLangdockFormat in langdockFormats
-    ? langdockFormats|filter(v => v != resolvedLangdockFormat)
+{% set langdockFamilies = ['anthropic', 'openai'] %}
+{% set resolvedLangdockFamily = parseEnv(settings.langdockModelFamily) %}
+{% set hiddenLangdockFamilies = resolvedLangdockFamily in langdockFamilies
+    ? langdockFamilies|filter(v => v != resolvedLangdockFamily)
     : [] %}
 
 {{ forms.selectizeField({
@@ -176,7 +176,7 @@
 
     {{ forms.autosuggestField({
         label: "Langdock API Key"|t("ai-alt-text"),
-        instructions: "An API key from your [Langdock workspace](https://docs.langdock.com/en/developer/overview/api-introduction). One key works for both API formats."|t("ai-alt-text"),
+        instructions: "An API key from your [Langdock workspace](https://docs.langdock.com/en/developer/overview/api-introduction). One key works for both model families."|t("ai-alt-text"),
         id: "langdockApiKey",
         name: "langdockApiKey",
         placeholder: '$LANGDOCK_API_KEY',
@@ -186,27 +186,27 @@
     }) }}
 
     {{ forms.selectizeField({
-        label: 'Langdock API Format'|t('ai-alt-text'),
-        id: 'langdockApiFormat',
-        name: 'langdockApiFormat',
-        instructions: "Which of Langdock's compatible APIs to send requests to. Pick the one that matches the model below: `Anthropic` for Claude models, `OpenAI` for GPT models. If you choose an environment variable, save and reload to show the matching settings."|t("ai-alt-text"),
+        label: 'Langdock Model Family'|t('ai-alt-text'),
+        id: 'langdockModelFamily',
+        name: 'langdockModelFamily',
+                instructions: "Which family the model below belongs to, so requests go to the matching Langdock API: `Claude` for Claude models (Anthropic API) or `GPT` for GPT models (OpenAI API). Only these two families are supported. If you choose an environment variable, it must resolve to `anthropic` or `openai`, then save and reload to show the matching settings."|t("ai-alt-text"),
         options: [
-            { label: 'Anthropic (Claude models)', value: 'anthropic' },
-            { label: 'OpenAI (GPT models)', value: 'openai' }
+            { label: 'Claude (Anthropic API)', value: 'anthropic' },
+            { label: 'GPT (OpenAI API)', value: 'openai' }
         ],
         includeEnvVars: true,
         allowedEnvValues: null,
-        value: settings.langdockApiFormat,
-        errors: settings.getErrors('langdockApiFormat'),
+        value: settings.langdockModelFamily,
+        errors: settings.getErrors('langdockModelFamily'),
         toggle: true,
-        targetPrefix: '#langdock-format-',
+        targetPrefix: '#langdock-family-',
     }) }}
 
     {{ forms.autosuggestField({
         label: 'Langdock Model'|t('ai-alt-text'),
         id: 'langdockModel',
         name: 'langdockModel',
-        instructions: "The model to use, as named in Langdock. It must have vision capabilities and match the API format above. See how to list the models in your workspace for the [Anthropic](https://docs.langdock.com/en/developer/completion-api/anthropic) or [OpenAI](https://docs.langdock.com/en/developer/completion-api/openai) API."|t("ai-alt-text"),
+        instructions: "The model to use, as named in Langdock. It must have vision capabilities and match the model family above. See how to list the models in your workspace for the [Anthropic](https://docs.langdock.com/en/developer/completion-api/anthropic) or [OpenAI](https://docs.langdock.com/en/developer/completion-api/openai) API."|t("ai-alt-text"),
         value: settings.langdockModel,
         errors: settings.getErrors('langdockModel'),
         suggestEnvVars: true,
@@ -227,7 +227,7 @@
         errors: settings.getErrors('langdockRegion')
     }) }}
 
-    <div id="langdock-format-openai" class="{{ 'openai' in hiddenLangdockFormats ? 'hidden' }}">
+    <div id="langdock-family-openai" class="{{ 'openai' in hiddenLangdockFamilies ? 'hidden' }}">
         {{ forms.selectizeField({
             label: 'Langdock Image Detail Level'|t('ai-alt-text'),
             id: 'langdockImageInputDetailLevel',
