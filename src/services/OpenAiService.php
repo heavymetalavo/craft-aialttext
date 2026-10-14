@@ -98,7 +98,6 @@ class OpenAiService extends ApiService
                     'Content-Type' => 'application/json',
                 ],
                 'json' => $requestData,
-                'on_stats' => $this->logRequestStats(),
             ]);
 
             $responseBody = (string)$response->getBody();

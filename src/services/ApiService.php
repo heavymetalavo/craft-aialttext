@@ -10,7 +10,6 @@ use craft\helpers\UrlHelper;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\TransferStats;
 use heavymetalavo\craftaialttext\AiAltText;
 
 /**
@@ -52,28 +51,6 @@ abstract class ApiService extends Component
      * @var Client
      */
     protected Client $client;
-
-    /**
-     * A Guzzle `on_stats` callback for provider API requests that logs where the request actually went and how
-     * it ended. Only the scheme, host and path are logged - never the query, headers or body.
-     */
-    protected function logRequestStats(): callable
-    {
-        return function(TransferStats $stats): void {
-            $uri = $stats->getEffectiveUri();
-            $response = $stats->getResponse();
-
-            Craft::info(sprintf(
-                'Provider request: %s %s://%s%s -> %s in %.2fs',
-                $stats->getRequest()->getMethod(),
-                $uri->getScheme(),
-                $uri->getHost(),
-                $uri->getPath(),
-                $response ? 'HTTP ' . $response->getStatusCode() : 'no response',
-                $stats->getTransferTime() ?? 0
-            ), static::class);
-        };
-    }
 
     public function __construct($config = [])
     {

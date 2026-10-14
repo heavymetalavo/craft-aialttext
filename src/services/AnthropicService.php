@@ -144,7 +144,6 @@ class AnthropicService extends ApiService
             $response = $this->client->post($this->baseUrl, [
                 'headers' => $this->requestHeaders(),
                 'json' => $requestArray,
-                'on_stats' => $this->logRequestStats(),
             ]);
 
             $responseBody = (string)$response->getBody();
