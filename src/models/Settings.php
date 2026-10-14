@@ -24,9 +24,19 @@ use craft\helpers\App;
  * @property string $anthropicModel The Anthropic Model
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
  * @property string $openAiReasoningEffort The reasoning effort level for OpenAI models
+ * @property string $langdockApiKey The Langdock API key
+ * @property string $langdockModelFamily The Langdock model family, which picks its API ('anthropic' for Claude models or 'openai' for GPT models)
+ * @property string $langdockModel The Langdock model to use
+ * @property string $langdockImageInputDetailLevel The image detail level for Langdock's OpenAI API
+ * @property string $langdockReasoningEffort The reasoning effort level for Langdock's OpenAI API
  */
 class Settings extends Model
 {
+    /**
+     * @var string The default Anthropic image detail level, also used by Langdock's Anthropic API
+     */
+    public const DEFAULT_ANTHROPIC_IMAGE_DETAIL_LEVEL = 'low';
+
     /**
      * @var string The API provider to use
      */
@@ -45,7 +55,7 @@ class Settings extends Model
     /**
      * @var string The Anthropic image detail level
      */
-    public string $anthropicImageDetailLevel = 'low';
+    public string $anthropicImageDetailLevel = self::DEFAULT_ANTHROPIC_IMAGE_DETAIL_LEVEL;
 
     /**
      * @var string The OpenAI API key
@@ -80,6 +90,37 @@ class Settings extends Model
     public string $openAiReasoningEffort = 'low';
 
     /**
+     * @var string The Langdock API key
+     */
+    public string $langdockApiKey = '';
+
+    /**
+     * @var string The family of the Langdock model, which decides the compatible API requests are sent to
+     *
+     * Options: anthropic (Claude models), openai (GPT models)
+     */
+    public string $langdockModelFamily = 'anthropic';
+
+    /**
+     * @var string The Langdock model to use, must have vision capabilities
+     */
+    public string $langdockModel = '';
+
+    /**
+     * @var string The image detail level for Langdock's OpenAI API, ignored by its Anthropic API
+     *
+     * Options: low, high, auto
+     */
+    public string $langdockImageInputDetailLevel = 'low';
+
+    /**
+     * @var string The reasoning effort level for Langdock's OpenAI API, ignored by its Anthropic API
+     *
+     * Options: none, minimal, low, medium, high, xhigh
+     */
+    public string $langdockReasoningEffort = 'low';
+
+    /**
      * @var bool Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
      */
     public bool $propagate = false;
@@ -110,7 +151,7 @@ class Settings extends Model
                 ['aiProvider'],
                 function($attribute) {
                     $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['openai', 'anthropic'], true)) {
+                    if (!in_array($val, ['openai', 'anthropic', 'langdock'], true)) {
                         $this->addError($attribute, 'Invalid AI Provider configured.');
                     }
                 }
@@ -150,10 +191,26 @@ class Settings extends Model
                     }
                 }
             ],
+            [['langdockApiKey', 'langdockModel'], 'string'],
+            [['langdockModelFamily'], 'validateOneOf', 'params' => ['allowed' => ['anthropic', 'openai'], 'message' => 'Invalid Langdock Model Family configured.']],
+            ['langdockImageInputDetailLevel', 'string'],
+            [['langdockImageInputDetailLevel'], 'validateOneOf', 'params' => ['allowed' => ['low', 'high', 'auto', ''], 'message' => 'Invalid Langdock Image Input Detail Level configured.']],
+            ['langdockReasoningEffort', 'string'],
+            [['langdockReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid Langdock Reasoning Effort configured.']],
             ['propagate', 'boolean'],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
         ];
+    }
+
+    /**
+     * Inline validator: the attribute, once any environment variable is resolved, must be one of `params['allowed']`.
+     */
+    public function validateOneOf(string $attribute, array $params): void
+    {
+        if (!in_array(App::parseEnv($this->$attribute), $params['allowed'], true)) {
+            $this->addError($attribute, $params['message']);
+        }
     }
 }

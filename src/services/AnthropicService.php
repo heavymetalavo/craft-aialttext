@@ -10,6 +10,7 @@ use Exception;
 use GuzzleHttp\Exception\{GuzzleException, RequestException};
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\api\{AnthropicRequest, AnthropicResponse};
+use heavymetalavo\craftaialttext\models\Settings;
 
 /**
  * Anthropic API Service
@@ -18,10 +19,10 @@ use heavymetalavo\craftaialttext\models\api\{AnthropicRequest, AnthropicResponse
  */
 class AnthropicService extends ApiService
 {
-    private string $apiKey;
-    private string $model;
-    private string $detailLevel;
-    private string $baseUrl = 'https://api.anthropic.com/v1/messages';
+    protected string $apiKey;
+    protected string $model;
+    protected string $detailLevel;
+    protected string $baseUrl = 'https://api.anthropic.com/v1/messages';
 
     /**
      * Initializes the service with the Anthropic API key, model and image detail level from the plugin settings.
@@ -31,11 +32,31 @@ class AnthropicService extends ApiService
      */
     public function __construct($config = [])
     {
-        $plugin = AiAltText::getInstance();
-        $this->apiKey = App::parseEnv($plugin->getSettings()->anthropicApiKey);
-        $this->model = App::parseEnv($plugin->getSettings()->anthropicModel);
-        $this->detailLevel = $plugin->getSettings()->anthropicImageDetailLevel;
+        $this->applySettings(AiAltText::getInstance()->getSettings());
         parent::__construct($config);
+    }
+
+    /**
+     * Reads the API key, model and image detail level from the plugin settings. Providers that speak the
+     * Anthropic Messages API through another host override this to read their own settings.
+     */
+    protected function applySettings(Settings $settings): void
+    {
+        $this->apiKey = App::parseEnv($settings->anthropicApiKey);
+        $this->model = App::parseEnv($settings->anthropicModel);
+        $this->detailLevel = $settings->anthropicImageDetailLevel;
+    }
+
+    /**
+     * The headers sent with every request.
+     */
+    protected function requestHeaders(): array
+    {
+        return [
+            'x-api-key' => $this->apiKey,
+            'anthropic-version' => '2023-06-01',
+            'content-type' => 'application/json',
+        ];
     }
 
     /**
@@ -121,11 +142,7 @@ class AnthropicService extends ApiService
             $requestArray = $requestModel->toArray();
 
             $response = $this->client->post($this->baseUrl, [
-                'headers' => [
-                    'x-api-key' => $this->apiKey,
-                    'anthropic-version' => '2023-06-01',
-                    'content-type' => 'application/json',
-                ],
+                'headers' => $this->requestHeaders(),
                 'json' => $requestArray,
             ]);
 
@@ -159,6 +176,11 @@ class AnthropicService extends ApiService
             if ($errorType === 'invalid_request_error' && !$forceBase64 && !$base64ImageSource) {
                 Craft::warning('Can access the asset URL, but the provider could not, forcing base64 fallback', __METHOD__);
                 return $this->generateAltText($asset, $siteId, true);
+            }
+
+            // Langdock reports errors as a flat {"message": "..."} rather than Anthropic's error object
+            if (is_string($decodedErrorResponse['message'] ?? null)) {
+                throw new Exception('Anthropic API request failed: ' . $decodedErrorResponse['message']);
             }
 
             throw new Exception("Anthropic API request failed error response: " . $errorResponse);

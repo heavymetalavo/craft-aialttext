@@ -11,6 +11,7 @@ use Exception;
 use GuzzleHttp\Exception\{GuzzleException, RequestException};
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\api\{OpenAiRequest, OpenAiResponse};
+use heavymetalavo\craftaialttext\models\Settings;
 use yii\base\InvalidConfigException;
 
 /**
@@ -25,9 +26,9 @@ use yii\base\InvalidConfigException;
  */
 class OpenAiService extends ApiService
 {
-    private string $apiKey;
-    private string $model;
-    private string $baseUrl = 'https://api.openai.com/v1';
+    protected string $apiKey;
+    protected string $model;
+    protected string $baseUrl = 'https://api.openai.com/v1';
 
     /**
      * Constructor
@@ -39,10 +40,35 @@ class OpenAiService extends ApiService
      */
     public function __construct($config = [])
     {
-        $plugin = AiAltText::getInstance();
-        $this->apiKey = App::parseEnv($plugin->getSettings()->openAiApiKey);
-        $this->model = App::parseEnv($plugin->getSettings()->openAiModel);
+        $this->applySettings(AiAltText::getInstance()->getSettings());
         parent::__construct($config);
+    }
+
+    /**
+     * Reads the API key and model from the plugin settings. Providers that speak the OpenAI Responses API
+     * through another host override this to read their own settings.
+     */
+    protected function applySettings(Settings $settings): void
+    {
+        $this->apiKey = App::parseEnv($settings->openAiApiKey);
+        $this->model = App::parseEnv($settings->openAiModel);
+    }
+
+    /**
+     * The `detail` value used for images larger than 512px on either side.
+     * Smaller images are sent as `low`, the request model's default.
+     */
+    protected function imageDetailLevel(): string
+    {
+        return App::parseEnv(AiAltText::getInstance()->getSettings()->openAiImageInputDetailLevel) ?: 'low';
+    }
+
+    /**
+     * The `reasoning.effort` value sent to reasoning models.
+     */
+    protected function reasoningEffort(): string
+    {
+        return (string) App::parseEnv(AiAltText::getInstance()->getSettings()->openAiReasoningEffort);
     }
 
     /**
@@ -121,12 +147,14 @@ class OpenAiService extends ApiService
                 $responseBody = (string) $e->getResponse()->getBody();
                 $errorData = json_decode($responseBody, true);
 
-                // Extract just the error message from the response
-                if (isset($errorData['error']['message'])) {
-                    $errorMsg = 'OpenAI API error: ' . $errorData['error']['message'];
+                // Extract just the error message from the response. Langdock reports some errors
+                // as a flat {"message": "..."} rather than OpenAI's error object.
+                $apiErrorMessage = $errorData['error']['message'] ?? $errorData['message'] ?? null;
+                if (is_string($apiErrorMessage)) {
+                    $errorMsg = 'OpenAI API error: ' . $apiErrorMessage;
                     Craft::error('OpenAI API error: ' . $responseBody, __METHOD__);
 
-                    $errorResponse->setError($errorMsg, $errorData['error']);
+                    $errorResponse->setError($errorMsg, $errorData['error'] ?? null);
                     return $errorResponse;
                 }
             }
@@ -162,7 +190,6 @@ class OpenAiService extends ApiService
      */
     public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceBase64 = false): string
     {
-        $plugin = AiAltText::getInstance();
         // Validate image support using the parent base service method
         if (!$this->validateImageSupport($asset)) {
             return '';
@@ -203,7 +230,7 @@ class OpenAiService extends ApiService
         $height = $asset->getHeight();
         $detail = null;
         if ($width > 512 || $height > 512) {
-            $detail = App::parseEnv($plugin->getSettings()->openAiImageInputDetailLevel) ?: 'low';
+            $detail = $this->imageDetailLevel();
         }
         
         $prompt = $this->resolvePrompt($asset, $siteId);
@@ -217,7 +244,7 @@ class OpenAiService extends ApiService
         $request->setInstructions($prompt)
             ->setPrompt(self::GENERATE_TRIGGER)
             ->setImageUrl($imageUrl)
-            ->setReasoningEffort((string) App::parseEnv($plugin->getSettings()->openAiReasoningEffort));
+            ->setReasoningEffort($this->reasoningEffort());
             
         // Only set detail if the image is large enough
         if ($detail !== null) {
