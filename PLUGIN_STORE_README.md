@@ -58,7 +58,7 @@ ddev craft plugin/install ai-alt-text
 2. Copy the new key and save it to an environment variable (`.env`).
 3. Choose the **Model Family** that matches the model you want to use: `Claude (Anthropic API)` for Claude models, `GPT (OpenAI API)` for GPT models. Both use the same API key.
 
-Langdock serves each vendor's API with a region in the URL (`EU` or `US`). Dedicated Langdock deployments are not supported yet: requests always go to `api.langdock.com`.
+Requests go to Langdock's EU region, where Langdock hosts its OpenAI and Anthropic models. Dedicated Langdock deployments are not supported yet: requests always go to `api.langdock.com`.
 
 ### OpenAI
 
@@ -149,7 +149,6 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **OpenAI/Anthropic/Langdock API Key** | Your provider's API key. |
 | **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-4-5`). For Langdock, use the model's name in Langdock. |
 | **Langdock Model Family** | Langdock only. `Claude (Anthropic API)` or `GPT (OpenAI API)`. It must match the model, and decides which of Langdock's compatible APIs requests are sent to. |
-| **Langdock Region** | Langdock only. `EU` or `US`. Not every model is available in every region, so pick one your model is offered in. |
 | **Langdock Image Detail Level** | Langdock with the `GPT (OpenAI API)` model family only. Works like the OpenAI image detail level, `low`, `high` or `auto`. |
 | **Langdock Reasoning Effort** | Langdock with the `GPT (OpenAI API)` model family only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). |
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |

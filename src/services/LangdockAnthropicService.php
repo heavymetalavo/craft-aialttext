@@ -12,7 +12,7 @@ use heavymetalavo\craftaialttext\models\Settings;
  * Langdock Anthropic API Service
  *
  * Langdock serves the Anthropic Messages API on its own host. It differs from Anthropic's in three
- * ways: the URL carries a region, the API key is a Bearer token, and images must be sent as base64.
+ * ways: the URL carries a region (always eu), the API key is a Bearer token, and images must be sent as base64.
  */
 class LangdockAnthropicService extends AnthropicService
 {
@@ -27,7 +27,8 @@ class LangdockAnthropicService extends AnthropicService
         $this->model = App::parseEnv($settings->langdockModel);
         // Langdock has no image detail setting of its own, so use the plugin's default
         $this->detailLevel = Settings::DEFAULT_ANTHROPIC_IMAGE_DETAIL_LEVEL;
-        $this->baseUrl = 'https://api.langdock.com/anthropic/' . App::parseEnv($settings->langdockRegion) . '/v1/messages';
+        // Langdock hosts its Anthropic models in the EU region
+        $this->baseUrl = 'https://api.langdock.com/anthropic/eu/v1/messages';
     }
 
     /**
@@ -57,12 +58,12 @@ class LangdockAnthropicService extends AnthropicService
     }
 
     /**
-     * Wrong-model errors usually mean the Model Family or Region doesn't suit the model, so say so. The hint is only
+     * Wrong-model errors usually mean the Model Family doesn't match the model, so say so. The hint is only
      * added once, since a failed attempt can be retried through this method.
      */
     private function withModelFamilyHint(Exception $e): Exception
     {
-        $hint = Craft::t('ai-alt-text', 'Check the model name, and that the Langdock Model Family and Region suit it: Claude (Anthropic API) for Claude models, GPT (OpenAI API) for GPT models. Not every model is available in every region.');
+        $hint = Craft::t('ai-alt-text', 'Check the model name, and that the Langdock Model Family matches it: Claude (Anthropic API) for Claude models, GPT (OpenAI API) for GPT models.');
 
         if (stripos($e->getMessage(), 'model') === false || str_contains($e->getMessage(), $hint)) {
             return $e;

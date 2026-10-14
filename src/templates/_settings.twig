@@ -212,21 +212,6 @@
         suggestEnvVars: true,
     }) }}
 
-    {{ forms.selectizeField({
-        label: 'Langdock Region'|t('ai-alt-text'),
-        id: 'langdockRegion',
-        name: 'langdockRegion',
-        instructions: "The region your Langdock workspace's data is processed in."|t("ai-alt-text"),
-        options: [
-            { label: 'EU', value: 'eu' },
-            { label: 'US', value: 'us' }
-        ],
-        includeEnvVars: true,
-        allowedEnvValues: null,
-        value: settings.langdockRegion,
-        errors: settings.getErrors('langdockRegion')
-    }) }}
-
     <div id="langdock-family-openai" class="{{ 'openai' in hiddenLangdockFamilies ? 'hidden' }}">
         {{ forms.selectizeField({
             label: 'Langdock Image Detail Level'|t('ai-alt-text'),

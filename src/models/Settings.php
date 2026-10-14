@@ -26,7 +26,6 @@ use craft\helpers\App;
  * @property string $openAiReasoningEffort The reasoning effort level for OpenAI models
  * @property string $langdockApiKey The Langdock API key
  * @property string $langdockModelFamily The Langdock model family, which picks its API ('anthropic' for Claude models or 'openai' for GPT models)
- * @property string $langdockRegion The Langdock data region ('eu' or 'us')
  * @property string $langdockModel The Langdock model to use
  * @property string $langdockImageInputDetailLevel The image detail level for Langdock's OpenAI API
  * @property string $langdockReasoningEffort The reasoning effort level for Langdock's OpenAI API
@@ -101,13 +100,6 @@ class Settings extends Model
      * Options: anthropic (Claude models), openai (GPT models)
      */
     public string $langdockModelFamily = 'anthropic';
-
-    /**
-     * @var string The Langdock data region
-     *
-     * Options: eu, us
-     */
-    public string $langdockRegion = 'eu';
 
     /**
      * @var string The Langdock model to use, must have vision capabilities
@@ -205,7 +197,6 @@ class Settings extends Model
             [['langdockImageInputDetailLevel'], 'validateOneOf', 'params' => ['allowed' => ['low', 'high', 'auto', ''], 'message' => 'Invalid Langdock Image Input Detail Level configured.']],
             ['langdockReasoningEffort', 'string'],
             [['langdockReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid Langdock Reasoning Effort configured.']],
-            [['langdockRegion'], 'validateOneOf', 'params' => ['allowed' => ['eu', 'us'], 'message' => 'Invalid Langdock Region configured.']],
             ['propagate', 'boolean'],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
