@@ -54,7 +54,7 @@ ddev craft plugin/install ai-alt-text
 
 ### Langdock
 
-1. In [Langdock](https://langdock.com/), create a personal API key under **Settings → Account → API keys** (your admin has to give you access first, see [Personal API keys](https://docs.langdock.com/en/using-langdock/account/personal-api-keys)), or ask your workspace admin for a workspace API key with the **Completion API** scope (see the [Completion API overview](https://docs.langdock.com/en/developer/completion-api/completion-overview)).
+1. In [Langdock](https://langdock.com/), click your account name (bottom left), then go to **Settings → Products → API**. On the **Workspace API keys** tab choose **Create API key** and tick only **Completion API**, which covers both the OpenAI and Anthropic endpoints this plugin uses (see the [Completion API overview](https://docs.langdock.com/en/developer/completion-api/completion-overview)). Creating a workspace key needs a workspace admin. The **Personal API keys** tab on the same page also works, see [Personal API keys](https://docs.langdock.com/en/using-langdock/account/personal-api-keys).
 2. Save the API key to an environment variable (`.env`).
 3. Choose the **Model Family** that matches the model you want to use: `Claude (Anthropic API)` for Claude models, `GPT (OpenAI API)` for GPT models. Both use the same API key.
 
