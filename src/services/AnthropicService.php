@@ -179,6 +179,11 @@ class AnthropicService extends ApiService
                 return $this->generateAltText($asset, $siteId, true);
             }
 
+            // Langdock reports errors as a flat {"message": "..."} rather than Anthropic's error object
+            if (is_string($decodedErrorResponse['message'] ?? null)) {
+                throw new Exception('Anthropic API request failed: ' . $decodedErrorResponse['message']);
+            }
+
             throw new Exception("Anthropic API request failed error response: " . $errorResponse);
         }
     }

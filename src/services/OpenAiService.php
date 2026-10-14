@@ -148,12 +148,14 @@ class OpenAiService extends ApiService
                 $responseBody = (string) $e->getResponse()->getBody();
                 $errorData = json_decode($responseBody, true);
 
-                // Extract just the error message from the response
-                if (isset($errorData['error']['message'])) {
-                    $errorMsg = 'OpenAI API error: ' . $errorData['error']['message'];
+                // Extract just the error message from the response. Langdock reports some errors
+                // as a flat {"message": "..."} rather than OpenAI's error object.
+                $apiErrorMessage = $errorData['error']['message'] ?? $errorData['message'] ?? null;
+                if (is_string($apiErrorMessage)) {
+                    $errorMsg = 'OpenAI API error: ' . $apiErrorMessage;
                     Craft::error('OpenAI API error: ' . $responseBody, __METHOD__);
 
-                    $errorResponse->setError($errorMsg, $errorData['error']);
+                    $errorResponse->setError($errorMsg, $errorData['error'] ?? null);
                     return $errorResponse;
                 }
             }
