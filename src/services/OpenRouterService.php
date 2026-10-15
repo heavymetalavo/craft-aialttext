@@ -7,6 +7,7 @@ use craft\elements\Asset;
 use craft\helpers\App;
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
+use heavymetalavo\craftaialttext\models\api\OpenAiResponse;
 use heavymetalavo\craftaialttext\models\Settings;
 
 /**
@@ -44,6 +45,30 @@ class OpenRouterService extends OpenAiService
         } catch (Exception $e) {
             throw $this->withOpenRouterWording($e);
         }
+    }
+
+    /**
+     * OpenRouter reports a failure at the model's own provider as just "Provider returned error" and keeps the cause
+     * (a temporary rate limit, an unsupported image, ...) in the error's metadata, so put the cause in the message.
+     */
+    protected function sendRequest(array $requestData): OpenAiResponse
+    {
+        $response = parent::sendRequest($requestData);
+        $metadata = $response->error['details']['metadata'] ?? null;
+        $raw = $metadata['raw'] ?? null;
+
+        if ($response->hasError() && is_string($raw) && $raw !== '') {
+            $decoded = json_decode($raw, true);
+            $cause = is_array($decoded) ? ($decoded['error']['message'] ?? $decoded['message'] ?? $raw) : $raw;
+            $provider = $metadata['provider_name'] ?? null;
+
+            $response->setError(
+                $response->error['message'] . ': ' . mb_strimwidth((string) $cause, 0, 300, '…') . ($provider ? " ($provider)" : ''),
+                $response->error['details']
+            );
+        }
+
+        return $response;
     }
 
     /**

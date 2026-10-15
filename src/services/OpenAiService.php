@@ -83,7 +83,7 @@ class OpenAiService extends ApiService
      * @return OpenAiResponse The API response
      * @throws Exception|GuzzleException If the API call fails
      */
-    private function sendRequest(array $requestData): OpenAiResponse
+    protected function sendRequest(array $requestData): OpenAiResponse
     {
         $requestStartedAt = null;
 
