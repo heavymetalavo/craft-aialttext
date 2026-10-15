@@ -1,5 +1,9 @@
 # Release Notes for AI Alt Text
 
+## 5.3.0 - 2026-10-15
+
+- Added [OpenRouter](https://openrouter.ai/) as an AI provider, sending OpenAI and Anthropic models through its Responses API. Configure the API key and model in the plugin settings, plus the image detail level and reasoning effort for OpenAI models.
+
 ## 5.2.0 - 2026-10-15
 
 - Added [Langdock](https://langdock.com/) as an AI provider, using either its Anthropic-compatible or OpenAI-compatible API. Configure the API key, model family and model in the plugin settings, plus the image detail level and reasoning effort for the OpenAI-compatible API.

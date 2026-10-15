@@ -29,7 +29,8 @@
 {% set providerOptions = [
     { label: 'Anthropic', value: 'anthropic' },
     { label: 'OpenAI', value: 'openai' },
-    { label: 'Langdock', value: 'langdock' }
+    { label: 'Langdock', value: 'langdock' },
+    { label: 'OpenRouter', value: 'openrouter' }
 ] %}
 {% set providerValues = providerOptions|map(o => o.value) %}
 
@@ -248,6 +249,71 @@
             errors: settings.getErrors('langdockReasoningEffort')
         }) }}
     </div>
+</div>
+
+
+<div id="provider-openrouter" class="{{ 'openrouter' in hiddenProviders ? 'hidden' }}">
+    <hr />
+
+    <h3>OpenRouter Settings</h3>
+
+    {{ forms.autosuggestField({
+        label: "OpenRouter API Key"|t("ai-alt-text"),
+        instructions: "An API key from your [OpenRouter account](https://openrouter.ai/keys). The account needs credit."|t("ai-alt-text"),
+        id: "openRouterApiKey",
+        name: "openRouterApiKey",
+        placeholder: '$OPENROUTER_API_KEY',
+        suggestEnvVars: true,
+        value: settings.openRouterApiKey,
+        errors: settings.getErrors("openRouterApiKey"),
+    }) }}
+
+    {{ forms.autosuggestField({
+        label: 'OpenRouter Model'|t('ai-alt-text'),
+        id: 'openRouterModel',
+        name: 'openRouterModel',
+        instructions: "The model's name on OpenRouter, which starts with the vendor, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-5-nano`. It must accept image input. [Browse the models](https://openrouter.ai/models)."|t("ai-alt-text"),
+        value: settings.openRouterModel,
+        placeholder: 'anthropic/claude-haiku-5.5',
+        errors: settings.getErrors('openRouterModel'),
+        suggestEnvVars: true,
+    }) }}
+
+    {{ forms.selectizeField({
+        label: 'OpenRouter Image Detail Level'|t('ai-alt-text'),
+        id: 'openRouterImageInputDetailLevel',
+        name: 'openRouterImageInputDetailLevel',
+        instructions: "Controls the [detail level](https://openrouter.ai/docs/guides/overview/multimodal/image-understanding) used to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest. Only OpenAI models use it."|t("ai-alt-text"),
+        options: [
+            { label: 'Low - Fast, low-cost (512px x 512px)', value: 'low' },
+            { label: 'High - Standard high-fidelity understanding', value: 'high' },
+            { label: 'Original - Large, dense, spatially sensitive images (gpt-5.4+)', value: 'original' },
+            { label: 'Auto - Let the model choose (may use more tokens)', value: 'auto' }
+        ],
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        value: settings.openRouterImageInputDetailLevel,
+        errors: settings.getErrors('openRouterImageInputDetailLevel')
+    }) }}
+
+    {{ forms.selectizeField({
+        label: 'OpenRouter Reasoning Effort'|t('ai-alt-text'),
+        id: 'openRouterReasoningEffort',
+        name: 'openRouterReasoningEffort',
+        instructions: "Controls the [reasoning effort](https://openrouter.ai/docs/api_reference/responses/reasoning) value when using OpenAI models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values a model accepts depends on the model, so check the provider's documentation if a value is rejected. Other models are sent no reasoning setting."|t("ai-alt-text"),
+        options: [
+            { label: 'None', value: 'none' },
+            { label: 'Minimal', value: 'minimal' },
+            { label: 'Low', value: 'low' },
+            { label: 'Medium', value: 'medium' },
+            { label: 'High', value: 'high' },
+            { label: 'Extra High', value: 'xhigh' }
+        ],
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        value: settings.openRouterReasoningEffort,
+        errors: settings.getErrors('openRouterReasoningEffort')
+    }) }}
 </div>
 
 

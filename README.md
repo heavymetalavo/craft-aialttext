@@ -1,8 +1,8 @@
 # 🤖 💬 AI Alt Text
   
-Generate alt text for CraftCMS Asset Images using the Anthropic, OpenAI or Langdock API (Antropic or OpenAI models only).
+Generate alt text for CraftCMS Asset Images using the Anthropic, OpenAI, Langdock or OpenRouter API (Anthropic or OpenAI models only through Langdock and OpenRouter).
 
-🚨 NEW Additional AI Provider support for Langdock is now available.
+🚨 NEW Additional AI Provider support for OpenRouter is now available.
 
 [Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft5) | [GitHub Repository](https://github.com/heavymetalavo/craft-aialttext)
 
@@ -17,7 +17,7 @@ A full walkthrough of all plugin features - [watch on YouTube](https://youtu.be/
 This plugin requires: 
 - Craft CMS 5.0.0 or later - running Craft 4? [Use the 4.x branch](https://github.com/heavymetalavo/craft-aialttext/blob/4.x/README.md) instead
 - PHP 8.2 or later
-- An Anthropic, OpenAI or Langdock API key
+- An Anthropic, OpenAI, Langdock or OpenRouter API key
 
 ## 📥 Installation
 
@@ -59,6 +59,16 @@ ddev craft plugin/install ai-alt-text
 3. Choose the **Model Family** that matches the model you want to use: `Claude (Anthropic API)` for Claude models, `GPT (OpenAI API)` for GPT models. Both use the same API key.
 
 Requests go to Langdock's EU region, where Langdock hosts its OpenAI and Anthropic models. Dedicated Langdock deployments are not supported yet: requests always go to `api.langdock.com`.
+
+### OpenRouter
+
+1. Visit [https://openrouter.ai/](https://openrouter.ai/) and sign up or log in.
+2. Make sure your account has some credit, a few dollars goes a long way with the small models.
+3. Go to [Keys](https://openrouter.ai/keys), create a key, and give it a name and, if you like, a credit limit.
+4. Copy the key and save it to an environment variable (`.env`).
+5. Set the **Model** to the model's OpenRouter name, which starts with the vendor, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-5-nano` ([browse the models](https://openrouter.ai/models) and choose one that accepts image input).
+
+OpenRouter takes the same request for every model, so there is no model family to choose. The plugin is built for and tested with OpenAI and Anthropic models. Other models that accept images generally work through the same endpoint (DeepSeek's and Mistral's did in testing) but aren't supported, and some thinking models are slow, in which case raise the request timeout in `config/guzzle.php`.
 
 ### OpenAI
 
@@ -145,12 +155,14 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 | Setting | Description |
 |---------|-------------|
-| **AI Provider** | Choose between OpenAI, Anthropic or Langdock. |
-| **OpenAI/Anthropic/Langdock API Key** | Your provider's API key. |
-| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-4-5`). For Langdock, use the model's name in Langdock. |
+| **AI Provider** | Choose between OpenAI, Anthropic, Langdock or OpenRouter. |
+| **OpenAI/Anthropic/Langdock/OpenRouter API Key** | Your provider's API key. |
+| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-4-5`). For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-5-nano`. |
 | **Langdock Model Family** | Langdock only. `Claude (Anthropic API)` or `GPT (OpenAI API)`. It must match the model, and decides which of Langdock's compatible APIs requests are sent to. |
 | **Langdock Image Detail Level** | Langdock with the `GPT (OpenAI API)` model family only. Works like the OpenAI image detail level, `low`, `high` or `auto`. |
 | **Langdock Reasoning Effort** | Langdock with the `GPT (OpenAI API)` model family only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). |
+| **OpenRouter Image Detail Level** | OpenRouter only. Works like the OpenAI image detail level, `low`, `high`, `original` or `auto`. Only OpenAI models use it. |
+| **OpenRouter Reasoning Effort** | OpenRouter only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). Only sent to OpenAI reasoning models. |
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |
 | **OpenAI Reasoning Effort**| The reasoning effort level for OpenAI reasoning models. |
 | **Prompt** | The instructions sent to the AI provider as the system / instruction message (example [below](#default-prompt)). Supports `{asset.property}` and `{site.property}` variables, plus `{site.languageName}` for the language's display name (e.g. `English (United Kingdom)`). |
@@ -197,6 +209,8 @@ Controls how much time the model spends "thinking" before generating a response 
 - `xhigh`
 
 **Langdock** with the `Claude (Anthropic API)` model family has no image detail setting: images are scaled to the `low` size (500px x 500px) and always sent as base64, since Langdock does not accept image URLs. With the `GPT (OpenAI API)` model family, **Langdock Image Detail Level** (`low`, `high` or `auto`) and **Langdock Reasoning Effort** work like the OpenAI settings above (both default to `low`).
+
+**OpenRouter** always sends images as base64 and scales them as OpenAI does, whichever model is used. OpenAI models use **OpenRouter Image Detail Level** and **OpenRouter Reasoning Effort** (both default to `low`). Claude and other models are sent neither, and so use their own defaults.
 
 For more information, refer to the [OpenAI](https://platform.openai.com/docs/guides/images) and [Anthropic](https://docs.anthropic.com/en/docs/build-with-claude/vision) documentation.
 
