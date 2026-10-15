@@ -135,7 +135,7 @@ class OpenAiRequest extends Model
 
         // o-series (o1, o3, o4-mini, ...) and the gpt-5 family onwards, including point releases
         // such as gpt-5.1 and future two-digit majors. Gateways such as OpenRouter prefix the vendor
-        // (`openai/gpt-5-nano`).
+        // (`openai/gpt-6-luna`).
         return (bool) preg_match('/^(openai\/)?(o\d|gpt-([5-9]|\d{2,}))/', $this->model);
     }
 }

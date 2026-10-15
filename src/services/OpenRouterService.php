@@ -14,7 +14,7 @@ use heavymetalavo\craftaialttext\models\Settings;
  * OpenRouter API Service
  *
  * OpenRouter serves the OpenAI Responses API on its own host for models from many vendors, which it names
- * with the vendor in front (`anthropic/claude-haiku-5.5`, `openai/gpt-5-nano`). Authentication is the same
+ * with the vendor in front (`anthropic/claude-haiku-5.5`, `openai/gpt-6-luna`). Authentication is the same
  * Bearer token OpenAI uses.
  */
 class OpenRouterService extends OpenAiService
@@ -80,7 +80,7 @@ class OpenRouterService extends OpenAiService
         $message = preg_replace('/^OpenAI API (error|request failed)/', 'OpenRouter $1', $e->getMessage());
 
         if (stripos($message, 'model') !== false) {
-            $message .= ' ' . Craft::t('ai-alt-text', "Check the model's name on OpenRouter, which starts with the vendor (for example `anthropic/claude-haiku-5.5` or `openai/gpt-5-nano`), and that the model accepts image input.");
+            $message .= ' ' . Craft::t('ai-alt-text', "Check the model's name on OpenRouter, which starts with the vendor (for example `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`), and that the model accepts image input.");
         }
 
         return $message === $e->getMessage() ? $e : new Exception($message, (int) $e->getCode(), $e);

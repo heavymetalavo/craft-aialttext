@@ -131,7 +131,7 @@ class Settings extends Model
 
     /**
      * @var string The OpenRouter model to use, as OpenRouter names it (e.g. `anthropic/claude-haiku-5.5` or
-     * `openai/gpt-5-nano`), must have vision capabilities
+     * `openai/gpt-6-luna`), must have vision capabilities
      */
     public string $openRouterModel = '';
 

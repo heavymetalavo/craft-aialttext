@@ -64,7 +64,7 @@ Requests go to Langdock's EU region, where Langdock hosts its OpenAI and Anthrop
 2. Make sure your account has some credit, a few dollars goes a long way with the small models.
 3. Go to [Keys](https://openrouter.ai/keys), create a key, and give it a name and, if you like, a credit limit.
 4. Copy the key and save it to an environment variable (`.env`).
-5. Set the **Model** to the model's OpenRouter name, which starts with the vendor, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-5-nano` (see [OpenRouter models](#-openrouter-models) for how to find ones that accept images, and what they cost).
+5. Set the **Model** to the model's OpenRouter name, which starts with the vendor, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna` (see [OpenRouter models](#-openrouter-models) for how to find ones that accept images, and what they cost).
 
 OpenRouter takes the same request for every model, so there is no model family to choose and any model that accepts image input can be used. The plugin is built for and tested with OpenAI and Anthropic models. Other vendors' models aren't supported, but [the ones tested](#-openrouter-models) worked unchanged, and how good the alt text is varies between models. Worth knowing:
 
@@ -159,7 +159,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 |---------|-------------|
 | **AI Provider** | Choose between OpenAI, Anthropic, Langdock or OpenRouter. |
 | **OpenAI/Anthropic/Langdock/OpenRouter API Key** | Your provider's API key. |
-| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-5-5`). For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-5-nano`. |
+| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-5-5`). For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. |
 | **Langdock Model Family** | Langdock only. `Claude (Anthropic API)` or `GPT (OpenAI API)`. It must match the model, and decides which of Langdock's compatible APIs requests are sent to. |
 | **Langdock Image Detail Level** | Langdock with the `GPT (OpenAI API)` model family only. Works like the OpenAI image detail level, `low`, `high` or `auto`. |
 | **Langdock Reasoning Effort** | Langdock with the `GPT (OpenAI API)` model family only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). |
