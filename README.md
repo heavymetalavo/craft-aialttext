@@ -185,39 +185,73 @@ To find out which models are capable of vision, check [the models page](https://
 
 #### 🌐 OpenRouter models
 
-The plugin doesn't keep a list of vision models, since OpenRouter's catalogue changes every week, but the models below all worked when tested.
+The plugin doesn't keep a list of vision models, since OpenRouter's catalogue changes every week, but all of the models below were tried and worked.
 
 **Check that a model accepts images**
 - Open the [models page filtered to image input and text output](https://openrouter.ai/models?input_modalities=image&output_modalities=text). Every model listed can be used, and a model's own page shows the input modalities it accepts. Models on the page's *Image* tab generate images and return no text, so they can't write alt text.
 - Or ask the API, which needs no key: `curl -s 'https://openrouter.ai/api/v1/models?input_modalities=image' | jq -r '.data[].id'` prints the ids to use as the **Model**.
 - A model that can't read images is refused with "No endpoints found that support image input".
 
-**Cheapest and best value**
+**Best value**
 
-Measured on one small test photo at `low` detail (OpenRouter's prices on 15 October 2026, the cost of the request OpenRouter reports):
-- **Cheapest:** `google/gemma-3-4b-it` (about $0.00002 per alt text) and `nex-agi/nex-n2.5-mini` (about $0.00005). Both are small models and their wording was less natural.
-- **Best value:** `openai/gpt-6-luna` at about $0.00005 and 2 seconds, and `anthropic/claude-haiku-5.5` at about $0.00025 and 2.5 seconds, both with good alt text. Haiku costs the same per token as Luna but counted six times as many tokens for the image (2,233 against 349), which is why it comes out about five times dearer here.
-- **Not as cheap as it looks:** `deepseek/deepseek-v4.1-flash` has the lowest price per input token ($0.016 per million) but thinks before it answers. The 1,000 to 2,400 tokens it spends per image are billed as output, so each alt text cost $0.0006 to $0.0016 (10 to 30 times Luna) and took 7 to 12 seconds. The **Reasoning Effort** setting doesn't reach it, as it's sent to OpenAI models only.
+- **`openai/gpt-6-luna`** is the best value, at about $0.00005 per alt text (about $0.05 per 1,000 images) in around 2 seconds, with good wording.
+- **`anthropic/claude-haiku-5.5`** is the best value if you'd rather use Claude, at about $0.0002 to $0.0004 in 2 to 4 seconds. It costs the same per token as Luna but counts three to six times as many tokens for an image.
+- Close behind are `google/gemini-3.1-flash-lite` (about $0.00015 in 1 second) and the flash models from China, `z-ai/glm-5.3-flash`, `qwen/qwen3.8-flash` and `deepseek/deepseek-v4-flash-vision-exp` (about $0.0002 to $0.0004 in 3 to 9 seconds).
+- **`deepseek/deepseek-v4.1-flash`** has the lowest price per input token but thinks before it answers, and the 1,000 to 2,000 tokens it can spend are billed as output. It cost $0.0002 to $0.0016 per alt text and took 1 to 12 seconds. Its wording was a little more precise than Luna's on a handful of photos (it named an avocado's pit where Luna said coconut), but not by much, and it costs 4 to 30 times as much. The **Reasoning Effort** setting doesn't reach it, as it's sent to OpenAI models only.
 
-The cost of an image depends on its size and on how each model counts image tokens, so check the *Activity* page in OpenRouter after a few runs with your own images.
+Models that think first (most of the Chinese ones: GLM, Qwen, MiMo, Kimi and Seed) are slower, and their reasoning is billed as output, which is why their cost and speed vary between runs.
 
-**Models tested**
+**Cost and speed of the models tried**
 
-Each was given the same photo and prompt through the plugin on 15 October 2026. Models not listed in the first row were not tried.
+Measured through the plugin on small test photos at `low` detail, using the cost OpenRouter reports for each request (prices on 15 October 2026). The cost of an image depends on its size and on how each model counts image tokens, so check the *Activity* page in OpenRouter after a few runs with your own images.
 
-| Vendor | Worked | Notes |
-|---|---|---|
-| OpenAI | `gpt-6-luna`, `gpt-5-nano`, `gpt-4o-mini` | |
-| Anthropic | `claude-haiku-5.5` | |
-| Google | `gemini-4-argon`, `gemini-3.8-flash`, `gemini-2.5-flash-lite`, `gemma-3-4b-it` | `gemini-nano-banana-2.1` generates images and failed. |
-| Meta | `muse-spark-open`, `muse-spark-1.3` | About 14 seconds each. `meta-llama/llama-guard-4-12b` is a safety model and only answers "safe". |
-| xAI | `grok-4.7`, `grok-4.5`, `grok-4.6` | `grok-4.6` took 67 seconds, and `grok-build-0.1` timed out after 40. |
-| DeepSeek | `deepseek-v4.1-flash`, `deepseek-v4-flash-vision-exp` | See the cost note above. |
-| Mistral | `mistral-large-4-0`, `mistral-medium-3-5`, `mistral-small-3.2-24b-instruct` | `mistral-large-4-0` took 41 seconds. `mistral-small-2603` was rate-limited upstream when tried. |
-| Qwen | `qwen3.8-flash`, `qwen3.8-omni-flash`, `qwen3.8-max-0902` | `qwen3.7-flash` took 45 to 52 seconds. |
-| Others | `amazon/nova-lite-v1`, `nvidia/nemotron-3.5-super-vl`, `z-ai/glm-5.3-flash`, `moonshotai/kimi-k3`, `cohere/command-a-plus`, `stepfun/step-3.7-flash`, `xiaomi/mimo-v2.6-flash`, `bytedance-seed/seed-1.6-flash`, `thinkingmachines/inkling-small`, `perplexity/sonar`, `perceptron/perceptron-mk1.5` | `rekaai/reka-edge`, `bytedance/ui-tars-1.5-7b` and `prism-ml/ternary-bonsai-2-27b` returned garbled text. |
+| Model | Cost per alt text | Time | Notes |
+|---|---|---|---|
+| `openai/gpt-6-luna` | $0.00005 | 2s | Best value. |
+| `qwen/qwen3-vl-30b-a3b-instruct` | $0.00012 | 3s | Doesn't think, so cost and speed are steady. |
+| `amazon/nova-lite-v1` | $0.00012 | 1s |  |
+| `google/gemini-3.1-flash-lite` | $0.00015 | 1s |  |
+| `meta-llama/llama-4-maverick` | $0.00014 | 12s |  |
+| `amazon/nova-2-lite-v1` | $0.00018 | 1s |  |
+| `google/gemini-3.5-flash-lite` | $0.0002 | 1s |  |
+| `google/gemini-2.5-flash-lite` | $0.0002 | 3–11s |  |
+| `z-ai/glm-5.3-flash` | $0.0002 | 3–7s | Thinks briefly. |
+| `deepseek/deepseek-v4-flash-vision-exp` | $0.0002–0.0003 | 3–5s | Thinks briefly. |
+| `anthropic/claude-haiku-5.5` | $0.0002–0.0004 | 2–4s | Good value. |
+| `qwen/qwen3.8-flash` | $0.0002–0.0004 | 5–9s | Thinks briefly. |
+| `qwen/qwen3.5-flash-02-23` | $0.00025 | 6s |  |
+| `meta-llama/llama-4-scout` | $0.00026 | 3s |  |
+| `bytedance-seed/seed-2.0-mini` | $0.0003 | 6s |  |
+| `qwen/qwen3.8-omni-flash` | $0.0003 | 5s |  |
+| `xiaomi/mimo-v2.5` | $0.0003 | 16s |  |
+| `google/gemma-4-31b-it` | $0.0003 | 1.5s |  |
+| `openai/gpt-5-nano` | $0.0002 | 3–4s | OpenAI retires it on 11 December 2026. |
+| `openai/gpt-4.1-nano` | $0.0004 | 4s |  |
+| `openai/gpt-4o-mini` | $0.0005 | 3s |  |
+| `openai/gpt-5.4-nano` | $0.0004 | 2s | Described a cub between the bear's paws that wasn't there. |
+| `z-ai/glm-5.3-flashx` | $0.0005–0.0009 | 3s | Dearer than `glm-5.3-flash`. |
+| `z-ai/glm-4.6v` | $0.0006 | 5–6s |  |
+| `qwen/qwen3.6-flash` | $0.0006 | 8s |  |
+| `qwen/qwen3.8-27b` | $0.0006 | 14s |  |
+| `openai/gpt-5-mini` | $0.0008 | 5s |  |
+| `deepseek/deepseek-v4.1-flash` | $0.0002–0.0016 | 1–12s | Thinks first, so it varies a lot from image to image. |
+| `qwen/qwen3.7-plus` | $0.001 | 7s |  |
+| `xiaomi/mimo-v2.6-pro` | $0.001 | 13s |  |
+| `bytedance-seed/seed-2.0-lite` | $0.0013 | 11s |  |
+| `stepfun/step-3.7-flash` | $0.0013 | 13s |  |
+| `z-ai/glm-5v-turbo` | $0.002–0.003 | 9–10s |  |
+| `moonshotai/kimi-k3` | $0.005–0.006 | 8–9s | Priced for output, so dear for this. |
 
-Failures that weren't about the model: `meta/muse-spark-1.3-contributor` and `sakana/sakana-namazu` were blocked by the data policy in my OpenRouter account (the error links to your [privacy settings](https://openrouter.ai/settings/privacy)), `minimax/minimax-01` rejects the plugin's maximum output length, and `scaledown/extract` needs options of its own.
+Also worked, with cost not measured:
+- `google/gemini-4-argon` and `gemini-3.8-flash`, `meta/muse-spark-open` and `muse-spark-1.3` (about 14 seconds), `x-ai/grok-4.7` and `grok-4.5`, `mistralai/mistral-medium-3-5` and `mistral-small-3.2-24b-instruct`, `qwen/qwen3.8-max-0902`, `nvidia/nemotron-3.5-super-vl`, `cohere/command-a-plus`, `perplexity/sonar`, `thinkingmachines/inkling-small` and `perceptron/perceptron-mk1.5`.
+- `google/gemma-3-4b-it`, `nex-agi/nex-n2.5-mini` and `mistralai/ministral-8b-2512` are very cheap but small models, and their wording was less natural. `rekaai/reka-edge`, `bytedance/ui-tars-1.5-7b`, `prism-ml/ternary-bonsai-2-27b` and `bytedance-seed/seed-1.6-flash` returned garbled text.
+- `meta-llama/llama-guard-4-12b` is a safety model and only answers "safe".
+
+Too slow, or didn't work:
+- Slow, 20 seconds or more: `moonshotai/kimi-k2.6` (70 seconds, and 1.8 cents per alt text), `moonshotai/kimi-k2.5`, `minimax/minimax-m3`, `bytedance-seed/seed-2-1-turbo`, `nex-agi/nex-n2.5-pro` (22 seconds), `x-ai/grok-4.6` (67 seconds), `x-ai/grok-build-0.1`, `mistralai/mistral-large-4-0` (41 seconds) and `qwen/qwen3.7-flash` (45 to 52 seconds). `xiaomi/mimo-v2.6-flash` ranged from 3 seconds to over 30.
+- Blocked by the data policy in my OpenRouter account, the error links to your [privacy settings](https://openrouter.ai/settings/privacy): `meta/muse-spark-1.3-contributor` and `sakana/sakana-namazu`.
+- Rate-limited by their provider when tried: `mistralai/mistral-small-2603` and `inclusionai/ling-3.0-flash-vl`.
+- Other: `minimax/minimax-01` rejects the plugin's maximum output length, `scaledown/extract` needs options of its own, and `google/gemini-nano-banana-2.1` generates images.
 
 #### 💬 Default prompt
 
