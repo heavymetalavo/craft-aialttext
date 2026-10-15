@@ -66,9 +66,13 @@ Requests go to Langdock's EU region, where Langdock hosts its OpenAI and Anthrop
 2. Make sure your account has some credit, a few dollars goes a long way with the small models.
 3. Go to [Keys](https://openrouter.ai/keys), create a key, and give it a name and, if you like, a credit limit.
 4. Copy the key and save it to an environment variable (`.env`).
-5. Set the **Model** to the model's OpenRouter name, which starts with the vendor, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-5-nano` ([browse the models](https://openrouter.ai/models) and choose one that accepts image input).
+5. Set the **Model** to the model's OpenRouter name, which starts with the vendor, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-5-nano` (see [OpenRouter models](#-openrouter-models) for how to find ones that accept images, and what they cost).
 
-OpenRouter takes the same request for every model, so there is no model family to choose. The plugin is built for and tested with OpenAI and Anthropic models. Other models that accept images generally work through the same endpoint (DeepSeek's and Mistral's did in testing) but aren't supported, and some thinking models are slow, in which case raise the request timeout in `config/guzzle.php`.
+OpenRouter takes the same request for every model, so there is no model family to choose and any model that accepts image input can be used. The plugin is built for and tested with OpenAI and Anthropic models. Other vendors' models aren't supported, but [the ones tested](#-openrouter-models) worked unchanged, and how good the alt text is varies between models. Worth knowing:
+
+- Some models think before they answer and are slow (Grok 4.6 and Mistral Large took over 40 seconds), so raise the request timeout in `config/guzzle.php` if you see a timeout error.
+- A provider sometimes rate-limits a model for a moment ("temporarily rate-limited upstream"), and failed jobs can be retried from the queue.
+- A few models need a setting in your OpenRouter account, and the error says which and links to it.
 
 ### OpenAI
 
@@ -157,7 +161,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 |---------|-------------|
 | **AI Provider** | Choose between OpenAI, Anthropic, Langdock or OpenRouter. |
 | **OpenAI/Anthropic/Langdock/OpenRouter API Key** | Your provider's API key. |
-| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-4-5`). For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-5-nano`. |
+| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-5-5`). For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-5-nano`. |
 | **Langdock Model Family** | Langdock only. `Claude (Anthropic API)` or `GPT (OpenAI API)`. It must match the model, and decides which of Langdock's compatible APIs requests are sent to. |
 | **Langdock Image Detail Level** | Langdock with the `GPT (OpenAI API)` model family only. Works like the OpenAI image detail level, `low`, `high` or `auto`. |
 | **Langdock Reasoning Effort** | Langdock with the `GPT (OpenAI API)` model family only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). |
@@ -174,10 +178,46 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 #### 🧠 Model Options
 
 All vision models should work, these small models seem to hit the sweetspot between quality & cost:
-- `claude-haiku-4-5` - For Anthropic: "The fastest model with near-frontier intelligence"
+- `claude-haiku-5-5` - For Anthropic: the fastest and most cost-efficient Claude model
 - `gpt-6-luna` - For OpenAI: "Our most efficient model for focused, high-volume tasks"
 
 To find out which models are capable of vision, check [the models page](https://platform.openai.com/docs/models), click into a model's detail page (e.g., [gpt-6-luna](https://platform.openai.com/docs/models/gpt-6-luna)) and look for "**Input**: Text, image" in the features columns at the top.
+
+#### 🌐 OpenRouter models
+
+The plugin doesn't keep a list of vision models, since OpenRouter's catalogue changes every week, but the models below all worked when tested.
+
+**Check that a model accepts images**
+- Open the [models page filtered to image input and text output](https://openrouter.ai/models?input_modalities=image&output_modalities=text). Every model listed can be used, and a model's own page shows the input modalities it accepts. Models on the page's *Image* tab generate images and return no text, so they can't write alt text.
+- Or ask the API, which needs no key: `curl -s 'https://openrouter.ai/api/v1/models?input_modalities=image' | jq -r '.data[].id'` prints the ids to use as the **Model**.
+- A model that can't read images is refused with "No endpoints found that support image input".
+
+**Cheapest and best value**
+
+Measured on one small test photo at `low` detail (OpenRouter's prices on 15 October 2026, the cost of the request OpenRouter reports):
+- **Cheapest:** `google/gemma-3-4b-it` (about $0.00002 per alt text) and `nex-agi/nex-n2.5-mini` (about $0.00005). Both are small models and their wording was less natural.
+- **Best value:** `openai/gpt-6-luna` at about $0.00005 and 2 seconds, and `anthropic/claude-haiku-5.5` at about $0.00025 and 2.5 seconds, both with good alt text. Haiku costs the same per token as Luna but counted six times as many tokens for the image (2,233 against 349), which is why it comes out about five times dearer here.
+- **Not as cheap as it looks:** `deepseek/deepseek-v4.1-flash` has the lowest price per input token ($0.016 per million) but thinks before it answers. The 1,000 to 2,400 tokens it spends per image are billed as output, so each alt text cost $0.0006 to $0.0016 (10 to 30 times Luna) and took 7 to 12 seconds. The **Reasoning Effort** setting doesn't reach it, as it's sent to OpenAI models only.
+
+The cost of an image depends on its size and on how each model counts image tokens, so check the *Activity* page in OpenRouter after a few runs with your own images.
+
+**Models tested**
+
+Each was given the same photo and prompt through the plugin on 15 October 2026. Models not listed in the first row were not tried.
+
+| Vendor | Worked | Notes |
+|---|---|---|
+| OpenAI | `gpt-6-luna`, `gpt-5-nano`, `gpt-4o-mini` | |
+| Anthropic | `claude-haiku-5.5` | |
+| Google | `gemini-4-argon`, `gemini-3.8-flash`, `gemini-2.5-flash-lite`, `gemma-3-4b-it` | `gemini-nano-banana-2.1` generates images and failed. |
+| Meta | `muse-spark-open`, `muse-spark-1.3` | About 14 seconds each. `meta-llama/llama-guard-4-12b` is a safety model and only answers "safe". |
+| xAI | `grok-4.7`, `grok-4.5`, `grok-4.6` | `grok-4.6` took 67 seconds, and `grok-build-0.1` timed out after 40. |
+| DeepSeek | `deepseek-v4.1-flash`, `deepseek-v4-flash-vision-exp` | See the cost note above. |
+| Mistral | `mistral-large-4-0`, `mistral-medium-3-5`, `mistral-small-3.2-24b-instruct` | `mistral-large-4-0` took 41 seconds. `mistral-small-2603` was rate-limited upstream when tried. |
+| Qwen | `qwen3.8-flash`, `qwen3.8-omni-flash`, `qwen3.8-max-0902` | `qwen3.7-flash` took 45 to 52 seconds. |
+| Others | `amazon/nova-lite-v1`, `nvidia/nemotron-3.5-super-vl`, `z-ai/glm-5.3-flash`, `moonshotai/kimi-k3`, `cohere/command-a-plus`, `stepfun/step-3.7-flash`, `xiaomi/mimo-v2.6-flash`, `bytedance-seed/seed-1.6-flash`, `thinkingmachines/inkling-small`, `perplexity/sonar`, `perceptron/perceptron-mk1.5` | `rekaai/reka-edge`, `bytedance/ui-tars-1.5-7b` and `prism-ml/ternary-bonsai-2-27b` returned garbled text. |
+
+Failures that weren't about the model: `meta/muse-spark-1.3-contributor` and `sakana/sakana-namazu` were blocked by the data policy in my OpenRouter account (the error links to your [privacy settings](https://openrouter.ai/settings/privacy)), `minimax/minimax-01` rejects the plugin's maximum output length, and `scaledown/extract` needs options of its own.
 
 #### 💬 Default prompt
 
