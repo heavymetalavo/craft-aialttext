@@ -1,10 +1,8 @@
 # 🤖 💬 AI Alt Text
   
-Generate alt text for CraftCMS Asset Images using the Anthropic, OpenAI or Langdock API.
+Generate alt text for CraftCMS Asset Images using the Anthropic, OpenAI or Langdock (Antropic or OpenAI models only) API.
 
 🚨 NEW Additional AI Provider support for Langdock is now available.
-
-🚨 NEW Craft 4 support is now available - [visit the 4.x branch README](https://github.com/heavymetalavo/craft-aialttext/blob/4.x/README.md) for installation and documentation.
 
 [Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft5) | [GitHub Repository](https://github.com/heavymetalavo/craft-aialttext)
 
