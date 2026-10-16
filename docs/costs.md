@@ -17,7 +17,7 @@ These are estimates, put together by an AI assistant (Claude) that ran the plugi
 | `deepseek/deepseek-v4.1-flash` | $0.00052 | about 1,900 |  |
 | `meta/muse-glimmer-30b` | $0.0014 | about 740 |  |
 | `google/gemini-3.8-flash` | $0.0014 | about 700 |  |
-| `claude-haiku-4-5` | $0.0016 | about 630 | Still active, but the earliest retirement date Anthropic gave for it (15 October 2026) has passed. |
+| `claude-haiku-4-5` | $0.0016 | about 630 | Anthropic can retire it from 15 October 2026, so check its deprecations page. |
 | `x-ai/grok-4.3` | $0.0020 | about 510 |  |
 | `x-ai/grok-4.7` | $0.0025 | about 410 |  |
 | `mistralai/mistral-large-4-0` | $0.0037 | about 270 | Timed out on 3 of 4 photos, so the figure comes from one request. |
@@ -29,8 +29,8 @@ These are estimates, put together by an AI assistant (Claude) that ran the plugi
 
 If you are concerned about unexpected charges we recommend:
 - **Prepay a small amount.** Add credit manually, about $5 at a time. At about 18,000 alt texts per $1 with `gpt-6-luna`, that goes a long way.
-- **Turn off automatic top-ups**, so a mistake can only spend what's in the account: auto recharge on OpenAI, auto-reload on Anthropic, auto top-up on OpenRouter.
-- **Set a spending limit where your provider has one**, e.g. [usage limits on OpenAI](https://platform.openai.com/account/billing/limits) or a credit limit on each [OpenRouter key](https://openrouter.ai/keys).
+- **Turn off automatic top-ups**, so a mistake can only spend what's in the account: auto-reload (auto recharge) in OpenAI's [API billing overview](https://platform.openai.com/account/billing), auto-reload on the Anthropic Console's Billing page, auto top-up on OpenRouter. If you keep OpenAI's on, set its monthly recharge limit.
+- **Set a spending limit where your provider has one**, e.g. a monthly spend limit on the Anthropic Console's Billing page, or a credit limit on each [OpenRouter key](https://openrouter.ai/keys). OpenAI's prepaid balance isn't an instant cutoff, so a small negative balance is possible.
 - **Try a few assets first.** Select a handful in the **Assets** manager and generate for those, then check what they cost before running **Generate missing** or **Generate all**.
 - **Prefer Generate missing.** **Generate all** regenerates every asset, including ones that already have alt text.
 - **Count your sites.** The bulk actions and console commands cover every site unless you pick one, and with **Save translated results for each site** each site is a request of its own, so the cost multiplies by the number of sites.

@@ -1,6 +1,6 @@
 # Release Notes for AI Alt Text
 
-## 5.3.0 - 2026-10-15
+## 5.3.0 - 2026-10-17
 
 - Added [OpenRouter](https://openrouter.ai/) as an AI provider, sending requests through its Responses API. OpenAI and Anthropic models are supported, and other models that accept images generally work too. Configure the API key and model in the plugin settings, plus the image detail level and reasoning effort for OpenAI models.
 - Changed the suggested Anthropic model in the **Anthropic Model** placeholder and documentation from `claude-haiku-4-5` to `claude-haiku-5-5`. The **Anthropic Model** setting itself still has no default.

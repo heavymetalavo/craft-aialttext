@@ -283,7 +283,7 @@
         label: 'OpenRouter Image Detail Level'|t('ai-alt-text'),
         id: 'openRouterImageInputDetailLevel',
         name: 'openRouterImageInputDetailLevel',
-        instructions: "Controls the [detail level](https://openrouter.ai/docs/guides/overview/multimodal/image-understanding) used to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest. Only OpenAI models use it."|t("ai-alt-text"),
+        instructions: "Controls the [detail level](https://openrouter.ai/docs/guides/overview/multimodal/image-understanding) used to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest. OpenAI and Gemini models use it, and in testing Qwen, GLM and Grok models ignored it. For Claude models it sets the size the image is scaled to: 500px at `low`, 1000px at `auto`, 1568px at `high` or `original`."|t("ai-alt-text"),
         options: [
             { label: 'Low - Fast, low-cost (512px x 512px)', value: 'low' },
             { label: 'High - Standard high-fidelity understanding', value: 'high' },

@@ -17,6 +17,5 @@ Planned work, not yet scheduled or promised. Shipped changes are in [CHANGELOG.m
 ## Under consideration
 
 - **Non-public asset URLs.** Providers can't fetch asset URLs on hosts like `*.ddev.site`, so every generation logs one failed download before the base64 fallback succeeds. Options are skipping the URL attempt for non-public hosts or adding a force-base64 setting.
-- **Claude image sizing on OpenRouter.** OpenRouter requests go through the OpenAI path, so Claude models get images sized for OpenAI rather than for Anthropic, and in testing Claude cost about 15 to 20% more through OpenRouter than direct (about 40% more input tokens). Sizing images the Anthropic way when the model starts with `anthropic/` would close the gap.
 - **Vision model suggestions for OpenRouter.** The model field could suggest image-capable models from OpenRouter's public models API (cached), rather than only linking to its models page.
 - **Custom endpoints.** Let a base URL be set for gateways that accept the OpenAI, Anthropic or OpenRouter request shapes unchanged, as Langdock does, so the plugin could work with a new provider even if the plugin doesn't officially support that provider.

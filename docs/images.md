@@ -7,7 +7,7 @@ How the plugin prepares images for each AI provider, and the limits to know abou
 ## Provider-Specific Limits
 
 - **Automatic Scaling**: The plugin automatically detects when an image exceeds provider limits and applies transforms (resizing or quality reduction) before sending the payload.
-- **Supported file types**: Both AI providers support: `png`, `jpeg`, `jpg`, `webp`, `gif` (non-animated)
+- **Supported file types**: All providers accept: `png`, `jpeg`, `jpg`, `webp`, `gif` (non-animated)
 - **SVG Support**: SVGs are rasterized to PNG (preserving transparency) before being sent to the AI (where transformSvgs is enabled).
 - **AVIF, HEIC & HEIF Support**: These image types are converted to PNG before being sent to an AI provider. This requires an image driver (ImageMagick built with AVIF/HEIF/HEIC support) that can decode them on environments without that support these assets are skipped.
 - **Animated GIFs**: Only the first frame is processed.

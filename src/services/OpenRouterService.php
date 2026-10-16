@@ -48,6 +48,28 @@ class OpenRouterService extends OpenAiService
     }
 
     /**
+     * Claude models are scaled as AnthropicService scales them (long edge by detail level, 5MB, about 1,600 tokens), since
+     * OpenAI's sizing sends them larger images than they need and costs about 15 to 20% more. The OpenRouter Image Detail
+     * Level picks the size: `low` 500px, `auto` 1000px, `high` and `original` 1568px. Other models are scaled as OpenAI's are.
+     *
+     * @inheritdoc
+     */
+    protected function visionTransformParams(Asset $asset): array
+    {
+        if (!str_starts_with($this->model, 'anthropic/')) {
+            return parent::visionTransformParams($asset);
+        }
+
+        $longEdge = match ($this->imageDetailLevel()) {
+            'high', 'original' => 1568,
+            'auto' => 1000,
+            default => 500,
+        };
+
+        return $this->getVisionTransformParams($asset, maxLongEdge: $longEdge, maxFileSizeMb: 5, maxTokens: 1600);
+    }
+
+    /**
      * OpenRouter reports a failure at the model's own provider as just "Provider returned error" and keeps the cause
      * (a temporary rate limit, an unsupported image, ...) in the error's metadata, so put the cause in the message.
      */
@@ -72,14 +94,15 @@ class OpenRouterService extends OpenAiService
     }
 
     /**
-     * The parent words its errors as OpenAI's, which would read as an OpenAI problem, so name OpenRouter. Wrong-model
-     * errors usually mean the name isn't an OpenRouter one, so say how it should look.
+     * The parent words its errors as OpenAI's, which would read as an OpenAI problem, so name OpenRouter. Errors about the
+     * model itself (an unknown name, or one that can't read images) get a note on how names should look; other errors
+     * that merely mention a model, such as an account data policy block, don't.
      */
     private function withOpenRouterWording(Exception $e): Exception
     {
         $message = preg_replace('/^OpenAI API (error|request failed)/', 'OpenRouter $1', $e->getMessage());
 
-        if (stripos($message, 'model') !== false) {
+        if (preg_match('/not a valid model|invalid model|model .*(not found|does not exist)|no endpoints found/i', $message)) {
             $message .= ' ' . Craft::t('ai-alt-text', "Check the model's name on OpenRouter, which starts with the vendor (for example `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`), and that the model accepts image input.");
         }
 
