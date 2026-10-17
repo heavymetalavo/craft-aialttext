@@ -13,7 +13,7 @@ These are estimates, put together by an AI assistant (Claude) that ran the plugi
 | `google/gemini-3.5-flash-lite` | $0.00018 | about 5,600 |  |
 | `claude-haiku-5-5` | $0.00023 | about 4,300 |  |
 | `qwen/qwen3.8-flash` | $0.00034 | about 3,000 |  |
-| `deepseek/deepseek-v4.1-flash-1017` | $0.00035 | about 2,800 | Released 17 October. [DeepSeek's announcement](https://api-docs.deepseek.com/news/news261017/) claims faster task completion and shorter outputs than the previous version. On DeepSeek's own coding benchmark (DeepSWE v1.1) its `max` effort scored 77.0%, ahead of GPT-6 Astra, Claude Opus 5 and Claude Fable 5 in their chart, at a fraction of the cost per task. |
+| `deepseek/deepseek-v4.1-flash-1017` | $0.00035 | about 2,800 | Released 17 October. [DeepSeek's announcement](https://api-docs.deepseek.com/news/news261017/) claims faster task completion and shorter outputs than the previous version, DeepSeek V4.1 Flash. On DeepSeek's own coding benchmark (DeepSWE v1.1) its `max` effort scored 77.0%, ahead of GPT-6 Astra, Claude Opus 5 and Claude Fable 5 in their chart, at a fraction of the cost per task. |
 | `z-ai/glm-5.3-flash` | $0.00040 | about 2,500 |  |
 | `deepseek/deepseek-v4.1-flash` | $0.00052 | about 1,900 |  |
 | `meta/muse-glimmer-30b` | $0.0014 | about 740 |  |
