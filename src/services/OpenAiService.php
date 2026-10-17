@@ -83,7 +83,7 @@ class OpenAiService extends ApiService
      * @return OpenAiResponse The API response
      * @throws Exception|GuzzleException If the API call fails
      */
-    private function sendRequest(array $requestData): OpenAiResponse
+    protected function sendRequest(array $requestData): OpenAiResponse
     {
         $requestStartedAt = null;
 
@@ -171,6 +171,17 @@ class OpenAiService extends ApiService
 
 
     /**
+     * The transform that scales an image to the model's limits before it is sent.
+     *
+     * OpenAI Vision: max 2048px long edge (API handles short edge scaling internally), max 512MB payload, max 1536 patches.
+     * Patch budget based on detail:high tiling — each 512px tile costs 170 tokens + 85 base.
+     */
+    protected function visionTransformParams(Asset $asset): array
+    {
+        return $this->getVisionTransformParams($asset, maxLongEdge: 2048, maxFileSizeMb: 512, maxPatches: 1536);
+    }
+
+    /**
      * Generates alt text for an asset using OpenAI's vision model
      *
      * This method:
@@ -195,9 +206,7 @@ class OpenAiService extends ApiService
             return '';
         }
 
-        // OpenAI Vision: max 2048px long edge (API handles short edge scaling internally), max 512MB payload, max 1536 patches
-        // Patch budget based on detail:high tiling — each 512px tile costs 170 tokens + 85 base
-        $transformParams = $this->getVisionTransformParams($asset, maxLongEdge: 2048, maxFileSizeMb: 512, maxPatches: 1536);
+        $transformParams = $this->visionTransformParams($asset);
 
         if (!empty($transformParams)) {
             $asset->setTransform($transformParams);

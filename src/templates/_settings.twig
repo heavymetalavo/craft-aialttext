@@ -29,7 +29,8 @@
 {% set providerOptions = [
     { label: 'Anthropic', value: 'anthropic' },
     { label: 'OpenAI', value: 'openai' },
-    { label: 'Langdock', value: 'langdock' }
+    { label: 'Langdock', value: 'langdock' },
+    { label: 'OpenRouter', value: 'openrouter' }
 ] %}
 {% set providerValues = providerOptions|map(o => o.value) %}
 
@@ -79,9 +80,9 @@
         label: 'Anthropic Model'|t('ai-alt-text'),
         id: 'anthropicModel',
         name: 'anthropicModel',
-        instructions: "The Anthropic model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-haiku-4-5`."|t("ai-alt-text"),
+        instructions: "The Anthropic model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-haiku-5-5`."|t("ai-alt-text"),
         value: settings.anthropicModel,
-        placeholder: 'claude-haiku-4-5',
+        placeholder: 'claude-haiku-5-5',
         errors: settings.getErrors('anthropicModel'),
         suggestEnvVars: true,
     }) }}
@@ -251,6 +252,71 @@
 </div>
 
 
+<div id="provider-openrouter" class="{{ 'openrouter' in hiddenProviders ? 'hidden' }}">
+    <hr />
+
+    <h3>OpenRouter Settings</h3>
+
+    {{ forms.autosuggestField({
+        label: "OpenRouter API Key"|t("ai-alt-text"),
+        instructions: "An API key from your [OpenRouter account](https://openrouter.ai/keys). The account needs credit."|t("ai-alt-text"),
+        id: "openRouterApiKey",
+        name: "openRouterApiKey",
+        placeholder: '$OPENROUTER_API_KEY',
+        suggestEnvVars: true,
+        value: settings.openRouterApiKey,
+        errors: settings.getErrors("openRouterApiKey"),
+    }) }}
+
+    {{ forms.autosuggestField({
+        label: 'OpenRouter Model'|t('ai-alt-text'),
+        id: 'openRouterModel',
+        name: 'openRouterModel',
+        instructions: "The model's name on OpenRouter, which starts with the vendor, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. It must accept image input: [browse the vision models](https://openrouter.ai/models?input_modalities=image&output_modalities=text)."|t("ai-alt-text"),
+        value: settings.openRouterModel,
+        placeholder: 'anthropic/claude-haiku-5.5',
+        errors: settings.getErrors('openRouterModel'),
+        suggestEnvVars: true,
+    }) }}
+
+    {{ forms.selectizeField({
+        label: 'OpenRouter Image Detail Level'|t('ai-alt-text'),
+        id: 'openRouterImageInputDetailLevel',
+        name: 'openRouterImageInputDetailLevel',
+        instructions: "Controls the [detail level](https://openrouter.ai/docs/guides/overview/multimodal/image-understanding) used to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest. OpenAI and Gemini models use it, and in testing Qwen, GLM and Grok models ignored it. For Claude models it sets the size the image is scaled to: 500px at `low`, 1000px at `auto`, 1568px at `high` or `original`."|t("ai-alt-text"),
+        options: [
+            { label: 'Low - Fast, low-cost (512px x 512px)', value: 'low' },
+            { label: 'High - Standard high-fidelity understanding', value: 'high' },
+            { label: 'Original - Large, dense, spatially sensitive images (gpt-5.4+)', value: 'original' },
+            { label: 'Auto - Let the model choose (may use more tokens)', value: 'auto' }
+        ],
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        value: settings.openRouterImageInputDetailLevel,
+        errors: settings.getErrors('openRouterImageInputDetailLevel')
+    }) }}
+
+    {{ forms.selectizeField({
+        label: 'OpenRouter Reasoning Effort'|t('ai-alt-text'),
+        id: 'openRouterReasoningEffort',
+        name: 'openRouterReasoningEffort',
+        instructions: "Controls the [reasoning effort](https://openrouter.ai/docs/api_reference/responses/reasoning) value when using OpenAI models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values a model accepts depends on the model, so check the provider's documentation if a value is rejected. Other models are sent no reasoning setting."|t("ai-alt-text"),
+        options: [
+            { label: 'None', value: 'none' },
+            { label: 'Minimal', value: 'minimal' },
+            { label: 'Low', value: 'low' },
+            { label: 'Medium', value: 'medium' },
+            { label: 'High', value: 'high' },
+            { label: 'Extra High', value: 'xhigh' }
+        ],
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        value: settings.openRouterReasoningEffort,
+        errors: settings.getErrors('openRouterReasoningEffort')
+    }) }}
+</div>
+
+
 <hr />
 
 
@@ -259,7 +325,7 @@
     id: 'prompt',
     name: 'prompt',
     rows: 8,
-    instructions: "Sent to the AI provider as the system / instruction message. The field supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`. Consider `{site.languageName}` for the site's language display name (e.g. `English (United Kingdom)`) which can help with translations on non-english sites. Checkout [the readme](https://github.com/heavymetalavo/craft-aialttext?tab=readme-ov-file#-default-prompt) for the most up to date suggestion prompt template."|t("ai-alt-text"),
+    instructions: "Sent to the AI provider as the system / instruction message. The field supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`. Consider `{site.languageName}` for the site's language display name (e.g. `English (United Kingdom)`) which can help with translations on non-english sites. Checkout [the docs](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/settings.md#-default-prompt) for the most up to date suggestion prompt template."|t("ai-alt-text"),
     value: settings.prompt,
     placeholder: "Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. \"#\", \"alt text:\", \"An image of\", \"A photo of\"). Do not wrap the output in quotes. Output in the language: {site.languageName} (BCP 47: {site.language})",
     errors: settings.getErrors('prompt'),

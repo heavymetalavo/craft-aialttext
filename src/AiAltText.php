@@ -12,7 +12,7 @@ use craft\services\{Assets, Utilities};
 use craft\web\{View, UrlManager};
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
 use heavymetalavo\craftaialttext\models\Settings;
-use heavymetalavo\craftaialttext\services\{AiAltTextService, OpenAiService, AnthropicService, LangdockAnthropicService, LangdockOpenAiService};
+use heavymetalavo\craftaialttext\services\{AiAltTextService, OpenAiService, AnthropicService, LangdockAnthropicService, LangdockOpenAiService, OpenRouterService};
 use heavymetalavo\craftaialttext\utilities\AiAltTextUtility;
 use yii\base\Event;
 
@@ -26,6 +26,7 @@ use yii\base\Event;
  * @property AnthropicService $anthropicService
  * @property LangdockAnthropicService $langdockAnthropicService
  * @property LangdockOpenAiService $langdockOpenAiService
+ * @property OpenRouterService $openRouterService
  * @property Settings $settings The plugin settings
  */
 class AiAltText extends Plugin
@@ -52,6 +53,7 @@ class AiAltText extends Plugin
                 'anthropicService' => AnthropicService::class,
                 'langdockAnthropicService' => LangdockAnthropicService::class,
                 'langdockOpenAiService' => LangdockOpenAiService::class,
+                'openRouterService' => OpenRouterService::class,
             ],
         ];
     }
@@ -69,6 +71,7 @@ class AiAltText extends Plugin
             'anthropicService' => AnthropicService::class,
             'langdockAnthropicService' => LangdockAnthropicService::class,
             'langdockOpenAiService' => LangdockOpenAiService::class,
+            'openRouterService' => OpenRouterService::class,
         ]);
 
         // Register template path

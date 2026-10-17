@@ -29,6 +29,10 @@ use craft\helpers\App;
  * @property string $langdockModel The Langdock model to use
  * @property string $langdockImageInputDetailLevel The image detail level for Langdock's OpenAI API
  * @property string $langdockReasoningEffort The reasoning effort level for Langdock's OpenAI API
+ * @property string $openRouterApiKey The OpenRouter API key
+ * @property string $openRouterModel The OpenRouter model to use, as named by OpenRouter
+ * @property string $openRouterImageInputDetailLevel The image detail level for OpenRouter's Responses API
+ * @property string $openRouterReasoningEffort The reasoning effort level for OpenRouter's Responses API
  */
 class Settings extends Model
 {
@@ -121,6 +125,31 @@ class Settings extends Model
     public string $langdockReasoningEffort = 'low';
 
     /**
+     * @var string The OpenRouter API key
+     */
+    public string $openRouterApiKey = '';
+
+    /**
+     * @var string The OpenRouter model to use, as OpenRouter names it (e.g. `anthropic/claude-haiku-5.5` or
+     * `openai/gpt-6-luna`), must have vision capabilities
+     */
+    public string $openRouterModel = '';
+
+    /**
+     * @var string The image detail level for OpenRouter's Responses API
+     *
+     * Options: low, high, auto, original
+     */
+    public string $openRouterImageInputDetailLevel = 'low';
+
+    /**
+     * @var string The reasoning effort level for OpenRouter's Responses API
+     *
+     * Options: none, minimal, low, medium, high, xhigh
+     */
+    public string $openRouterReasoningEffort = 'low';
+
+    /**
      * @var bool Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
      */
     public bool $propagate = false;
@@ -151,7 +180,7 @@ class Settings extends Model
                 ['aiProvider'],
                 function($attribute) {
                     $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['openai', 'anthropic', 'langdock'], true)) {
+                    if (!in_array($val, ['openai', 'anthropic', 'langdock', 'openrouter'], true)) {
                         $this->addError($attribute, 'Invalid AI Provider configured.');
                     }
                 }
@@ -197,6 +226,11 @@ class Settings extends Model
             [['langdockImageInputDetailLevel'], 'validateOneOf', 'params' => ['allowed' => ['low', 'high', 'auto', ''], 'message' => 'Invalid Langdock Image Input Detail Level configured.']],
             ['langdockReasoningEffort', 'string'],
             [['langdockReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid Langdock Reasoning Effort configured.']],
+            [['openRouterApiKey', 'openRouterModel'], 'string'],
+            ['openRouterImageInputDetailLevel', 'string'],
+            [['openRouterImageInputDetailLevel'], 'validateOneOf', 'params' => ['allowed' => ['low', 'high', 'auto', 'original', ''], 'message' => 'Invalid OpenRouter Image Input Detail Level configured.']],
+            ['openRouterReasoningEffort', 'string'],
+            [['openRouterReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid OpenRouter Reasoning Effort configured.']],
             ['propagate', 'boolean'],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
