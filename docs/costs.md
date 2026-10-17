@@ -13,6 +13,7 @@ These are estimates, put together by an AI assistant (Claude) that ran the plugi
 | `google/gemini-3.5-flash-lite` | $0.00018 | about 5,600 |  |
 | `claude-haiku-5-5` | $0.00023 | about 4,300 |  |
 | `qwen/qwen3.8-flash` | $0.00034 | about 3,000 |  |
+| `deepseek/deepseek-v4.1-flash-1017` | $0.00035 | about 2,800 | Released 17 October. [Hacker News commenters](https://news.ycombinator.com/item?id=50129121) report higher coding benchmark scores and about 2.5x fewer reasoning tokens than the previous weights, which we haven't verified. Not yet tested for vision quality beyond this run. Timed out at 40 seconds on 2 of 8 requests, so the figure comes from the six that finished. |
 | `z-ai/glm-5.3-flash` | $0.00040 | about 2,500 |  |
 | `deepseek/deepseek-v4.1-flash` | $0.00052 | about 1,900 |  |
 | `meta/muse-glimmer-30b` | $0.0014 | about 740 |  |
