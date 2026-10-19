@@ -29,6 +29,14 @@ class OpenAiService extends ApiService
     protected string $apiKey;
     protected string $model;
     protected string $baseUrl = 'https://api.openai.com/v1';
+    protected string $providerLabel = 'OpenAI';
+
+    /**
+     * @var bool Whether to send `store: false`, so OpenAI doesn't keep the request and response (it stores them for
+     * at least 30 days by default). Other hosts of the Responses API leave it out: OpenRouter is stateless and
+     * rejects `store: true`, and Langdock's behaviour with it hasn't been tested.
+     */
+    protected bool $sendStoreFalse = true;
 
     /**
      * Constructor
@@ -88,11 +96,11 @@ class OpenAiService extends ApiService
         $requestStartedAt = null;
 
         try {
-            // Log the request for debugging (cap the length so base64 image data doesn't bloat the log)
-            Craft::debug('OpenAI API request: ' . substr(Json::encode($requestData), 0, 1000), __METHOD__);
+            $url = $this->baseUrl . '/responses';
+            $this->logRequest($url, $requestData);
 
             $requestStartedAt = microtime(true);
-            $response = $this->client->post($this->baseUrl . '/responses', [
+            $response = $this->client->post($url, [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type' => 'application/json',
@@ -101,12 +109,7 @@ class OpenAiService extends ApiService
             ]);
 
             $responseBody = (string)$response->getBody();
-            Craft::debug(sprintf(
-                'OpenAI API request took %.3fs',
-                microtime(true) - $requestStartedAt
-            ), __METHOD__);
-            // Log the raw response for debugging
-            Craft::debug('OpenAI API raw response: ' . $responseBody, __METHOD__);
+            $this->logResponse($url, $response->getStatusCode(), $responseBody, microtime(true) - $requestStartedAt);
 
             // Create response model and parse the response
             $responseModel = new OpenAiResponse();
@@ -152,7 +155,7 @@ class OpenAiService extends ApiService
                 $apiErrorMessage = $errorData['error']['message'] ?? $errorData['message'] ?? null;
                 if (is_string($apiErrorMessage)) {
                     $errorMsg = 'OpenAI API error: ' . $apiErrorMessage;
-                    Craft::error('OpenAI API error: ' . $responseBody, __METHOD__);
+                    Craft::error('OpenAI API error: ' . trim($responseBody), __METHOD__);
 
                     $errorResponse->setError($errorMsg, $errorData['error'] ?? null);
                     return $errorResponse;
@@ -267,6 +270,10 @@ class OpenAiService extends ApiService
 
         // Convert to array explicitly to avoid potential object-to-array conversion issues
         $requestArray = $request->toArray();
+
+        if ($this->sendStoreFalse) {
+            $requestArray['store'] = false;
+        }
 
         // Send the request
         $response = $this->sendRequest($requestArray);

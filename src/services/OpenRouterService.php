@@ -19,6 +19,9 @@ use heavymetalavo\craftaialttext\models\Settings;
  */
 class OpenRouterService extends OpenAiService
 {
+    protected string $providerLabel = 'OpenRouter';
+    protected bool $sendStoreFalse = false;
+
     /**
      * Reads the OpenRouter settings in place of the OpenAI ones.
      *

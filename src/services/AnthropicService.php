@@ -23,6 +23,7 @@ class AnthropicService extends ApiService
     protected string $model;
     protected string $detailLevel;
     protected string $baseUrl = 'https://api.anthropic.com/v1/messages';
+    protected string $providerLabel = 'Anthropic';
 
     /**
      * Initializes the service with the Anthropic API key, model and image detail level from the plugin settings.
@@ -141,12 +142,16 @@ class AnthropicService extends ApiService
             // Convert explicit request structure to array for the JSON payload
             $requestArray = $requestModel->toArray();
 
+            $this->logRequest($this->baseUrl, $requestArray);
+
+            $requestStartedAt = microtime(true);
             $response = $this->client->post($this->baseUrl, [
                 'headers' => $this->requestHeaders(),
                 'json' => $requestArray,
             ]);
 
             $responseBody = (string)$response->getBody();
+            $this->logResponse($this->baseUrl, $response->getStatusCode(), $responseBody, microtime(true) - $requestStartedAt);
             
             $responseModel = new AnthropicResponse();
             if (!$responseModel->parseResponse($responseBody)) {
@@ -159,7 +164,7 @@ class AnthropicService extends ApiService
             $errorResponse = ($e instanceof RequestException && $e->hasResponse())
                 ? (string)$e->getResponse()->getBody()
                 : $e->getMessage();
-            Craft::error("Anthropic API Error: " . $errorResponse, __METHOD__);
+            Craft::error("Anthropic API Error: " . trim($errorResponse), __METHOD__);
             
             $responseModel = new AnthropicResponse();
             if ($responseModel->parseResponse($errorResponse) && $responseModel->hasError()) {

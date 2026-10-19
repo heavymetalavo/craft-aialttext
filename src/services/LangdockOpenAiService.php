@@ -17,6 +17,9 @@ use heavymetalavo\craftaialttext\models\Settings;
  */
 class LangdockOpenAiService extends OpenAiService
 {
+    protected string $providerLabel = 'Langdock';
+    protected bool $sendStoreFalse = false;
+
     /**
      * Reads the Langdock settings in place of the OpenAI ones.
      *

@@ -16,6 +16,8 @@ use heavymetalavo\craftaialttext\models\Settings;
  */
 class LangdockAnthropicService extends AnthropicService
 {
+    protected string $providerLabel = 'Langdock';
+
     /**
      * Reads the Langdock settings in place of the Anthropic ones.
      *
