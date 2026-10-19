@@ -20,15 +20,31 @@ use yii\base\InvalidConfigException;
  * the Open Responses spec (https://www.openresponses.org/) now describes. That is OpenAI itself and hosts such as
  * Langdock and OpenRouter. It builds the request, sends it, reads the response and generates the alt text.
  *
- * A provider extends it to say where it lives (`baseUrl`), which settings it reads and what to call itself in
- * messages (`providerLabel`), and can adjust the places where hosts differ: image sizing, the `store` flag and how
- * errors are worded. Hosts differ most in their error bodies, which is why a failed image URL is only retried as
- * base64 when the error says `invalid_request_error`, as OpenAI and Langdock do and OpenRouter doesn't.
+ * A provider extends it to say where it lives (`baseUrl`), which settings it reads (`applySettings()`,
+ * `imageDetailLevel()`, `reasoningEffort()`) and what to call itself in log lines and messages (`providerLabel`).
+ * It can also adjust the places where hosts differ: image sizing (`visionTransformParams()`), the `store` flag
+ * (`sendStoreFalse`) and how errors are worded.
+ *
+ * Hosts differ most in their error bodies. OpenAI's and Langdock's carry `type: invalid_request_error` when they
+ * can't fetch an image URL, so the request is retried with the image as base64. OpenRouter's errors have no `type`,
+ * so OpenRouterService sends base64 from the start.
  */
 abstract class ResponsesApiService extends ApiService
 {
+    /**
+     * @var string The API key, read from the plugin settings by applySettings().
+     */
     protected string $apiKey;
+
+    /**
+     * @var string The model name, as the provider names it, read from the plugin settings by applySettings().
+     */
     protected string $model;
+
+    /**
+     * @var string The provider's base URL without a trailing slash, such as `https://api.openai.com/v1`. The request
+     * goes to `{baseUrl}/responses`. Set by the provider's default or by applySettings().
+     */
     protected string $baseUrl;
 
     /**
@@ -77,8 +93,7 @@ abstract class ResponsesApiService extends ApiService
      * - Error handling
      *
      * @param array $requestData The request data to send
-     * @return OpenAiResponse The API response
-     * @throws Exception|GuzzleException If the API call fails
+     * @return OpenAiResponse The response, which carries the error if the call failed. This method doesn't throw.
      */
     protected function sendRequest(array $requestData): OpenAiResponse
     {
@@ -160,8 +175,6 @@ abstract class ResponsesApiService extends ApiService
         }
     }
 
-
-
     /**
      * The transform that scales an image to the model's limits before it is sent. This is the sizing for OpenAI's
      * models, which suits any host serving them. A host that serves other vendors' models can override it to size
@@ -185,13 +198,14 @@ abstract class ResponsesApiService extends ApiService
      * - Handles any errors that occur during the process
      *
      * @param Asset $asset The asset to generate alt text for
-     * @param int|null $siteId
-     * @return string The generated alt text, or an empty string if generation fails
+     * @param int|null $siteId The site the alt text is for, which sets the language of the prompt's site variables
+     * @param bool $forceBase64 Send the image as base64 instead of a URL the provider has to fetch
+     * @return string The generated alt text, or an empty string if the asset is skipped or the model returned no text
      * @throws GuzzleException
      * @throws ImageTransformException
      * @throws AssetException
      * @throws InvalidConfigException
-     * @throws Exception
+     * @throws Exception If the request is invalid or the provider returns an error
      */
     public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceBase64 = false): string
     {
@@ -227,8 +241,8 @@ abstract class ResponsesApiService extends ApiService
             $imageUrl = "data:$mimeType;base64,$base64Image"; // Replace URL with data string
         }
 
-        // Only set detail parameter for images larger than 512x512 pixels
-        // OpenAI API doesn't accept detail parameter for smaller images
+        // Use the configured detail level for images over 512px on either side. Smaller images keep the request
+        // model's default, `low`.
         $width = $asset->getWidth();
         $height = $asset->getHeight();
         $detail = null;

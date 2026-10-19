@@ -54,7 +54,7 @@ abstract class ApiService extends Component
     protected Client $client;
 
     /**
-     * @var string The provider's name in log lines, set by each provider service.
+     * @var string The provider's name in log lines and error messages, set by each provider service.
      */
     protected string $providerLabel = 'API';
 
