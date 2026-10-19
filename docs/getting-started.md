@@ -77,5 +77,6 @@ Example twig:
 - If the plugin returns errors about API authentication, verify your API key.
 - For "bad request" errors, ensure your selected model supports vision capabilities.
 - Alt text generation is processed through Craft's queue system for bulk operations, so check the queue if generation seems to be taking a long time.
+- If a queued job fails with a rate limit error, such as "OpenRouter error: Rate limit exceeded: new-account-rpm/… new accounts are limited to 20 requests per minute for this model", the provider is limiting how fast you can send requests. This is common on a new OpenRouter account, which can be limited per model until it has built up some history of use, and OpenRouter doesn't publish when that lifts. The simplest fix is to switch the **Model** to a different one for now (for example `anthropic/claude-haiku-5.5` in place of `openai/gpt-6-luna`), as limits are set per model, and switch back once the account has matured. You can also use the provider directly, or add your own OpenAI or Anthropic key to OpenRouter. Failed jobs can be retried from the **Queue Manager** once the limit has eased, and running a single queue worker for bulk jobs keeps the request rate down.
 - Any errors _should_ be logged, check your queue.log files!
 - Check the asset has a title! If somehow an asset exists without one craft will not be able to resave it.

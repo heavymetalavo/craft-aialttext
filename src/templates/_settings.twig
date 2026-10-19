@@ -153,7 +153,7 @@
         label: 'OpenAI Reasoning Effort'|t('ai-alt-text'),
         id: 'openAiReasoningEffort',
         name: 'openAiReasoningEffort',
-        instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values a model accepts depends on the model, so check the provider's documentation if a value is rejected."|t("ai-alt-text"),
+        instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values work depends on the model: `gpt-5` models (like `gpt-5-nano` and `gpt-5-mini`) accept `minimal` but not `none` or `xhigh`, while newer models (like `gpt-6-luna`) accept `none` and `xhigh` but not `minimal`. `low` works on both."|t("ai-alt-text"),
         options: [
             { label: 'None', value: 'none' },
             { label: 'Minimal', value: 'minimal' },
@@ -234,7 +234,7 @@
             label: 'Langdock Reasoning Effort'|t('ai-alt-text'),
             id: 'langdockReasoningEffort',
             name: 'langdockReasoningEffort',
-            instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values a model accepts depends on the model, so check the provider's documentation if a value is rejected."|t("ai-alt-text"),
+            instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values work depends on the model: `gpt-5` models (like `gpt-5-nano` and `gpt-5-mini`) accept `minimal` but not `none` or `xhigh`, while newer models (like `gpt-6-luna`) accept `none` and `xhigh` but not `minimal`. `low` works on both."|t("ai-alt-text"),
             options: [
                 { label: 'None', value: 'none' },
                 { label: 'Minimal', value: 'minimal' },
@@ -300,7 +300,7 @@
         label: 'OpenRouter Reasoning Effort'|t('ai-alt-text'),
         id: 'openRouterReasoningEffort',
         name: 'openRouterReasoningEffort',
-        instructions: "Controls the [reasoning effort](https://openrouter.ai/docs/api_reference/responses/reasoning) value when using OpenAI models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values a model accepts depends on the model, so check the provider's documentation if a value is rejected. Other models are sent no reasoning setting."|t("ai-alt-text"),
+        instructions: "Controls the [reasoning effort](https://openrouter.ai/docs/api_reference/responses/reasoning) value when using OpenAI models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values work depends on the model: `gpt-5` models (like `gpt-5-nano`) accept `minimal` but not `none`, while newer models (like `gpt-6-luna`) accept `none` but, directly with OpenAI, not `minimal` (OpenRouter accepted it). `low` works on both. Other models are sent no reasoning setting."|t("ai-alt-text"),
         options: [
             { label: 'None', value: 'none' },
             { label: 'Minimal', value: 'minimal' },

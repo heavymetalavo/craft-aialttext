@@ -31,6 +31,7 @@ OpenRouter takes the same request for every model, so there is no model family t
 
 - Some models think before they answer and are slow (Grok 4.6 and Mistral Large took over 40 seconds), so raise the request timeout in `config/guzzle.php` if you see a timeout error.
 - A provider sometimes rate-limits a model for a moment ("temporarily rate-limited upstream"), and failed jobs can be retried from the queue.
+- New OpenRouter accounts can be limited to as few as 20 requests per minute for a model, which a bulk run will pass. Switching to a different model until the account has more history is the simplest fix, see [Troubleshooting](getting-started.md#-troubleshooting).
 - A few models need a setting in your OpenRouter account, and the error says which and links to it.
 
 ## OpenAI

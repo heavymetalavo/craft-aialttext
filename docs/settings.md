@@ -53,6 +53,15 @@ Controls how much time the model spends "thinking" before generating a response 
 - `high`
 - `xhigh`
 
+Which values work depends on the model, as tested on 19 October 2026:
+
+| Models | Accepted | Refused |
+|---|---|---|
+| `gpt-5` models, e.g. `gpt-5-nano`, `gpt-5-mini` | `minimal`, `low`, `medium`, `high` | `none`, `xhigh` |
+| Newer models, e.g. `gpt-6-luna`, `gpt-5.6-luna` | `none`, `low`, `medium`, `high`, `xhigh` | `minimal` |
+
+`low` works on both, which is why it's the default. Langdock behaves like OpenAI. OpenRouter was more forgiving with `openai/gpt-6-luna`, where every value worked, but it still refused `none` on `openai/gpt-5-nano`. A refused value fails the request with an error naming the values the model supports.
+
 **Langdock** with the `Claude (Anthropic API)` model family has no image detail setting: images are scaled to the `low` size (500px x 500px) and always sent as base64, since Langdock does not accept image URLs. With the `GPT (OpenAI API)` model family, **Langdock Image Detail Level** (`low`, `high` or `auto`) and **Langdock Reasoning Effort** work like the OpenAI settings above (both default to `low`).
 
 **OpenRouter** always sends images as base64. It scales them as OpenAI does, except for Claude models (`anthropic/…`), which are scaled as on the Anthropic API: the detail level picks the long-edge limit (500px at `low`, 1000px at `auto`, 1568px at `high` or `original`) as the Anthropic setting does, and a token budget of about 1,600 tokens (about 1.2 megapixels) also applies, which is what sets the size of larger photos. OpenAI models use **OpenRouter Image Detail Level** and **OpenRouter Reasoning Effort** (both default to `low`). The image detail level is sent to every model, and Gemini models also change how many tokens they use with it, while Qwen, GLM and Grok models ignored it in testing. The reasoning effort is only sent to OpenAI reasoning models, and other models use their own defaults.
