@@ -12,17 +12,14 @@ use heavymetalavo\craftaialttext\models\Settings;
 /**
  * Langdock OpenAI API Service
  *
- * Langdock serves the OpenAI Responses API on its own host, with a region (always eu) in the URL. Authentication is
- * the same Bearer token OpenAI uses.
+ * Langdock serves OpenAI's Responses API on its own host, with a region (always eu) in the URL. Authentication is
+ * a Bearer token, and it doesn't store responses, so `store` is left out.
  */
-class LangdockOpenAiService extends OpenAiService
+class LangdockOpenAiService extends ResponsesApiService
 {
     protected string $providerLabel = 'Langdock';
-    protected bool $sendStoreFalse = false;
 
     /**
-     * Reads the Langdock settings in place of the OpenAI ones.
-     *
      * @inheritdoc
      */
     protected function applySettings(Settings $settings): void
@@ -62,8 +59,6 @@ class LangdockOpenAiService extends OpenAiService
     }
 
     /**
-     * Uses the Langdock Image Detail Level setting, not the OpenAI one.
-     *
      * @inheritdoc
      */
     protected function imageDetailLevel(): string
@@ -72,8 +67,6 @@ class LangdockOpenAiService extends OpenAiService
     }
 
     /**
-     * Uses the Langdock Reasoning Effort setting, not the OpenAI one.
-     *
      * @inheritdoc
      */
     protected function reasoningEffort(): string

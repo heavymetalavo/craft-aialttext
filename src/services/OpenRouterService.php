@@ -13,18 +13,15 @@ use heavymetalavo\craftaialttext\models\Settings;
 /**
  * OpenRouter API Service
  *
- * OpenRouter serves the OpenAI Responses API on its own host for models from many vendors, which it names
- * with the vendor in front (`anthropic/claude-haiku-5.5`, `openai/gpt-6-luna`). Authentication is the same
- * Bearer token OpenAI uses.
+ * OpenRouter serves the Responses API on its own host for models from many vendors, which it names with the vendor
+ * in front (`anthropic/claude-haiku-5.5`, `openai/gpt-6-luna`). Authentication is a Bearer token, and its stateless
+ * API leaves out `store`.
  */
-class OpenRouterService extends OpenAiService
+class OpenRouterService extends ResponsesApiService
 {
     protected string $providerLabel = 'OpenRouter';
-    protected bool $sendStoreFalse = false;
 
     /**
-     * Reads the OpenRouter settings in place of the OpenAI ones.
-     *
      * @inheritdoc
      */
     protected function applySettings(Settings $settings): void
@@ -35,7 +32,7 @@ class OpenRouterService extends OpenAiService
     }
 
     /**
-     * OpenRouter's errors carry no `type`, so the retry with base64 that OpenAiService does when a provider
+     * OpenRouter's errors carry no `type`, so the retry with base64 that ResponsesApiService does when a provider
      * can't fetch the image URL never triggers. Always sending base64 works for every model and provider.
      *
      * @inheritdoc
@@ -97,13 +94,12 @@ class OpenRouterService extends OpenAiService
     }
 
     /**
-     * The parent words its errors as OpenAI's, which would read as an OpenAI problem, so name OpenRouter. Errors about the
-     * model itself (an unknown name, or one that can't read images) get a note on how names should look; other errors
-     * that merely mention a model, such as an account data policy block, don't.
+     * Errors about the model itself (an unknown name, or one that can't read images) get a note on how OpenRouter
+     * names models. Other errors that merely mention a model, such as an account data policy block, don't.
      */
     private function withOpenRouterWording(Exception $e): Exception
     {
-        $message = preg_replace('/^OpenAI API (error|request failed)/', 'OpenRouter $1', $e->getMessage());
+        $message = $e->getMessage();
 
         if (preg_match('/not a valid model|invalid model|model .*(not found|does not exist)|no endpoints found/i', $message)) {
             $message .= ' ' . Craft::t('ai-alt-text', "Check the model's name on OpenRouter, which starts with the vendor (for example `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`), and that the model accepts image input.");
@@ -113,8 +109,6 @@ class OpenRouterService extends OpenAiService
     }
 
     /**
-     * Uses the OpenRouter Image Detail Level setting, not the OpenAI one.
-     *
      * @inheritdoc
      */
     protected function imageDetailLevel(): string
@@ -123,8 +117,6 @@ class OpenRouterService extends OpenAiService
     }
 
     /**
-     * Uses the OpenRouter Reasoning Effort setting, not the OpenAI one.
-     *
      * @inheritdoc
      */
     protected function reasoningEffort(): string

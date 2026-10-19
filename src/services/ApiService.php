@@ -165,7 +165,7 @@ abstract class ApiService extends Component
      * @todo Consider making $siteId a required `int` and dropping the null branch below — in
      *       practice $siteId is never null (every caller resolves a concrete site). Doing it
      *       cleanly means tightening ?int → int across the call chain (the abstract
-     *       generateAltText(), OpenAiService & AnthropicService generateAltText()/sendRequest(),
+     *       generateAltText(), ResponsesApiService & AnthropicService generateAltText()/sendRequest(),
      *       and AiAltTextService::generateAltText()), with the one genuine guard at the queue job,
      *       whose siteId payload is legitimately nullable (`$this->siteId ?? $asset->siteId`).
      * @throws Exception If an explicitly requested site no longer exists, or a prompt variable can't be resolved.
