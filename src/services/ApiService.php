@@ -11,10 +11,17 @@ use craft\helpers\ImageTransforms;
 use craft\helpers\Json;
 use craft\helpers\UrlHelper;
 use craft\image\Raster;
+use DOMDocument;
+use DOMElement;
+use DOMXPath;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use heavymetalavo\craftaialttext\AiAltText;
+use Imagick;
+use ImagickException;
+use ImagickPixel;
+use ImagickPixelException;
 
 /**
  * Base API Service
@@ -466,6 +473,168 @@ abstract class ApiService extends Component
         } finally {
             FileHelper::unlink($path);
         }
+    }
+
+    /**
+     * Renders an SVG as a PNG and returns it base64 encoded.
+     *
+     * Craft loads SVGs into Imagick from a string, which ImageMagick often renders with its own built-in SVG renderer,
+     * and that renderer draws gradients as solid black. So the SVG is rendered here, with its gradients flattened first
+     * where ImageMagick can't draw them, see canRenderSvgGradients() and flattenSvgGradients(). Rendering it here also
+     * works for SVGs on volumes without public URLs, whose transforms Craft can't hand over.
+     *
+     * @param Asset $asset The SVG
+     * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
+     * @return string The base64 encoded PNG
+     */
+    protected function getSvgBase64(Asset $asset, array $transformParams): string
+    {
+        $images = Craft::$app->getImages();
+        $svg = $asset->getContents();
+
+        if ($images->getIsImagick() && !$this->canRenderSvgGradients()) {
+            $svg = $this->flattenSvgGradients($svg);
+        }
+
+        $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false));
+        FileHelper::writeToFile("$path.svg", $svg);
+
+        try {
+            // Rendered at the provider's size limit if the SVG is larger, otherwise at 1000px, as Craft's transforms do
+            $size = max($transformParams['width'] ?? 0, $transformParams['height'] ?? 0) ?: 1000;
+            $images->loadImage("$path.svg", true, $size)->saveAs("$path.png");
+
+            return base64_encode(file_get_contents("$path.png"));
+        } finally {
+            FileHelper::unlink("$path.svg");
+            FileHelper::unlink("$path.png");
+        }
+    }
+
+    /**
+     * Whether ImageMagick draws gradients in an SVG read from a string, as Craft reads them. Its built-in SVG renderer
+     * draws them as solid black, but ImageMagick built with librsvg draws them, and so does Inkscape when it's installed,
+     * with ImageMagick 6 or 7.1.2-34 and later. Checked by rendering a small red gradient, and cached for a day.
+     *
+     * @return bool Whether gradients are drawn
+     */
+    protected function canRenderSvgGradients(): bool
+    {
+        // Cached as 1 or 0, as a cached false reads as a cache miss
+        return (bool)Craft::$app->getCache()->getOrSet('ai-alt-text:svg-gradients', function(): int {
+            try {
+                $image = new Imagick();
+                $image->setBackgroundColor(new ImagickPixel('transparent'));
+                $image->readImageBlob('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="#f00"/><stop offset="1" stop-color="#f00"/></linearGradient></defs><rect width="10" height="10" fill="url(#g)"/></svg>');
+                $canRender = $image->getImagePixelColor(5, 5)->getColor()['r'] > 128;
+            } catch (ImagickException $e) {
+                Craft::warning('Could not check whether ImageMagick draws SVG gradients: ' . $e->getMessage(), __METHOD__);
+                $canRender = false;
+            }
+
+            Craft::info('ImageMagick ' . ($canRender ? 'draws' : "doesn't draw") . ' SVG gradients, so they ' . ($canRender ? 'are kept' : 'will be flattened'), __METHOD__);
+
+            return (int)$canRender;
+        }, 86400);
+    }
+
+    /**
+     * Replaces each gradient used as a fill or stroke in an SVG with the average of its stop colours, so ImageMagick's
+     * built-in SVG renderer, which draws gradients as solid black, shows about the right colour. The SVG is returned
+     * unchanged if it can't be parsed.
+     *
+     * @param string $svg The SVG markup
+     * @return string The SVG markup with solid colours in place of gradients
+     */
+    protected function flattenSvgGradients(string $svg): string
+    {
+        $doc = new DOMDocument();
+        if (!@$doc->loadXML($svg, LIBXML_NONET)) {
+            return $svg;
+        }
+
+        $xpath = new DOMXPath($doc);
+
+        $gradients = [];
+        foreach ($xpath->query('//*[local-name()="linearGradient" or local-name()="radialGradient"]') as $gradient) {
+            $gradients[$gradient->getAttribute('id')] = $gradient;
+        }
+
+        if (empty($gradients)) {
+            return $svg;
+        }
+
+        $colours = [];
+        foreach (array_keys($gradients) as $id) {
+            $colours[$id] = $this->averageGradientColour($gradients, (string)$id);
+        }
+
+        $replace = fn(string $value): string => preg_replace_callback(
+            '/url\(\s*[\'"]?#([^\'")\s]+)[\'"]?\s*\)/',
+            fn(array $match) => $colours[$match[1]] ?? $match[0],
+            $value
+        );
+
+        foreach ($xpath->query('//*[@fill or @stroke or @style]') as $element) {
+            foreach (['fill', 'stroke', 'style'] as $attribute) {
+                if ($element->hasAttribute($attribute)) {
+                    $element->setAttribute($attribute, $replace($element->getAttribute($attribute)));
+                }
+            }
+        }
+
+        // Illustrator, among others, can set fills in a <style> element instead
+        foreach ($xpath->query('//*[local-name()="style"]') as $style) {
+            $style->textContent = $replace($style->textContent);
+        }
+
+        return $doc->saveXML();
+    }
+
+    /**
+     * The average of a gradient's stop colours as a hex colour. A gradient without stops of its own takes them from
+     * the gradient it links to with `href`, as Illustrator exports often do.
+     *
+     * @param DOMElement[] $gradients The SVG's gradients, by id
+     * @param string $id The gradient's id
+     * @param int $depth How many `href` links have been followed, to stop at a loop
+     * @return string|null The colour, or null if the gradient has no stops with a colour Imagick can read
+     */
+    private function averageGradientColour(array $gradients, string $id, int $depth = 0): ?string
+    {
+        $gradient = $gradients[$id] ?? null;
+        if ($gradient === null || $depth > 10) {
+            return null;
+        }
+
+        $colours = [];
+        foreach ($gradient->childNodes as $stop) {
+            if (!$stop instanceof DOMElement || $stop->localName !== 'stop') {
+                continue;
+            }
+
+            $colour = preg_match('/stop-color\s*:\s*([^;]+)/', $stop->getAttribute('style'), $match)
+                ? trim($match[1])
+                : $stop->getAttribute('stop-color');
+
+            try {
+                // An unset stop-color is black
+                $colours[] = (new ImagickPixel($colour ?: 'black'))->getColor();
+            } catch (ImagickPixelException) {
+                // A colour Imagick can't read, e.g. currentColor
+            }
+        }
+
+        if (empty($colours)) {
+            $href = $gradient->getAttribute('href') ?: $gradient->getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+
+            return str_starts_with($href, '#') ? $this->averageGradientColour($gradients, substr($href, 1), $depth + 1) : null;
+        }
+
+        return sprintf('#%02x%02x%02x', ...array_map(
+            fn(string $channel) => (int)round(array_sum(array_column($colours, $channel)) / count($colours)),
+            ['r', 'g', 'b']
+        ));
     }
 
     /**

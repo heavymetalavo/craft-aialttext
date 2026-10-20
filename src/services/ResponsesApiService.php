@@ -227,8 +227,9 @@ abstract class ResponsesApiService extends ApiService
 
         $transformParams = $this->visionTransformParams($asset);
 
-        // Checked before setTransform(), after which the asset reports the transform's MIME type instead of GIF
+        // Checked before setTransform(), after which the asset reports the transform's MIME type instead of GIF or SVG
         $isAnimatedGif = $this->isAnimatedGif($asset);
+        $isSvg = AiAltText::getInstance()->aiAltTextService->isSvg($asset);
 
         if (!empty($transformParams)) {
             $asset->setTransform($transformParams);
@@ -241,9 +242,9 @@ abstract class ResponsesApiService extends ApiService
             throw new Exception("Asset transform produced unsupported MIME type: $mimeType. Supported formats are: " . implode(', ', self::ACCEPTED_MIME_TYPES));
         }
         
-        // Make sure that we do not get a "generate transform" url, but a real url with true. Animated GIFs are sent
-        // as base64 of their first frame, see getFirstFrameBase64()
-        $imageUrl = $isAnimatedGif ? null : $asset->getUrl($transformParams, true);
+        // Make sure that we do not get a "generate transform" url, but a real url with true. Animated GIFs and SVGs are
+        // rendered here and sent as base64, see getFirstFrameBase64() and getSvgBase64()
+        $imageUrl = $isAnimatedGif || $isSvg ? null : $asset->getUrl($transformParams, true);
 
         // If we have a URL, resolve root-relative URLs to the site base; leave absolute URLs as-is
         if (!empty($imageUrl)) {
@@ -252,7 +253,11 @@ abstract class ResponsesApiService extends ApiService
 
         // If no public URL is available, or base64 is forced
         if ($forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            $base64Image = $isAnimatedGif ? $this->getFirstFrameBase64($asset, $transformParams) : $this->getAssetBase64String($asset, $transformParams);
+            $base64Image = match (true) {
+                $isAnimatedGif => $this->getFirstFrameBase64($asset, $transformParams),
+                $isSvg => $this->getSvgBase64($asset, $transformParams),
+                default => $this->getAssetBase64String($asset, $transformParams),
+            };
             $imageUrl = "data:$mimeType;base64,$base64Image"; // Replace URL with data string
         }
 
