@@ -7,6 +7,7 @@
 - Changed generated alt text to be saved to the sites that share it under the volume's **Alternative Text Translation Method**, so it's generated once for them, in the language of the site it's generated for. For example, two French sites on a volume set to Translate for each language now make one API request instead of two, and get the same alt text. On a volume set to Translate for each site group, every site in a site group gets the same alt text, whatever its language. On a Not translatable volume, only sites in the same language share it.
 - Changed bulk generation across all sites, in the utility and the `missing` and `all` console commands, to queue one job for the sites that share alt text, and generation for assets without alt text to copy a sharing site's existing alt text to the sites missing it instead of making a request.
 - Removed the **Propagate** setting. Generated alt text is saved to the sites that share it, as above, instead of being propagated to every site.
+- Fixed alt text for animated GIFs describing their last frame instead of their first when Craft uses the Imagick image driver. The first frame is now sent to the AI provider as base64, rather than as a URL to Craft's JPG transform, which flattens every frame into one.
 
 ## 5.3.0 - 2026-10-20
 

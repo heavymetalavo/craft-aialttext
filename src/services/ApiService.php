@@ -6,8 +6,11 @@ use Craft;
 use craft\base\Component;
 use craft\elements\Asset;
 use craft\helpers\App;
+use craft\helpers\FileHelper;
+use craft\helpers\ImageTransforms;
 use craft\helpers\Json;
 use craft\helpers\UrlHelper;
+use craft\image\Raster;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -437,6 +440,32 @@ abstract class ApiService extends Component
         Craft::warning("Falling back to the source file contents of {$asset->filename} for base64 encoding: the (transformed) image URL was unavailable or could not be downloaded, and its source MIME type \"$originalMimeType\" is natively supported by the AI provider.", __METHOD__);
 
         return base64_encode($asset->getContents());
+    }
+
+    /**
+     * Renders the first frame of an animated GIF as a JPG, scaled to fit $transformParams, and returns it base64 encoded.
+     *
+     * Craft's own JPG transform of an animated GIF shows the last frame on the Imagick driver, which flattens every
+     * frame into one, so the frame is rendered here instead. GD only reads the first frame, so it's unaffected.
+     *
+     * @param Asset $asset The animated GIF
+     * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
+     * @return string The base64 encoded JPG
+     */
+    protected function getFirstFrameBase64(Asset $asset, array $transformParams): string
+    {
+        /** @var Raster $image */
+        $image = Craft::$app->getImages()->loadImage(ImageTransforms::getLocalImageSource($asset));
+        $image->disableAnimation()->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
+
+        $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false) . '.jpg');
+        $image->saveAs($path);
+
+        try {
+            return base64_encode(file_get_contents($path));
+        } finally {
+            FileHelper::unlink($path);
+        }
     }
 
     /**
