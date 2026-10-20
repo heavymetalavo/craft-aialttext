@@ -33,6 +33,7 @@ OpenRouter takes the same request for every model, so there is no model author t
 - A provider sometimes rate-limits a model for a moment ("temporarily rate-limited upstream"), and failed jobs can be retried from the queue.
 - New OpenRouter accounts can be limited to as few as 20 requests per minute for a model, which a bulk run will pass. Switching to a different model until the account has more history is the simplest fix, see [Troubleshooting](getting-started.md#-troubleshooting).
 - A few models need a setting in your OpenRouter account, and the error says which and links to it.
+- Requests send your primary site's URL as the `HTTP-Referer` header, with `heavymetalavo/craft-aialttext` as the title, so your OpenRouter logs list them under that app name. The app is marked hidden, which keeps it out of OpenRouter's public rankings. If the primary site's URL isn't absolute (it is `@web`, for example), none of these headers are sent.
 
 ## OpenAI
 

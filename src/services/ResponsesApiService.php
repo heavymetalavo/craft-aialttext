@@ -23,7 +23,7 @@ use yii\base\InvalidConfigException;
  * A provider extends it to say where it lives (`baseUrl`), which settings it reads (`applySettings()`,
  * `imageDetailLevel()`, `reasoningEffort()`) and what to call itself in log lines and messages (`providerLabel`).
  * It can also adjust the places where hosts differ: image sizing (`visionTransformParams()`), the `store` flag
- * (`sendStoreFalse`) and how errors are worded.
+ * (`sendStoreFalse`), the headers it sends (`extraHeaders()`) and how errors are worded.
  *
  * Hosts differ most in their error bodies. OpenAI's and Langdock's carry `type: invalid_request_error` when they
  * can't fetch an image URL, so the request is retried with the image as base64. OpenRouter's errors have no `type`,
@@ -53,6 +53,16 @@ abstract class ResponsesApiService extends ApiService
      * `store: true` (they accept `false`).
      */
     protected bool $sendStoreFalse = false;
+
+    /**
+     * Headers to send beside the authorization, for a host that takes extras.
+     *
+     * @return array<string, string>
+     */
+    protected function extraHeaders(): array
+    {
+        return [];
+    }
 
     /**
      * Constructor
@@ -108,6 +118,7 @@ abstract class ResponsesApiService extends ApiService
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type' => 'application/json',
+                    ...$this->extraHeaders(),
                 ],
                 'json' => $requestData,
             ]);
@@ -253,7 +264,7 @@ abstract class ResponsesApiService extends ApiService
         $prompt = $this->resolvePrompt($asset, $siteId);
 
         // Log asset info for debugging
-        Craft::info('Generating alt text for asset: ' . $asset->filename . ' (' . (str_starts_with($imageUrl, 'data:') ? substr($imageUrl, 0, 30) . '…' : $imageUrl) . ')', __METHOD__);
+        Craft::info('Generating alt text with ' . $this->providerLabel . ' for asset: ' . $asset->filename . ' (' . (str_starts_with($imageUrl, 'data:') ? substr($imageUrl, 0, 30) . '…' : $imageUrl) . ')', __METHOD__);
 
         // Create and populate the request model
         $request = new OpenAiRequest();

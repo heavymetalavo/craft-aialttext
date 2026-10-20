@@ -22,6 +22,29 @@ class OpenRouterService extends ResponsesApiService
     protected string $providerLabel = 'OpenRouter';
 
     /**
+     * Names the app in OpenRouter's logs, which make an app of each distinct `HTTP-Referer`: the primary site's URL,
+     * titled with the plugin's Composer name and hidden from OpenRouter's public rankings (which it only applies
+     * when it first sees the app). A primary site URL that isn't absolute, such as `@web` in a queue job, sends none
+     * of the three.
+     *
+     * @inheritdoc
+     */
+    protected function extraHeaders(): array
+    {
+        $url = Craft::$app->getSites()->getPrimarySite()->getBaseUrl();
+
+        if (!is_string($url) || !preg_match('#^https?://#i', $url)) {
+            return [];
+        }
+
+        return [
+            'HTTP-Referer' => $url,
+            'X-OpenRouter-Title' => 'heavymetalavo/craft-aialttext',
+            'X-OpenRouter-App-Visibility' => 'hidden',
+        ];
+    }
+
+    /**
      * @inheritdoc
      */
     protected function applySettings(Settings $settings): void
