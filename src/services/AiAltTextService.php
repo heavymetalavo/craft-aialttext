@@ -203,8 +203,8 @@ class AiAltTextService extends Component
             return Craft::t('ai-alt-text', 'No API key is configured for the {provider} provider. Add one in the AI Alt Text plugin settings.', ['provider' => $label]);
         }
 
-        if ($provider === 'langdock' && !in_array(App::parseEnv($settings->langdockModelFamily), ['anthropic', 'openai'], true)) {
-            return Craft::t('ai-alt-text', 'The Langdock Model Family must be Claude (Anthropic) or GPT (OpenAI). Choose one in the AI Alt Text plugin settings.');
+        if ($provider === 'langdock' && !in_array(App::parseEnv($settings->langdockModelAuthor), ['anthropic', 'openai'], true)) {
+            return Craft::t('ai-alt-text', 'The Langdock Model Author must be Anthropic or OpenAI. Choose one in the AI Alt Text plugin settings.');
         }
 
         return null;
@@ -221,7 +221,7 @@ class AiAltTextService extends Component
 
         return match (App::parseEnv($settings->aiProvider)) {
             'anthropic' => $plugin->anthropicService,
-            'langdock' => App::parseEnv($settings->langdockModelFamily) === 'openai'
+            'langdock' => App::parseEnv($settings->langdockModelAuthor) === 'openai'
                 ? $plugin->langdockOpenAiService
                 : $plugin->langdockAnthropicService,
             'openai' => $plugin->openAiService,

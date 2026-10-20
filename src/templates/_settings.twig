@@ -39,10 +39,10 @@
     ? providerValues|filter(v => v != resolvedProvider)
     : [] %}
 
-{% set langdockFamilies = ['anthropic', 'openai'] %}
-{% set resolvedLangdockFamily = parseEnv(settings.langdockModelFamily) %}
-{% set hiddenLangdockFamilies = resolvedLangdockFamily in langdockFamilies
-    ? langdockFamilies|filter(v => v != resolvedLangdockFamily)
+{% set langdockAuthors = ['anthropic', 'openai'] %}
+{% set resolvedLangdockAuthor = parseEnv(settings.langdockModelAuthor) %}
+{% set hiddenLangdockAuthors = resolvedLangdockAuthor in langdockAuthors
+    ? langdockAuthors|filter(v => v != resolvedLangdockAuthor)
     : [] %}
 
 {{ forms.selectizeField({
@@ -177,7 +177,7 @@
 
     {{ forms.autosuggestField({
         label: "Langdock API Key"|t("ai-alt-text"),
-        instructions: "An API key from your [Langdock workspace](https://docs.langdock.com/en/developer/overview/api-introduction). One key works for both model families."|t("ai-alt-text"),
+        instructions: "An API key from your [Langdock workspace](https://docs.langdock.com/en/developer/overview/api-introduction). One key works for both model authors."|t("ai-alt-text"),
         id: "langdockApiKey",
         name: "langdockApiKey",
         placeholder: '$LANGDOCK_API_KEY',
@@ -187,33 +187,33 @@
     }) }}
 
     {{ forms.selectizeField({
-        label: 'Langdock Model Family'|t('ai-alt-text'),
-        id: 'langdockModelFamily',
-        name: 'langdockModelFamily',
-                instructions: "Which family the model below belongs to, so requests go to the matching Langdock API: `Claude` for Claude models (Anthropic API) or `GPT` for GPT models (OpenAI API). Only these two families are supported. If you choose an environment variable, it must resolve to `anthropic` or `openai`, then save and reload to show the matching settings."|t("ai-alt-text"),
+        label: 'Langdock Model Author'|t('ai-alt-text'),
+        id: 'langdockModelAuthor',
+        name: 'langdockModelAuthor',
+        instructions: "The author of the model below, so requests go to the matching Langdock API: `Anthropic` for models such as Claude, or `OpenAI` for models such as GPT. Only these two model authors are supported. If you choose an environment variable, it must resolve to `anthropic` or `openai`, then save and reload to show the matching settings."|t("ai-alt-text"),
         options: [
-            { label: 'Claude (Anthropic API)', value: 'anthropic' },
-            { label: 'GPT (OpenAI API)', value: 'openai' }
+            { label: 'Anthropic (e.g. Claude)', value: 'anthropic' },
+            { label: 'OpenAI (e.g. GPT)', value: 'openai' }
         ],
         includeEnvVars: true,
         allowedEnvValues: null,
-        value: settings.langdockModelFamily,
-        errors: settings.getErrors('langdockModelFamily'),
+        value: settings.langdockModelAuthor,
+        errors: settings.getErrors('langdockModelAuthor'),
         toggle: true,
-        targetPrefix: '#langdock-family-',
+        targetPrefix: '#langdock-author-',
     }) }}
 
     {{ forms.autosuggestField({
         label: 'Langdock Model'|t('ai-alt-text'),
         id: 'langdockModel',
         name: 'langdockModel',
-        instructions: "The model to use, as named in Langdock. It must have vision capabilities and match the model family above. See how to list the models in your workspace for the [Anthropic](https://docs.langdock.com/en/developer/completion-api/anthropic) or [OpenAI](https://docs.langdock.com/en/developer/completion-api/openai) API."|t("ai-alt-text"),
+        instructions: "The model to use, as named in Langdock. It must have vision capabilities and come from the model author above. See how to list the models in your workspace for the [Anthropic](https://docs.langdock.com/en/developer/completion-api/anthropic) or [OpenAI](https://docs.langdock.com/en/developer/completion-api/openai-responses) API."|t("ai-alt-text"),
         value: settings.langdockModel,
         errors: settings.getErrors('langdockModel'),
         suggestEnvVars: true,
     }) }}
 
-    <div id="langdock-family-openai" class="{{ 'openai' in hiddenLangdockFamilies ? 'hidden' }}">
+    <div id="langdock-author-openai" class="{{ 'openai' in hiddenLangdockAuthors ? 'hidden' }}">
         {{ forms.selectizeField({
             label: 'Langdock Image Detail Level'|t('ai-alt-text'),
             id: 'langdockImageInputDetailLevel',
@@ -272,7 +272,7 @@
         label: 'OpenRouter Model'|t('ai-alt-text'),
         id: 'openRouterModel',
         name: 'openRouterModel',
-        instructions: "The model's name on OpenRouter, which starts with the vendor, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. It must accept image input: [browse the vision models](https://openrouter.ai/models?input_modalities=image&output_modalities=text)."|t("ai-alt-text"),
+        instructions: "The model's name on OpenRouter, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. It must accept image input: [browse the vision models](https://openrouter.ai/models?input_modalities=image&output_modalities=text)."|t("ai-alt-text"),
         value: settings.openRouterModel,
         placeholder: 'openai/gpt-6-luna',
         errors: settings.getErrors('openRouterModel'),

@@ -25,7 +25,7 @@ use craft\helpers\App;
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
  * @property string $openAiReasoningEffort The reasoning effort level for OpenAI models
  * @property string $langdockApiKey The Langdock API key
- * @property string $langdockModelFamily The Langdock model family, which picks its API ('anthropic' for Claude models or 'openai' for GPT models)
+ * @property string $langdockModelAuthor The author of the Langdock model, which picks its API ('anthropic' for models such as Claude or 'openai' for models such as GPT)
  * @property string $langdockModel The Langdock model to use
  * @property string $langdockImageInputDetailLevel The image detail level for Langdock's OpenAI API
  * @property string $langdockReasoningEffort The reasoning effort level for Langdock's OpenAI API
@@ -99,11 +99,11 @@ class Settings extends Model
     public string $langdockApiKey = '';
 
     /**
-     * @var string The family of the Langdock model, which decides the compatible API requests are sent to
+     * @var string The author of the Langdock model, which decides the compatible API requests are sent to
      *
-     * Options: anthropic (Claude models), openai (GPT models)
+     * Options: anthropic (models such as Claude), openai (models such as GPT)
      */
-    public string $langdockModelFamily = 'anthropic';
+    public string $langdockModelAuthor = 'anthropic';
 
     /**
      * @var string The Langdock model to use, must have vision capabilities
@@ -172,6 +172,22 @@ class Settings extends Model
     /**
      * @inheritdoc
      */
+    public function setAttributes($values, $safeOnly = true): void
+    {
+        // 5.2.0 stored the Langdock Model Author as `langdockModelFamily`. Still read that name, so a project config
+        // that hasn't been migrated yet or a config file that still uses it keeps working. A config file overrides
+        // the project config, so the old name wins when both are present.
+        if (is_array($values) && isset($values['langdockModelFamily'])) {
+            $values['langdockModelAuthor'] = $values['langdockModelFamily'];
+            unset($values['langdockModelFamily']);
+        }
+
+        parent::setAttributes($values, $safeOnly);
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function defineRules(): array
     {
         return [
@@ -221,7 +237,7 @@ class Settings extends Model
                 }
             ],
             [['langdockApiKey', 'langdockModel'], 'string'],
-            [['langdockModelFamily'], 'validateOneOf', 'params' => ['allowed' => ['anthropic', 'openai'], 'message' => 'Invalid Langdock Model Family configured.']],
+            [['langdockModelAuthor'], 'validateOneOf', 'params' => ['allowed' => ['anthropic', 'openai'], 'message' => 'Invalid Langdock Model Author configured.']],
             ['langdockImageInputDetailLevel', 'string'],
             [['langdockImageInputDetailLevel'], 'validateOneOf', 'params' => ['allowed' => ['low', 'high', 'auto', ''], 'message' => 'Invalid Langdock Image Input Detail Level configured.']],
             ['langdockReasoningEffort', 'string'],

@@ -15,7 +15,7 @@ Setting up an API key for each provider, and choosing a model.
 
 1. In [Langdock](https://langdock.com/), click your account name (bottom left), then go to **Settings → Products → API**. On the **Workspace API keys** tab tick only **Completion API**, which covers both the OpenAI and Anthropic endpoints this plugin uses (see the [Completion API overview](https://docs.langdock.com/en/developer/completion-api/completion-overview)), then click **Create API key**. Creating a workspace key needs a workspace admin. The **Personal API keys** tab on the same page also works, see [Personal API keys](https://docs.langdock.com/en/using-langdock/account/personal-api-keys).
 2. Copy the new key and save it to an environment variable (`.env`).
-3. Choose the **Model Family** that matches the model you want to use: `Claude (Anthropic API)` for Claude models, `GPT (OpenAI API)` for GPT models. Both use the same API key.
+3. Choose the **Model Author** of the model you want to use: `Anthropic` for models such as Claude, `OpenAI` for models such as GPT. Both use the same API key.
 
 Requests go to Langdock's EU region, where Langdock hosts its OpenAI and Anthropic models. Dedicated Langdock deployments are not supported yet: requests always go to `api.langdock.com`.
 
@@ -25,9 +25,9 @@ Requests go to Langdock's EU region, where Langdock hosts its OpenAI and Anthrop
 2. Make sure your account has some credit, a few dollars goes a long way with the small models.
 3. Go to [Keys](https://openrouter.ai/keys), create a key, and give it a name and, if you like, a credit limit.
 4. Copy the key and save it to an environment variable (`.env`).
-5. Set the **Model** to the model's OpenRouter name, which starts with the vendor, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna` (see [OpenRouter models](#-openrouter-models) for how to find ones that accept images).
+5. Set the **Model** to the model's OpenRouter name, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna` (see [OpenRouter models](#-openrouter-models) for how to find ones that accept images).
 
-OpenRouter takes the same request for every model, so there is no model family to choose and any model that accepts image input can be used. The plugin is built for and tested with OpenAI and Anthropic models. Other vendors' models aren't supported, but [the ones tested](costs.md) worked unchanged, and how good the alt text is varies between models. Worth knowing:
+OpenRouter takes the same request for every model, so there is no model author to choose and any model that accepts image input can be used. The plugin is built for and tested with OpenAI and Anthropic models. Models from other authors aren't supported, but [the ones tested](costs.md) worked unchanged, and how good the alt text is varies between models. Worth knowing:
 
 - Some models think before they answer and are slow (Grok 4.6 and Mistral Large took over 40 seconds), so raise the request timeout in `config/guzzle.php` if you see a timeout error.
 - A provider sometimes rate-limits a model for a moment ("temporarily rate-limited upstream"), and failed jobs can be retried from the queue.

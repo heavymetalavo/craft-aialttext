@@ -2,13 +2,18 @@
 
 ## 5.3.0 - 2026-10-20
 
+> {tip} Run `craft up` to rename the saved **Langdock Model Family** setting to **Langdock Model Author** in your project config, then commit the changed `project.yaml`. If you set `langdockModelFamily` in `config/ai-alt-text.php`, rename it to `langdockModelAuthor`. The old name is still read for now.
+
 - Added [OpenRouter](https://openrouter.ai/) as an AI provider, sending requests through its Responses API. OpenAI and Anthropic models are supported, and other models that accept images generally work too. Configure the API key and model in the plugin settings, plus the image detail level and reasoning effort for OpenAI models. Errors name OpenRouter and include the reason the model's provider gave, such as a rate limit.
 - Changed OpenAI requests to send `store: false`, so OpenAI no longer keeps each request and its image for 30 days, which is its default for the Responses API. Langdock and OpenRouter requests are unchanged.
 - Changed the debug log (in `devMode`) to show one line per request and response with the provider, the endpoint, and the request with base64 images cut short, instead of the first 1,000 characters of the request, which ended inside the image.
 - Changed errors from Langdock's GPT models to name Langdock instead of OpenAI, for example "Langdock API error: …", and likewise when Langdock returns an incomplete or refused response.
+- Changed the OpenAI, Langdock (OpenAI-compatible API) and OpenRouter services to share an abstract `ResponsesApiService` base class, which holds the Responses API request, response and error handling. `OpenAiService` now only holds the OpenAI settings and endpoint, so a custom service that extended it for another provider should extend `ResponsesApiService` instead.
+- Changed the **Langdock Model Family** setting to **Langdock Model Author**, with the options `Anthropic (e.g. Claude)` and `OpenAI (e.g. GPT)`, so it is chosen by who made the model rather than by what the model is called. Its handle is now `langdockModelAuthor`, and the saved `anthropic` or `openai` value is unchanged.
 - Changed the **OpenAI Reasoning Effort**, **Langdock Reasoning Effort** and **OpenRouter Reasoning Effort** settings' instructions to say which values each kind of model accepts: `gpt-5` models accept `minimal` but not `none` or `xhigh`, newer models like `gpt-6-luna` accept `none` and `xhigh` but not `minimal`, and `low` works on both.
 - Changed the suggested Anthropic model in the **Anthropic Model** placeholder and documentation from `claude-haiku-4-5` to `claude-haiku-5-5`. The **Anthropic Model** setting itself still has no default.
 - Changed the README into a shorter overview, with the setup, settings, console commands, image handling and costs moved to a `docs/` folder. It includes a table of the estimated cost per alt text for popular models, and advice on avoiding unexpected charges and on rate limits.
+- Fixed the **Langdock Model** setting's instructions linking to Langdock's OpenAI Completions API page instead of its Responses API page, which the plugin uses for OpenAI models.
 
 ## 5.2.0 - 2026-10-15
 

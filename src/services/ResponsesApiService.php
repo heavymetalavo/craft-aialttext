@@ -177,8 +177,8 @@ abstract class ResponsesApiService extends ApiService
 
     /**
      * The transform that scales an image to the model's limits before it is sent. This is the sizing for OpenAI's
-     * models, which suits any host serving them. A host that serves other vendors' models can override it to size
-     * their images the way those vendors do.
+     * models, which suits any host serving them. A host that serves other authors' models (OpenRouter serves
+     * Claude, for example) can override it to size their images the way those models need.
      *
      * OpenAI Vision: max 2048px long edge (API handles short edge scaling internally), max 512MB payload, max 1536 patches.
      * Patch budget based on detail:high tiling — each 512px tile costs 170 tokens + 85 base.

@@ -11,9 +11,9 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **AI Provider** | Choose between OpenAI, Anthropic, Langdock or OpenRouter. |
 | **OpenAI/Anthropic/Langdock/OpenRouter API Key** | Your provider's API key. |
 | **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-5-5`). For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. |
-| **Langdock Model Family** | Langdock only. `Claude (Anthropic API)` or `GPT (OpenAI API)`. It must match the model, and decides which of Langdock's compatible APIs requests are sent to. |
-| **Langdock Image Detail Level** | Langdock with the `GPT (OpenAI API)` model family only. Works like the OpenAI image detail level, `low`, `high` or `auto`. |
-| **Langdock Reasoning Effort** | Langdock with the `GPT (OpenAI API)` model family only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). |
+| **Langdock Model Author** | Langdock only. `Anthropic` (models such as Claude) or `OpenAI` (models such as GPT). It must be the author of the model, and decides which of Langdock's compatible APIs requests are sent to. |
+| **Langdock Image Detail Level** | Langdock with the `OpenAI` model author only. Works like the OpenAI image detail level, `low`, `high` or `auto`. |
+| **Langdock Reasoning Effort** | Langdock with the `OpenAI` model author only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). |
 | **OpenRouter Image Detail Level** | OpenRouter only. Works like the OpenAI image detail level, `low`, `high`, `original` or `auto`. OpenAI and Gemini models use it, and in testing Qwen, GLM and Grok models ignored it. For Claude models it picks the size limit, as the Anthropic setting does. |
 | **OpenRouter Reasoning Effort** | OpenRouter only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). Only sent to OpenAI reasoning models. |
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |
@@ -62,7 +62,7 @@ Which values work depends on the model, as tested on 19 October 2026:
 
 `low` works on both, which is why it's the default. Langdock behaves like OpenAI. OpenRouter was more forgiving with `openai/gpt-6-luna`, where every value worked, but it still refused `none` on `openai/gpt-5-nano`. A refused value fails the request with an error naming the values the model supports.
 
-**Langdock** with the `Claude (Anthropic API)` model family has no image detail setting: images are scaled to the `low` size (500px x 500px) and always sent as base64, since Langdock does not accept image URLs. With the `GPT (OpenAI API)` model family, **Langdock Image Detail Level** (`low`, `high` or `auto`) and **Langdock Reasoning Effort** work like the OpenAI settings above (both default to `low`).
+**Langdock** with the `Anthropic` model author has no image detail setting: images are scaled to the `low` size (500px x 500px) and always sent as base64, since Langdock does not accept image URLs. With the `OpenAI` model author, **Langdock Image Detail Level** (`low`, `high` or `auto`) and **Langdock Reasoning Effort** work like the OpenAI settings above (both default to `low`).
 
 **OpenRouter** always sends images as base64. It scales them as OpenAI does, except for Claude models (`anthropic/…`), which are scaled as on the Anthropic API: the detail level picks the long-edge limit (500px at `low`, 1000px at `auto`, 1568px at `high` or `original`) as the Anthropic setting does, and a token budget of about 1,600 tokens (about 1.2 megapixels) also applies, which is what sets the size of larger photos. OpenAI models use **OpenRouter Image Detail Level** and **OpenRouter Reasoning Effort** (both default to `low`). The image detail level is sent to every model, and Gemini models also change how many tokens they use with it, while Qwen, GLM and Grok models ignored it in testing. The reasoning effort is only sent to OpenAI reasoning models, and other models use their own defaults.
 
