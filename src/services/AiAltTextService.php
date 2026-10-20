@@ -4,6 +4,7 @@ namespace heavymetalavo\craftaialttext\services;
 
 use Craft;
 use craft\base\Component;
+use craft\base\Field;
 use craft\elements\Asset;
 use craft\enums\MenuItemType;
 use craft\events\DefineMenuItemsEvent;
@@ -204,9 +205,7 @@ class AiAltTextService extends Component
 
     /**
      * The asset's site IDs, by the alt text they share: the same key under the volume's Alternative
-     * Text Translation Method, and the same language, so a result is never saved to a site in another
-     * language (e.g. when the volume's alt text isn't translatable). Keyed by sharedAltTextKey(), with
-     * the sites in site order.
+     * Text Translation Method (see sharedAltTextKey()). Keyed by that, with the sites in site order.
      *
      * @return int[][]
      */
@@ -230,11 +229,21 @@ class AiAltTextService extends Component
     }
 
     /**
-     * The key shared by the sites that share an asset's alt text, for the asset on one of them.
+     * The key shared by the sites that share an asset's alt text, for the asset on one of them: Craft's
+     * alt translation key, so for example every site in a site group shares one alt text, in the
+     * language of the site it's generated for.
      */
     private function sharedAltTextKey(Asset $siteAsset): string
     {
-        return $siteAsset->getAltTranslationKey() . '|' . $siteAsset->getSite()->language;
+        $key = $siteAsset->getAltTranslationKey();
+
+        // Not translatable gives every site the same key, which would save one language to them all, so on
+        // those volumes sites only share alt text with sites in the same language
+        if ($siteAsset->getVolume()->altTranslationMethod === Field::TRANSLATION_METHOD_NONE) {
+            $key .= '|' . $siteAsset->getSite()->language;
+        }
+
+        return $key;
     }
 
     /**
