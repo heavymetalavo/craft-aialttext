@@ -24,8 +24,9 @@ Requests go to Langdock's EU region, where Langdock hosts its OpenAI and Anthrop
 1. Visit [https://openrouter.ai/](https://openrouter.ai/) and sign up or log in.
 2. Make sure your account has some credit, a few dollars goes a long way with the small models.
 3. Go to [Keys](https://openrouter.ai/keys), create a key, and give it a name and, if you like, a credit limit.
-4. Copy the key and save it to an environment variable (`.env`).
-5. Set the **Model** to the model's OpenRouter name, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna` (see [OpenRouter models](#-openrouter-models) for how to find ones that accept images).
+4. Copy the key and save it to an environment variable (`.env`), for example `OPENROUTER_API_KEY`.
+5. In the plugin settings, set **OpenRouter API Key** to that variable, e.g. `$OPENROUTER_API_KEY`.
+6. Set the **Model** to the model's OpenRouter name, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna` (see [OpenRouter models](#-openrouter-models) for how to find ones that accept images).
 
 OpenRouter takes the same request for every model, so there is no model author to choose and any model that accepts image input can be used. The plugin is built for and tested with OpenAI and Anthropic models. Models from other authors aren't supported, but [the ones tested](costs.md) worked unchanged, and how good the alt text is varies between models. Worth knowing:
 
@@ -33,7 +34,7 @@ OpenRouter takes the same request for every model, so there is no model author t
 - A provider sometimes rate-limits a model for a moment ("temporarily rate-limited upstream"), and failed jobs can be retried from the queue.
 - New OpenRouter accounts can be limited to as few as 20 requests per minute for a model, which a bulk run will pass. Switching to a different model until the account has more history is the simplest fix, see [Troubleshooting](getting-started.md#-troubleshooting).
 - A few models need a setting in your OpenRouter account, and the error says which and links to it.
-- Requests send your primary site's URL as the `HTTP-Referer` header, with `heavymetalavo/craft-aialttext` as the title, so your OpenRouter logs list them under that app name. The app is marked hidden, which keeps it out of OpenRouter's public rankings. If the primary site's URL isn't absolute (it is `@web`, for example), none of these headers are sent.
+- Requests send your primary site's URL as the `HTTP-Referer` header, with `heavymetalavo/craft-aialttext` as the title, so your OpenRouter logs list them under that app name. The app is marked hidden, which keeps it out of OpenRouter's public rankings. This works from the console and the queue as well, as long as the primary site's URL is a full URL (an environment variable that holds one is fine). A URL that uses the `@web` alias has no value in the console, so requests made there send none of these headers.
 
 ## OpenAI
 
