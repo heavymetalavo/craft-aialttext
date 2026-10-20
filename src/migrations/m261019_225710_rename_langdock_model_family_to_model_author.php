@@ -20,11 +20,11 @@ class m261019_225710_rename_langdock_model_family_to_model_author extends Migrat
     {
         $projectConfig = Craft::$app->getProjectConfig();
 
-        // If the incoming project config was produced by an environment that
-        // already ran this migration, the renamed setting arrives through the
-        // normal project config apply — don't write it again.
-        $schemaVersion = $projectConfig->get('plugins.ai-alt-text.schemaVersion', true);
-        if ($schemaVersion !== null && version_compare($schemaVersion, '1.2.0', '>=')) {
+        // If the incoming project config already has the renamed setting, it was
+        // produced by an environment that ran this migration and arrives through
+        // the normal project config apply — don't write it again. (Its schema
+        // version can't tell, as reverting the migration leaves that at 1.2.0.)
+        if ($projectConfig->get('plugins.ai-alt-text.settings.langdockModelAuthor', true) !== null) {
             return true;
         }
 
