@@ -2,6 +2,8 @@
 
 **README** · [Getting started](docs/getting-started.md) · [AI providers](docs/providers.md) · [Settings](docs/settings.md) · [Console commands](docs/console-commands.md) · [Images](docs/images.md) · [Costs](docs/costs.md)
 
+![AI Alt Text, for Anthropic, OpenAI, Langdock and OpenRouter, on Craft 5 and Craft 4 (lite). A photo of a polar bear waving, with its alt text below: "A young polar bear stands upright on snowy ice, raising one paw to show its dark pads against a soft grey sky."](docs/images/banner.png)
+
 Write alt text for every image on your Craft site with AI: one click, in bulk, or as images are uploaded, in each site's language.
 
 🚨 **New in 5.3:** OpenRouter support, with hundreds of vision models behind one API key.  
@@ -18,6 +20,8 @@ Write alt text for every image on your Craft site with AI: one click, in bulk, o
 - **Awkward images handled.** Large images are scaled to each provider's limits, SVG, AVIF, HEIC and HEIF are converted, animated GIFs use their first frame, and private volumes are sent as base64. See [Images](docs/images.md).
 - **Your prompt, your rules.** Edit the instructions sent to the AI, with `{asset.*}` and `{site.*}` variables. See [Settings](docs/settings.md#-default-prompt).
 - **Permissions built in.** Bulk generation has its own utility permission, and single assets follow the asset's own save permission.
+
+![How it works, in four steps. 1, triggered: on upload or file replacement, from an asset's action menu, for selected assets, from the bulk actions utility or the command line. 2, prepared: SVG, AVIF, HEIC, HEIF and animated GIFs are converted, and large images are scaled to the provider's limits. 3, described: sent with your prompt to Anthropic, OpenAI, Langdock or OpenRouter, which writes the alt text in the site's language. 4, saved: written to the asset's native alt field for that site, and to its other sites if you choose.](docs/images/how-it-works.png)
 
 ## 🎬 Video walkthrough
 

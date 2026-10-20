@@ -4,6 +4,8 @@
 
 How the plugin prepares images for each AI provider, and the limits to know about.
 
+![How images are prepared. Your image, any JPG, PNG, WebP, GIF, SVG, AVIF, HEIC or HEIF asset on a public or private volume, is converted: SVG, AVIF, HEIC and HEIF become PNG, and animated GIFs become a JPG of their first frame. It's scaled down if it's over the provider's limits, using your image detail setting. It's sent as a URL, or as base64 for private volumes, URLs the provider can't reach, OpenRouter, and Langdock's Anthropic models. The AI provider describes it and returns the alt text. PNG, JPG, WebP and still GIFs within the limits are sent unchanged.](images/image-preparation.png)
+
 ## Provider-Specific Limits
 
 - **Automatic Scaling**: The plugin automatically detects when an image exceeds provider limits and applies transforms (resizing or quality reduction) before sending the payload.
