@@ -12,14 +12,14 @@ use heavymetalavo\craftaialttext\models\Settings;
 /**
  * Langdock OpenAI API Service
  *
- * Langdock serves the OpenAI Responses API on its own host, with a region (always eu) in the URL. Authentication is
- * the same Bearer token OpenAI uses.
+ * Langdock serves OpenAI's Responses API on its own host, with a region (always eu) in the URL. Authentication is
+ * a Bearer token, and it doesn't store responses, so `store` is left out.
  */
-class LangdockOpenAiService extends OpenAiService
+class LangdockOpenAiService extends ResponsesApiService
 {
+    protected string $providerLabel = 'Langdock';
+
     /**
-     * Reads the Langdock settings in place of the OpenAI ones.
-     *
      * @inheritdoc
      */
     protected function applySettings(Settings $settings): void
@@ -39,17 +39,17 @@ class LangdockOpenAiService extends OpenAiService
         try {
             return parent::generateAltText($asset, $siteId, $forceBase64);
         } catch (Exception $e) {
-            throw $this->withModelFamilyHint($e);
+            throw $this->withModelAuthorHint($e);
         }
     }
 
     /**
-     * Wrong-model errors usually mean the Model Family doesn't match the model, so say so. The hint is only
+     * Wrong-model errors usually mean the Model Author doesn't match the model, so say so. The hint is only
      * added once, since a failed attempt can be retried through this method.
      */
-    private function withModelFamilyHint(Exception $e): Exception
+    private function withModelAuthorHint(Exception $e): Exception
     {
-        $hint = Craft::t('ai-alt-text', 'Check the model name, and that the Langdock Model Family matches it: Claude (Anthropic API) for Claude models, GPT (OpenAI API) for GPT models.');
+        $hint = Craft::t('ai-alt-text', 'Check the model name, and that the Langdock Model Author matches it: Anthropic for models such as Claude, OpenAI for models such as GPT.');
 
         if (stripos($e->getMessage(), 'model') === false || str_contains($e->getMessage(), $hint)) {
             return $e;
@@ -59,8 +59,6 @@ class LangdockOpenAiService extends OpenAiService
     }
 
     /**
-     * Uses the Langdock Image Detail Level setting, not the OpenAI one.
-     *
      * @inheritdoc
      */
     protected function imageDetailLevel(): string
@@ -69,8 +67,6 @@ class LangdockOpenAiService extends OpenAiService
     }
 
     /**
-     * Uses the Langdock Reasoning Effort setting, not the OpenAI one.
-     *
      * @inheritdoc
      */
     protected function reasoningEffort(): string

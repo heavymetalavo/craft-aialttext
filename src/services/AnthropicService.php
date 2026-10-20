@@ -23,6 +23,7 @@ class AnthropicService extends ApiService
     protected string $model;
     protected string $detailLevel;
     protected string $baseUrl = 'https://api.anthropic.com/v1/messages';
+    protected string $providerLabel = 'Anthropic';
 
     /**
      * Initializes the service with the Anthropic API key, model and image detail level from the plugin settings.
@@ -120,7 +121,7 @@ class AnthropicService extends ApiService
     {
         try {
             // Log the request intent for debugging
-            Craft::info('Anthropic API request initiated for asset: ' . $asset->filename . ' with image URL: ' . $imageUrl, __METHOD__);
+            Craft::info('Generating alt text with ' . $this->providerLabel . ' for asset: ' . $asset->filename . ' (' . ($imageUrl ?: 'base64 image') . ')', __METHOD__);
 
             $prompt = $this->resolvePrompt($asset, $siteId);
 
@@ -135,22 +136,26 @@ class AnthropicService extends ApiService
             }
 
             if (!$requestModel->validate()) {
-                throw new Exception("Invalid Anthropic request: " . Json::encode($requestModel->getErrors()));
+                throw new Exception("Invalid " . $this->providerLabel . " request: " . Json::encode($requestModel->getErrors()));
             }
 
             // Convert explicit request structure to array for the JSON payload
             $requestArray = $requestModel->toArray();
 
+            $this->logRequest($this->baseUrl, $requestArray);
+
+            $requestStartedAt = microtime(true);
             $response = $this->client->post($this->baseUrl, [
                 'headers' => $this->requestHeaders(),
                 'json' => $requestArray,
             ]);
 
             $responseBody = (string)$response->getBody();
+            $this->logResponse($this->baseUrl, $response->getStatusCode(), $responseBody, microtime(true) - $requestStartedAt);
             
-            $responseModel = new AnthropicResponse();
+            $responseModel = (new AnthropicResponse())->setProviderLabel($this->providerLabel);
             if (!$responseModel->parseResponse($responseBody)) {
-                throw new Exception("Anthropic API returned error: " . $responseModel->getErrorMessage());
+                throw new Exception($this->providerLabel . " API returned error: " . $responseModel->getErrorMessage());
             }
 
             return $responseModel->getText();
@@ -159,11 +164,11 @@ class AnthropicService extends ApiService
             $errorResponse = ($e instanceof RequestException && $e->hasResponse())
                 ? (string)$e->getResponse()->getBody()
                 : $e->getMessage();
-            Craft::error("Anthropic API Error: " . $errorResponse, __METHOD__);
+            Craft::error($this->providerLabel . " API Error: " . trim($errorResponse), __METHOD__);
             
-            $responseModel = new AnthropicResponse();
+            $responseModel = (new AnthropicResponse())->setProviderLabel($this->providerLabel);
             if ($responseModel->parseResponse($errorResponse) && $responseModel->hasError()) {
-                throw new Exception("Anthropic API request failed parsed response: " . $responseModel->getErrorMessage());
+                throw new Exception($this->providerLabel . " API request failed parsed response: " . $responseModel->getErrorMessage());
             }
 
             // Try a fallback where if we have accessed the image before but the provider cannot access it, we can try again with the base64 encoded contents
@@ -180,10 +185,10 @@ class AnthropicService extends ApiService
 
             // Langdock reports errors as a flat {"message": "..."} rather than Anthropic's error object
             if (is_string($decodedErrorResponse['message'] ?? null)) {
-                throw new Exception('Anthropic API request failed: ' . $decodedErrorResponse['message']);
+                throw new Exception($this->providerLabel . ' API request failed: ' . $decodedErrorResponse['message']);
             }
 
-            throw new Exception("Anthropic API request failed error response: " . $errorResponse);
+            throw new Exception($this->providerLabel . " API request failed error response: " . $errorResponse);
         }
     }
 }

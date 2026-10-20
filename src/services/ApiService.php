@@ -6,6 +6,7 @@ use Craft;
 use craft\base\Component;
 use craft\elements\Asset;
 use craft\helpers\App;
+use craft\helpers\Json;
 use craft\helpers\UrlHelper;
 use Exception;
 use GuzzleHttp\Client;
@@ -52,6 +53,11 @@ abstract class ApiService extends Component
      */
     protected Client $client;
 
+    /**
+     * @var string The provider's name in log lines and error messages, set by each provider service.
+     */
+    protected string $providerLabel = 'API';
+
     public function __construct($config = [])
     {
         parent::__construct($config);
@@ -66,6 +72,79 @@ abstract class ApiService extends Component
             isset($guzzleConfig['timeout']) ? [] : ['timeout' => self::DEFAULT_TIMEOUT]
         );
     }
+    /**
+     * Logs, at debug level, where a request is going and what it carries. Base64 image data is cut short so the
+     * model, instructions, detail and reasoning stay readable, and the images' type, size and weight are given
+     * beside the endpoint, outside the request body.
+     */
+    protected function logRequest(string $url, array $body): void
+    {
+        if (!(defined('YII_DEBUG') && YII_DEBUG)) {
+            return;
+        }
+
+        $images = [];
+        $trimmed = $this->trimBase64ForLog($body, $images);
+
+        Craft::debug(
+            $this->providerLabel . ' request to ' . $url . ($images ? ' with ' . implode(', ', $images) : '') . ': ' . Json::encode($trimmed),
+            static::class
+        );
+    }
+
+    /**
+     * Logs, at debug level, the status, time and body of a response. The body is trimmed because OpenRouter pads a
+     * slow response with leading whitespace (a keep-alive while the model works), which would fill the log with blank lines.
+     */
+    protected function logResponse(string $url, int $status, string $body, float $seconds): void
+    {
+        Craft::debug(sprintf('%s response from %s: HTTP %d in %.3fs: %s', $this->providerLabel, $url, $status, $seconds, trim($body)), static::class);
+    }
+
+    /**
+     * Cuts base64 image data in a request body down to its first characters, and adds a description of each image
+     * (e.g. `image/jpeg 1341x894, 87 KB`) to $images.
+     *
+     * @param string[] $images
+     */
+    private function trimBase64ForLog(mixed $value, array &$images): mixed
+    {
+        if (is_array($value)) {
+            foreach ($value as $key => $item) {
+                $value[$key] = $this->trimBase64ForLog($item, $images);
+            }
+
+            return $value;
+        }
+
+        if (!is_string($value)) {
+            return $value;
+        }
+
+        $prefix = '';
+        $base64 = null;
+        if (preg_match('#^(data:[\w/+.-]+;base64,)(.+)$#s', $value, $matches)) {
+            [, $prefix, $base64] = $matches;
+        } elseif (strlen($value) > 5000 && preg_match('#^[A-Za-z0-9+/=\s]+$#', $value)) {
+            $base64 = $value;
+        }
+
+        if ($base64 === null) {
+            return $value;
+        }
+
+        $binary = base64_decode($base64, true);
+        $info = $binary !== false ? @getimagesizefromstring($binary) : false;
+        $images[] = sprintf(
+            '%s %s, %d KB',
+            $info['mime'] ?? 'image of unknown type',
+            $info ? $info[0] . 'x' . $info[1] : 'unknown size',
+            (int) round(strlen((string) $binary) / 1024)
+        );
+
+        return $prefix . substr($base64, 0, 40) . '…';
+    }
+
     /**
      * Required implementation for child services to generate their specific payloads.
      */
@@ -86,7 +165,7 @@ abstract class ApiService extends Component
      * @todo Consider making $siteId a required `int` and dropping the null branch below — in
      *       practice $siteId is never null (every caller resolves a concrete site). Doing it
      *       cleanly means tightening ?int → int across the call chain (the abstract
-     *       generateAltText(), OpenAiService & AnthropicService generateAltText()/sendRequest(),
+     *       generateAltText(), ResponsesApiService & AnthropicService generateAltText()/sendRequest(),
      *       and AiAltTextService::generateAltText()), with the one genuine guard at the queue job,
      *       whose siteId payload is legitimately nullable (`$this->siteId ?? $asset->siteId`).
      * @throws Exception If an explicitly requested site no longer exists, or a prompt variable can't be resolved.

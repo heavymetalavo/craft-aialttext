@@ -25,10 +25,14 @@ use craft\helpers\App;
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
  * @property string $openAiReasoningEffort The reasoning effort level for OpenAI models
  * @property string $langdockApiKey The Langdock API key
- * @property string $langdockModelFamily The Langdock model family, which picks its API ('anthropic' for Claude models or 'openai' for GPT models)
+ * @property string $langdockModelAuthor The author of the Langdock model, which picks its API ('anthropic' for models such as Claude or 'openai' for models such as GPT)
  * @property string $langdockModel The Langdock model to use
  * @property string $langdockImageInputDetailLevel The image detail level for Langdock's OpenAI API
  * @property string $langdockReasoningEffort The reasoning effort level for Langdock's OpenAI API
+ * @property string $openRouterApiKey The OpenRouter API key
+ * @property string $openRouterModel The OpenRouter model to use, as named by OpenRouter
+ * @property string $openRouterImageInputDetailLevel The image detail level for OpenRouter's Responses API
+ * @property string $openRouterReasoningEffort The reasoning effort level for OpenRouter's Responses API
  */
 class Settings extends Model
 {
@@ -95,11 +99,11 @@ class Settings extends Model
     public string $langdockApiKey = '';
 
     /**
-     * @var string The family of the Langdock model, which decides the compatible API requests are sent to
+     * @var string The author of the Langdock model, which decides the compatible API requests are sent to
      *
-     * Options: anthropic (Claude models), openai (GPT models)
+     * Options: anthropic (models such as Claude), openai (models such as GPT)
      */
-    public string $langdockModelFamily = 'anthropic';
+    public string $langdockModelAuthor = 'anthropic';
 
     /**
      * @var string The Langdock model to use, must have vision capabilities
@@ -119,6 +123,31 @@ class Settings extends Model
      * Options: none, minimal, low, medium, high, xhigh
      */
     public string $langdockReasoningEffort = 'low';
+
+    /**
+     * @var string The OpenRouter API key
+     */
+    public string $openRouterApiKey = '';
+
+    /**
+     * @var string The OpenRouter model to use, as OpenRouter names it (e.g. `anthropic/claude-haiku-5.5` or
+     * `openai/gpt-6-luna`), must have vision capabilities
+     */
+    public string $openRouterModel = '';
+
+    /**
+     * @var string The image detail level for OpenRouter's Responses API
+     *
+     * Options: low, high, auto, original
+     */
+    public string $openRouterImageInputDetailLevel = 'low';
+
+    /**
+     * @var string The reasoning effort level for OpenRouter's Responses API
+     *
+     * Options: none, minimal, low, medium, high, xhigh
+     */
+    public string $openRouterReasoningEffort = 'low';
 
     /**
      * @var bool Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
@@ -143,6 +172,22 @@ class Settings extends Model
     /**
      * @inheritdoc
      */
+    public function setAttributes($values, $safeOnly = true): void
+    {
+        // 5.2.0 stored the Langdock Model Author as `langdockModelFamily`. Still read that name, so a project config
+        // that hasn't been migrated yet or a config file that still uses it keeps working. A config file overrides
+        // the project config, so the old name wins when both are present.
+        if (is_array($values) && isset($values['langdockModelFamily'])) {
+            $values['langdockModelAuthor'] = $values['langdockModelFamily'];
+            unset($values['langdockModelFamily']);
+        }
+
+        parent::setAttributes($values, $safeOnly);
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function defineRules(): array
     {
         return [
@@ -151,7 +196,7 @@ class Settings extends Model
                 ['aiProvider'],
                 function($attribute) {
                     $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['openai', 'anthropic', 'langdock'], true)) {
+                    if (!in_array($val, ['openai', 'anthropic', 'langdock', 'openrouter'], true)) {
                         $this->addError($attribute, 'Invalid AI Provider configured.');
                     }
                 }
@@ -192,11 +237,16 @@ class Settings extends Model
                 }
             ],
             [['langdockApiKey', 'langdockModel'], 'string'],
-            [['langdockModelFamily'], 'validateOneOf', 'params' => ['allowed' => ['anthropic', 'openai'], 'message' => 'Invalid Langdock Model Family configured.']],
+            [['langdockModelAuthor'], 'validateOneOf', 'params' => ['allowed' => ['anthropic', 'openai'], 'message' => 'Invalid Langdock Model Author configured.']],
             ['langdockImageInputDetailLevel', 'string'],
             [['langdockImageInputDetailLevel'], 'validateOneOf', 'params' => ['allowed' => ['low', 'high', 'auto', ''], 'message' => 'Invalid Langdock Image Input Detail Level configured.']],
             ['langdockReasoningEffort', 'string'],
             [['langdockReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid Langdock Reasoning Effort configured.']],
+            [['openRouterApiKey', 'openRouterModel'], 'string'],
+            ['openRouterImageInputDetailLevel', 'string'],
+            [['openRouterImageInputDetailLevel'], 'validateOneOf', 'params' => ['allowed' => ['low', 'high', 'auto', 'original', ''], 'message' => 'Invalid OpenRouter Image Input Detail Level configured.']],
+            ['openRouterReasoningEffort', 'string'],
+            [['openRouterReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid OpenRouter Reasoning Effort configured.']],
             ['propagate', 'boolean'],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],

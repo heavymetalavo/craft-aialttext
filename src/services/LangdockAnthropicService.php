@@ -16,6 +16,8 @@ use heavymetalavo\craftaialttext\models\Settings;
  */
 class LangdockAnthropicService extends AnthropicService
 {
+    protected string $providerLabel = 'Langdock';
+
     /**
      * Reads the Langdock settings in place of the Anthropic ones.
      *
@@ -53,17 +55,17 @@ class LangdockAnthropicService extends AnthropicService
         try {
             return parent::generateAltText($asset, $siteId, true);
         } catch (Exception $e) {
-            throw $this->withModelFamilyHint($e);
+            throw $this->withModelAuthorHint($e);
         }
     }
 
     /**
-     * Wrong-model errors usually mean the Model Family doesn't match the model, so say so. The hint is only
+     * Wrong-model errors usually mean the Model Author doesn't match the model, so say so. The hint is only
      * added once, since a failed attempt can be retried through this method.
      */
-    private function withModelFamilyHint(Exception $e): Exception
+    private function withModelAuthorHint(Exception $e): Exception
     {
-        $hint = Craft::t('ai-alt-text', 'Check the model name, and that the Langdock Model Family matches it: Claude (Anthropic API) for Claude models, GPT (OpenAI API) for GPT models.');
+        $hint = Craft::t('ai-alt-text', 'Check the model name, and that the Langdock Model Author matches it: Anthropic for models such as Claude, OpenAI for models such as GPT.');
 
         if (stripos($e->getMessage(), 'model') === false || str_contains($e->getMessage(), $hint)) {
             return $e;

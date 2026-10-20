@@ -186,14 +186,15 @@ class AiAltTextService extends Component
             return Craft::t('ai-alt-text', 'No AI provider is configured. Choose one in the AI Alt Text plugin settings.');
         }
 
-        if (!in_array($provider, ['openai', 'anthropic', 'langdock'], true)) {
-            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic or Langdock in the AI Alt Text plugin settings.', ['provider' => $provider]);
+        if (!in_array($provider, ['openai', 'anthropic', 'langdock', 'openrouter'], true)) {
+            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Langdock or OpenRouter in the AI Alt Text plugin settings.', ['provider' => $provider]);
         }
 
         [$label, $apiKey] = match ($provider) {
             'anthropic' => ['Anthropic', $settings->anthropicApiKey],
             'langdock' => ['Langdock', $settings->langdockApiKey],
             'openai' => ['OpenAI', $settings->openAiApiKey],
+            'openrouter' => ['OpenRouter', $settings->openRouterApiKey],
         };
 
         $apiKey = App::parseEnv($apiKey);
@@ -202,8 +203,8 @@ class AiAltTextService extends Component
             return Craft::t('ai-alt-text', 'No API key is configured for the {provider} provider. Add one in the AI Alt Text plugin settings.', ['provider' => $label]);
         }
 
-        if ($provider === 'langdock' && !in_array(App::parseEnv($settings->langdockModelFamily), ['anthropic', 'openai'], true)) {
-            return Craft::t('ai-alt-text', 'The Langdock Model Family must be Claude (Anthropic) or GPT (OpenAI). Choose one in the AI Alt Text plugin settings.');
+        if ($provider === 'langdock' && !in_array(App::parseEnv($settings->langdockModelAuthor), ['anthropic', 'openai'], true)) {
+            return Craft::t('ai-alt-text', 'The Langdock Model Author must be Anthropic or OpenAI. Choose one in the AI Alt Text plugin settings.');
         }
 
         return null;
@@ -220,10 +221,11 @@ class AiAltTextService extends Component
 
         return match (App::parseEnv($settings->aiProvider)) {
             'anthropic' => $plugin->anthropicService,
-            'langdock' => App::parseEnv($settings->langdockModelFamily) === 'openai'
+            'langdock' => App::parseEnv($settings->langdockModelAuthor) === 'openai'
                 ? $plugin->langdockOpenAiService
                 : $plugin->langdockAnthropicService,
             'openai' => $plugin->openAiService,
+            'openrouter' => $plugin->openRouterService,
         };
     }
 
