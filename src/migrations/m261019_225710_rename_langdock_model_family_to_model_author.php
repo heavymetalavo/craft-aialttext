@@ -28,27 +28,7 @@ class m261019_225710_rename_langdock_model_family_to_model_author extends Migrat
             return true;
         }
 
-        $settings = $projectConfig->get('plugins.ai-alt-text.settings') ?? [];
-
-        if (!array_key_exists('langdockModelFamily', $settings)) {
-            return true;
-        }
-
-        if (!Craft::$app->getConfig()->getGeneral()->allowAdminChanges) {
-            Craft::warning('Skipping Langdock Model Author migration: project config is read-only on this environment (allowAdminChanges is false). Run the update on an environment that allows admin changes and deploy the resulting project config.', __METHOD__);
-            return true;
-        }
-
-        Craft::info('Renaming the langdockModelFamily setting to langdockModelAuthor.', __METHOD__);
-
-        // Write the whole settings node back with only that key renamed, so no
-        // other stored settings are lost. (Plugins::savePluginSettings() would
-        // replace the node with only the keys passed to it.)
-        $settings['langdockModelAuthor'] = $settings['langdockModelFamily'];
-        unset($settings['langdockModelFamily']);
-        $projectConfig->set('plugins.ai-alt-text.settings', $settings, 'Rename the AI Alt Text Langdock Model Family setting to Langdock Model Author');
-
-        return true;
+        return $this->renameSetting('langdockModelFamily', 'langdockModelAuthor');
     }
 
     /**
@@ -56,7 +36,35 @@ class m261019_225710_rename_langdock_model_family_to_model_author extends Migrat
      */
     public function safeDown(): bool
     {
-        echo "m261019_225710_rename_langdock_model_family_to_model_author cannot be reverted.\n";
-        return false;
+        return $this->renameSetting('langdockModelAuthor', 'langdockModelFamily');
+    }
+
+    /**
+     * Renames a stored setting, keeping its value, if it is stored.
+     */
+    private function renameSetting(string $from, string $to): bool
+    {
+        $projectConfig = Craft::$app->getProjectConfig();
+        $settings = $projectConfig->get('plugins.ai-alt-text.settings') ?? [];
+
+        if (!array_key_exists($from, $settings)) {
+            return true;
+        }
+
+        if (!Craft::$app->getConfig()->getGeneral()->allowAdminChanges) {
+            Craft::warning("Skipping the rename of the $from setting: project config is read-only on this environment (allowAdminChanges is false). Run the update on an environment that allows admin changes and deploy the resulting project config.", __METHOD__);
+            return true;
+        }
+
+        Craft::info("Renaming the $from setting to $to.", __METHOD__);
+
+        // Write the whole settings node back with only that key renamed, so no
+        // other stored settings are lost. (Plugins::savePluginSettings() would
+        // replace the node with only the keys passed to it.)
+        $settings[$to] = $settings[$from];
+        unset($settings[$from]);
+        $projectConfig->set('plugins.ai-alt-text.settings', $settings, "Rename the AI Alt Text $from setting to $to");
+
+        return true;
     }
 }
