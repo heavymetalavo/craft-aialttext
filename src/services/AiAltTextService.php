@@ -132,28 +132,63 @@ class AiAltTextService extends Component
     }
 
     /**
-     * Groups the asset's sites by the alt text they share: the same key under the volume's Alternative
-     * Text Translation Method, and the same language, so a result is never saved to a site in another
-     * language (e.g. when the volume's alt text isn't translatable). The current site's group comes
-     * first, led by the current site.
+     * Handles an asset a bulk run has reached on one site, once for the sites that share its alt text
+     * (see siteAssetsBySharedAltText()), so they cost at most one request between them:
+     *
+     * - In a run for assets without alt text, if a site in the group has some, it's copied to the
+     *   group's empty sites instead of generating text that would overwrite it.
+     * - Otherwise a job is queued for the group's first site in the run, which saves to the whole
+     *   group, and the group's other sites skip the asset. In a run for one site, that's the site.
+     *
+     * @param Asset $asset The asset, on the site the run reached it on
+     * @param bool $includeExisting Whether the run includes assets that already have alt text
+     * @param bool $allSites Whether the run covers every site, rather than just the asset's
+     * @param array|null $existingJobs Queue job info for the duplicate-job check
+     * @return string `queued`, `copied`, or `skipped` when an earlier site in the group handles it,
+     * a job is already queued, or the asset isn't eligible
+     * @throws Exception
+     */
+    public function createBulkJob(Asset $asset, bool $includeExisting, bool $allSites, ?array $existingJobs = null): string
+    {
+        $group = $this->siteAssetsBySharedAltText($asset)[$this->sharedAltTextKey($asset)];
+        $existingAltText = $includeExisting ? null : ArrayHelper::firstValue(array_filter(array_column($group, 'alt')));
+
+        if ($existingAltText !== null) {
+            foreach ($group as $siteAsset) {
+                if (empty($siteAsset->alt)) {
+                    $siteAsset->alt = $existingAltText;
+
+                    if (!Craft::$app->elements->saveElement($siteAsset, true, false)) {
+                        throw new Exception("Failed to copy alt text for asset: {$siteAsset->filename} (site {$siteAsset->siteId})");
+                    }
+                }
+            }
+
+            return 'copied';
+        }
+
+        if ($allSites && $group[0]->siteId !== $asset->siteId) {
+            return 'skipped';
+        }
+
+        // The caller has already chosen the sites, so skip the saveTranslatedResultsToEachSite fan-out
+        return $this->createJob($asset, false, $asset->siteId, false, true, $existingJobs) ? 'queued' : 'skipped';
+    }
+
+    /**
+     * Groups the asset's sites by the alt text they share (see siteAssetsBySharedAltText()). The
+     * current site's group comes first, led by the current site.
      *
      * @return int[][] Site IDs, grouped
      */
     private function groupSitesSharingAltText(Asset $asset, int $currentSiteId): array
     {
-        $siteAssets = ArrayHelper::index(Asset::find()->id($asset->id)->site('*')->all(), 'siteId');
-        $groups = [];
-
-        foreach (Craft::$app->getSites()->getAllSites() as $site) {
-            if (isset($siteAssets[$site->id])) {
-                $groups[$siteAssets[$site->id]->getAltTranslationKey() . '|' . $site->language][] = $site->id;
-            }
-        }
-
         $currentGroup = [$currentSiteId];
         $otherGroups = [];
 
-        foreach ($groups as $siteIds) {
+        foreach ($this->siteAssetsBySharedAltText($asset) as $siteAssets) {
+            $siteIds = array_column($siteAssets, 'siteId');
+
             if (in_array($currentSiteId, $siteIds, true)) {
                 $currentGroup = [$currentSiteId, ...array_diff($siteIds, [$currentSiteId])];
             } else {
@@ -162,6 +197,36 @@ class AiAltTextService extends Component
         }
 
         return [$currentGroup, ...$otherGroups];
+    }
+
+    /**
+     * The asset in each of its sites, grouped by the alt text they share: the same key under the volume's
+     * Alternative Text Translation Method, and the same language, so a result is never saved to a site in
+     * another language (e.g. when the volume's alt text isn't translatable). Groups, and the sites in them,
+     * are in site order, keyed by sharedAltTextKey().
+     *
+     * @return Asset[][]
+     */
+    private function siteAssetsBySharedAltText(Asset $asset): array
+    {
+        $siteAssets = ArrayHelper::index(Asset::find()->id($asset->id)->site('*')->all(), 'siteId');
+        $groups = [];
+
+        foreach (Craft::$app->getSites()->getAllSites() as $site) {
+            if (isset($siteAssets[$site->id])) {
+                $groups[$this->sharedAltTextKey($siteAssets[$site->id])][] = $siteAssets[$site->id];
+            }
+        }
+
+        return $groups;
+    }
+
+    /**
+     * The key shared by the sites that share an asset's alt text, for the asset on one of them.
+     */
+    private function sharedAltTextKey(Asset $siteAsset): string
+    {
+        return $siteAsset->getAltTranslationKey() . '|' . $siteAsset->getSite()->language;
     }
 
     /**

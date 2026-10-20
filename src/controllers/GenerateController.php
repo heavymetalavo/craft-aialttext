@@ -144,6 +144,7 @@ class GenerateController extends Controller
                 Craft::$app->getQueue()->push(new GenerateAiAltTextForAssets([
                     'siteId' => $site->id,
                     'includeExisting' => $includeExisting,
+                    'allSites' => !$siteIdParam,
                 ]));
             }
         } catch (Exception $e) {
