@@ -6,7 +6,7 @@
 - Changed OpenAI Provider requests to send `store: false`, so OpenAI no longer keeps each request and its image for 30 days, which is its default for the Responses API.
 - Changed errors and log lines from Langdock's models to name Langdock instead of OpenAI or Anthropic, for example "Langdock API error: …", and likewise when Langdock returns an incomplete, refused or unreadable response.
 - Changed the OpenAI, Langdock (OpenAI-compatible API) and OpenRouter services to share a base class, which holds the Responses API request, response and error handling. Sets foundations to support new providers which run on [the Open Responses open-source specification](https://www.openresponses.org/) (e.g. Hugging Face).
-- Changed the **Langdock Model Family** setting to **Langdock Model Author** naming to align with industry terminology, and values stored in the old settings field are migrated
+- Changed the **Langdock Model Family** setting to **Langdock Model Author** naming to align with industry terminology, and values stored in the old settings field are migrated.
 
 ## 5.2.0 - 2026-10-15
 
