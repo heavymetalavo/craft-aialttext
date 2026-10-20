@@ -8,6 +8,7 @@ use craft\elements\Asset;
 use craft\enums\MenuItemType;
 use craft\events\DefineMenuItemsEvent;
 use craft\helpers\App;
+use craft\helpers\ArrayHelper;
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
@@ -77,17 +78,20 @@ class AiAltTextService extends Component
         // Get the $saveTranslatedResultsToEachSite setting value
         $saveTranslatedResultsToEachSite = $skipSaveTranslatedResultsToEachSiteSetting ? false : AiAltText::getInstance()->settings->saveTranslatedResultsToEachSite;
 
+        // Sites that share alt text are generated once. The first group is the current site's, led by it.
+        $siteGroups = $this->groupSitesSharingAltText($asset, $assetSiteId);
+        $sharedSiteIds = array_slice(array_shift($siteGroups), 1);
+
         // Check if we need to save the current site off queue
         if ($saveCurrentSiteOffQueue) {
-            $this->generateAltText($asset, $assetSiteId);
+            $this->generateAltText($asset, $assetSiteId, $sharedSiteIds);
     
             if (!$saveTranslatedResultsToEachSite) {
                 return true;
             }
         }
 
-        $sites = Craft::$app->getSites()->getAllSites();
-        $hasPlusOneSite = count($sites) > 1;
+        $hasPlusOneSite = count(Craft::$app->getSites()->getAllSites()) > 1;
 
         // Queue the current site's job — unless generateAltText() already handled it off queue
         // above, in which case queueing it here would generate it a second time.
@@ -96,6 +100,7 @@ class AiAltTextService extends Component
                 'description' => $this->jobDescription($asset, $assetSiteId, $hasPlusOneSite),
                 'assetId' => $asset->id,
                 'siteId' => $assetSiteId,
+                'sharedSiteIds' => $sharedSiteIds,
             ]));
         }
 
@@ -104,28 +109,59 @@ class AiAltTextService extends Component
             return true;
         }
 
-        // Queue a job for each of the *other* sites. The current site is always already handled
-        // above — either inline via generateAltText() or by the push above — so it must never be
-        // queued again here, regardless of which of those two routes it took.
-        foreach ($sites as $site) {
-            // Skip the current site
-            if ($site->id === $assetSiteId) {
-                continue;
-            }
+        // Queue a job for each group of *other* sites, generated for the group's first site and saved
+        // to the rest. The current site's group is always already handled above — either inline via
+        // generateAltText() or by the push above — so it must never be queued again here.
+        foreach ($siteGroups as $siteIds) {
+            $siteId = array_shift($siteIds);
 
-            // Skip sites that already have a pending job for this asset
-            if ($existingJobs !== null && $this->hasPendingJob($existingJobs, $this->jobMarker($asset->id, $site->id, $hasPlusOneSite))) {
+            // Skip groups that already have a pending job for this asset
+            if ($existingJobs !== null && $this->hasPendingJob($existingJobs, $this->jobMarker($asset->id, $siteId, $hasPlusOneSite))) {
                 continue;
             }
 
             $queue->push(new GenerateAiAltTextJob([
-                'description' => $this->jobDescription($asset, $site->id, $hasPlusOneSite),
+                'description' => $this->jobDescription($asset, $siteId, $hasPlusOneSite),
                 'assetId' => $asset->id,
-                'siteId' => $site->id,
+                'siteId' => $siteId,
+                'sharedSiteIds' => $siteIds,
             ]));
         }
 
         return true;
+    }
+
+    /**
+     * Groups the asset's sites by the alt text they share: the same key under the volume's Alternative
+     * Text Translation Method, and the same language, so a result is never saved to a site in another
+     * language (e.g. when the volume's alt text isn't translatable). The current site's group comes
+     * first, led by the current site.
+     *
+     * @return int[][] Site IDs, grouped
+     */
+    private function groupSitesSharingAltText(Asset $asset, int $currentSiteId): array
+    {
+        $siteAssets = ArrayHelper::index(Asset::find()->id($asset->id)->site('*')->all(), 'siteId');
+        $groups = [];
+
+        foreach (Craft::$app->getSites()->getAllSites() as $site) {
+            if (isset($siteAssets[$site->id])) {
+                $groups[$siteAssets[$site->id]->getAltTranslationKey() . '|' . $site->language][] = $site->id;
+            }
+        }
+
+        $currentGroup = [$currentSiteId];
+        $otherGroups = [];
+
+        foreach ($groups as $siteIds) {
+            if (in_array($currentSiteId, $siteIds, true)) {
+                $currentGroup = [$currentSiteId, ...array_diff($siteIds, [$currentSiteId])];
+            } else {
+                $otherGroups[] = $siteIds;
+            }
+        }
+
+        return [$currentGroup, ...$otherGroups];
     }
 
     /**
@@ -239,16 +275,15 @@ class AiAltTextService extends Component
      *
      * @param Asset $asset The asset to generate alt text for
      * @param int|null $siteId The site ID
+     * @param int[] $sharedSiteIds Other sites that share the site's alt text, saved with the same result
      * @return string The generated alt text
      * @throws Exception If the asset is invalid or alt text generation fails
      */
-    public function generateAltText(Asset $asset, ?int $siteId = null): string
+    public function generateAltText(Asset $asset, ?int $siteId = null, array $sharedSiteIds = []): string
     {
         if ($asset->kind !== Asset::KIND_IMAGE) {
             throw new Exception('Asset must be an image');
         }
-        
-        $plugin = AiAltText::getInstance();
 
         $error = $this->getConfigurationError();
 
@@ -262,28 +297,34 @@ class AiAltTextService extends Component
             throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
         }
 
-        $propagate = (bool) $plugin->getSettings()->propagate;
-
-        // Both saves go in one transaction. The blank pre-save below deliberately clears the alt
-        // value, so if the real save afterwards failed for any reason - a validation error, a
-        // beforeSave veto from another plugin, a DB problem - the asset would be left with its
-        // previous alt text replaced by an empty string. Rolling back keeps the old value.
+        // The site and the sites sharing its alt text are saved in one transaction, so if any save
+        // fails - a validation error, a beforeSave veto from another plugin, a DB problem - they all
+        // keep their previous alt text, rather than some sites having the new value and some not.
         $transaction = Craft::$app->getDb()->beginTransaction();
 
         try {
-            // Bug Workaround: Pre-save blank alt text to prevent propagation across sites where setting is false.
-            if (!$propagate) {
-                $asset->alt = '';
-                Craft::debug("Performing preliminary save for asset {$asset->id} to establish site rows before setting alt text.", __METHOD__);
-                Craft::$app->elements->saveElement($asset, true, false);
-            }
-
             $asset->alt = $altText;
 
-            Craft::info("Saving AI alt text for asset {$asset->id} with propagate=" . ($propagate ? 'true' : 'false'), __METHOD__);
+            Craft::info("Saving AI alt text for asset {$asset->id}", __METHOD__);
 
-            if (!Craft::$app->elements->saveElement($asset, true, $propagate)) {
+            // Not propagated, so sites in other languages never get it. The sites sharing it are saved below.
+            if (!Craft::$app->elements->saveElement($asset, true, false)) {
                 throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
+            }
+
+            foreach ($sharedSiteIds as $sharedSiteId) {
+                $sharedAsset = Asset::find()->id($asset->id)->siteId($sharedSiteId)->one();
+
+                // Skip sites the asset has left since the job was queued
+                if (!$sharedAsset) {
+                    continue;
+                }
+
+                $sharedAsset->alt = $altText;
+
+                if (!Craft::$app->elements->saveElement($sharedAsset, true, false)) {
+                    throw new Exception("Failed to save alt text for asset: {$asset->filename} (site $sharedSiteId)");
+                }
             }
 
             $transaction->commit();
