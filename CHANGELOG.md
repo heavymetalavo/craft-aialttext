@@ -2,8 +2,6 @@
 
 ## 5.3.0 - 2026-10-20
 
-> {tip} Run `craft up` to rename the saved **Langdock Model Family** setting to **Langdock Model Author** in your project config, then commit the changed `project.yaml`. If you set `langdockModelFamily` in `config/ai-alt-text.php`, rename it to `langdockModelAuthor`. The old name is still read for now.
-
 - Added [OpenRouter](https://openrouter.ai/) as an AI provider, sending requests through its Responses API. OpenAI and Anthropic models are supported, and other models that accept images generally work too. Configure the API key and model in the plugin settings, plus the image detail level and reasoning effort for OpenAI models. Errors name OpenRouter and include the reason the model's provider gave, such as a rate limit.
 - Changed OpenAI requests to send `store: false`, so OpenAI no longer keeps each request and its image for 30 days, which is its default for the Responses API. Langdock and OpenRouter requests are unchanged.
 - Changed the debug log (in `devMode`) to show one line per request and response with the provider, the endpoint, and the request with base64 images cut short, instead of the first 1,000 characters of the request, which ended inside the image.
