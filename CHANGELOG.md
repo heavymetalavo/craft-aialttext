@@ -8,7 +8,7 @@
 - Changed bulk generation across all sites, in the utility and the `missing` and `all` console commands, to queue one job for the sites that share alt text, and generation for assets without alt text to copy a sharing site's existing alt text to the sites missing it instead of making a request.
 - Removed the **Propagate** setting. Generated alt text is saved to the sites that share it, as above, instead of being propagated to every site.
 - Fixed alt text for animated GIFs describing their last frame instead of their first when Craft uses the Imagick image driver. The first frame is now sent to the AI provider as base64, rather than as a URL to Craft's JPG transform, which flattens every frame into one.
-- Fixed alt text for SVGs with gradients describing them in the wrong colours, as ImageMagick's built-in SVG renderer draws gradients as solid black. SVGs are now rendered by the plugin and sent to the AI provider as base64, and where ImageMagick can't draw gradients, each one is replaced by the average of its colours first. This also lets alt text be generated for SVGs on volumes without public URLs. For full SVG rendering, install Inkscape on the server, see [Images](docs/images.md).
+- Fixed alt text for SVGs with gradients describing them in the wrong colours, as ImageMagick's built-in SVG renderer draws gradients as solid black. SVGs are now rendered by the plugin and sent to the AI provider as base64, and where ImageMagick can't draw gradients, each one is replaced by the average of its colours first. This also lets alt text be generated for SVGs on volumes without public URLs. For accurate SVG rendering, install Inkscape on the server, or `imagemagick-svg` on Alpine, see [Images](docs/images.md).
 
 ## 5.3.0 - 2026-10-20
 
