@@ -19,7 +19,6 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use heavymetalavo\craftaialttext\AiAltText;
 use Imagick;
-use ImagickException;
 use ImagickPixel;
 use ImagickPixelException;
 
@@ -513,29 +512,36 @@ abstract class ApiService extends Component
 
     /**
      * Whether ImageMagick draws gradients in an SVG read from a string, as Craft reads them. Its built-in SVG renderer
-     * draws them as solid black, but ImageMagick built with librsvg draws them, and so does Inkscape when it's installed,
-     * with ImageMagick 6 or 7.1.2-34 and later. Checked by rendering a small red gradient, and cached for a day.
+     * draws them as solid black. ImageMagick built with librsvg draws them, and so does Inkscape when it's installed,
+     * with ImageMagick 6 or 7.1.2-34 and later, as earlier ImageMagick 7 releases can't pass Inkscape an SVG read from a
+     * string. Anything else is assumed to draw them black, so they're flattened rather than sent that way.
      *
      * @return bool Whether gradients are drawn
      */
     protected function canRenderSvgGradients(): bool
     {
-        // Cached as 1 or 0, as a cached false reads as a cache miss
-        return (bool)Craft::$app->getCache()->getOrSet('ai-alt-text:svg-gradients', function(): int {
-            try {
-                $image = new Imagick();
-                $image->setBackgroundColor(new ImagickPixel('transparent'));
-                $image->readImageBlob('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="#f00"/><stop offset="1" stop-color="#f00"/></linearGradient></defs><rect width="10" height="10" fill="url(#g)"/></svg>');
-                $canRender = $image->getImagePixelColor(5, 5)->getColor()['r'] > 128;
-            } catch (ImagickException $e) {
-                Craft::warning('Could not check whether ImageMagick draws SVG gradients: ' . $e->getMessage(), __METHOD__);
-                $canRender = false;
+        if (!empty(Imagick::queryFormats('RSVG'))) {
+            return true;
+        }
+
+        if (!preg_match('/ImageMagick (\d+\.\d+\.\d+)-(\d+)/', Imagick::getVersion()['versionString'], $match)) {
+            return false;
+        }
+
+        $version = "$match[1].$match[2]";
+        if (!str_starts_with($version, '6.') && version_compare($version, '7.1.2.34', '<')) {
+            return false;
+        }
+
+        // PHP-FPM often clears PATH, and ImageMagick's shell then looks in the standard directories
+        foreach (explode(PATH_SEPARATOR, getenv('PATH') ?: '/usr/local/bin:/usr/bin:/bin') as $dir) {
+            // @ as open_basedir can block the check, which then counts as Inkscape not being installed
+            if (@is_executable("$dir/inkscape")) {
+                return true;
             }
+        }
 
-            Craft::info('ImageMagick ' . ($canRender ? 'draws' : "doesn't draw") . ' SVG gradients, so they ' . ($canRender ? 'are kept' : 'will be flattened'), __METHOD__);
-
-            return (int)$canRender;
-        }, 86400);
+        return false;
     }
 
     /**

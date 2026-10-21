@@ -11,6 +11,9 @@ This plugin requires:
 - PHP 8.2 or later
 - An Anthropic, OpenAI, Langdock or OpenRouter API key, see [AI providers](providers.md)
 
+Recommended:
+- For accurate alt text for SVGs, an SVG renderer for ImageMagick: Inkscape on Debian or Ubuntu (`apt install inkscape`), or `imagemagick-svg` on Alpine. See [Images](images.md#provider-specific-limits)
+
 ## 📥 Installation
 
 You can install this plugin from [the Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft5) or with Composer.
