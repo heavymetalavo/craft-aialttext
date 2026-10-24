@@ -2,7 +2,7 @@
 
 **README** · [Getting started](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/getting-started.md) · [AI providers](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/providers.md) · [Settings](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/settings.md) · [Console commands](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/console-commands.md) · [Images](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/images.md) · [Costs](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/costs.md)
 
-![AI Alt Text, for Anthropic, OpenAI, Langdock and OpenRouter, on Craft 5 and Craft 4 (lite). A photo of a polar bear waving, with its alt text below: "A young polar bear stands upright on snowy ice, raising one paw to show its dark pads against a soft grey sky."](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/5.x/docs/images/banner.png)
+![AI Alt Text, for Anthropic, OpenAI, Langdock and OpenRouter, on Craft 5 and Craft 4 (lite). A photo of a polar bear waving, with its alt text below: "A young polar bear standing upright on snow, raising one paw as if waving, with a grey sky behind it."](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/5.x/docs/images/banner.png)
 
 Write alt text for every image on your Craft site with AI: one click, in bulk, or as images are uploaded, in each site's language.
 
@@ -14,7 +14,7 @@ Write alt text for every image on your Craft site with AI: one click, in bulk, o
 ## ✨ What you get
 
 - **Any vision model, one key.** Use Anthropic or OpenAI directly, Langdock (hosted in the EU), or OpenRouter, which offers over 300 image-capable models, including Claude, GPT, Gemini, Grok, Qwen and DeepSeek. Switching model is one setting. OpenAI and Anthropic models are supported, and more than 50 others worked in our tests. See [AI providers](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/providers.md).
-- **Pennies for a whole library.** With `gpt-6-luna`, alt text for 1,000 images costs about 6 cents. [Compare models](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/costs.md).
+- **Pennies for a whole library.** With our top pick, `claude-haiku-5-5`, alt text for 1,000 images costs about 23 cents, or about 6 cents with `gpt-6-luna`. [Compare models](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/costs.md).
 - **Every site's language.** Alt text is written in the site's language, and can be saved to each site of a multi-site install.
 - **One click, in bulk, or automatically.** From an asset's action menu, for selected assets, from the bulk actions utility, on upload or file replacement, or from the [command line](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/console-commands.md). Bulk work runs through Craft's queue, where failed jobs can be retried.
 - **Awkward images handled.** Large images are scaled to each provider's limits, SVG, AVIF, HEIC and HEIF are converted, animated GIFs use their first frame, and private volumes are sent as base64. See [Images](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/images.md).
@@ -57,7 +57,7 @@ Then use it in your templates:
 
 ## ⚠️ Disclaimer
 
-We've taken some steps to try prevent unexpected costs with default plugin settings (e.g. detail: `low` and the suggested small model `gpt-6-luna`) though we take no responsibility for excessive API token usage that may result from mistakes, bugs, or security vulnerabilities within this plugin so use at your own risk. See [Avoiding unexpected charges](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/costs.md#-avoiding-unexpected-charges).
+We've taken some steps to try prevent unexpected costs with default plugin settings (e.g. detail: `low` and suggested small models such as `claude-haiku-5-5`) though we take no responsibility for excessive API token usage that may result from mistakes, bugs, or security vulnerabilities within this plugin so use at your own risk. See [Avoiding unexpected charges](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/costs.md#-avoiding-unexpected-charges).
 
 ## 🙋 Support
 
