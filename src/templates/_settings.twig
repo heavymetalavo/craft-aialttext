@@ -353,7 +353,7 @@
     label: 'Save translated results for each site'|t('ai-alt-text'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',
-    instructions: "Also generate alt text for the asset's other sites, each in its site's language. Sites that share alt text under the volume's **Alternative Text Translation Method** get one result between them, from one request: sites in the same language on Translate for each language or Not translatable, or all the sites in a site group on Translate for each site group. When off, only the site you're working in, and the sites that share its alt text, get alt text."|t("ai-alt-text"),
+    instructions: "When on, alt text is generated for every site, each in its site's language. When off, it's saved for the current site only. Either way, it honours the asset volume's **Alternative Text Translation Method** (for each site, site group or language), so sites that share alt text get one result between them, from one request."|t("ai-alt-text"),
     on: settings.saveTranslatedResultsToEachSite,
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}
