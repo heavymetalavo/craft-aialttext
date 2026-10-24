@@ -8,9 +8,13 @@ These are estimates, put together by an AI assistant (Claude) that ran the plugi
 
 | Model | Estimated cost per alt text | Approx alt texts per $1 | Notes |
 |---|---|---|---|
-| `gpt-6-luna` | $0.000056 | 18,000 |  |
+| `gpt-6-luna` with `none` reasoning effort | $0.000049 | 20,000 | Measured on 23 October over 61 requests on 33 varied images, relative to `low`. It misread logo text more often than at `low`. |
+| `gpt-6-luna` | $0.000056 | 18,000 | At the default `low` reasoning effort. |
+| `gpt-6-luna` with `medium` reasoning effort | $0.000078 | 13,000 | Measured on 23 October over 61 requests on 33 varied images, relative to `low`. |
+| `gpt-6-luna` with `high` reasoning effort | $0.000098 | 10,000 | Measured on 23 October over 61 requests on 33 varied images, relative to `low`. |
 | `xiaomi/mimo-v2.6-flash` | $0.00010 | 9,700 |  |
 | `gpt-5.6-luna` | $0.00011 | 8,800 |  |
+| `gpt-6-luna` with `xhigh` reasoning effort | $0.00012 | 8,100 | Measured on 23 October over 61 requests on 33 varied images, relative to `low`. |
 | `google/gemini-3.5-flash-lite` | $0.00018 | 5,600 |  |
 | `claude-haiku-5-5` | $0.00023 | 4,300 |  |
 | `qwen/qwen3.8-flash` | $0.00034 | 3,000 |  |
@@ -47,5 +51,5 @@ If you are concerned about unexpected charges we recommend:
 - **Prefer Generate missing.** **Generate all** regenerates every asset, including ones that already have alt text.
 - **Count your sites.** The bulk actions and console commands cover every site unless you pick one, and with **Save translated results for each site** each site is a request of its own, so the cost multiplies by the number of sites.
 - **Mind automatic generation.** With **Generate for new image assets** on, every upload and file replacement is a request, so a large upload is a large batch.
-- **Keep the default `low` settings.** `low` image detail and reasoning effort keep token use down: on `gpt-6-luna`, a large photo used 350 input tokens at `low` and about 2,000 at `high`, which made each alt text about four times the cost, and `xhigh` reasoning effort about tripled it. Consider raising them if the results aren't good enough in testing.
+- **Keep the default `low` settings.** `low` image detail and reasoning effort keep token use down: on `gpt-6-luna`, a large photo used 350 input tokens at `low` and about 2,000 at `high`, which made each alt text about four times the cost, and `xhigh` reasoning effort about doubled it. Consider raising them if the results aren't good enough in testing.
 - **Check your usage regularly** on your provider's usage page. OpenRouter's *Activity* page shows the cost of each request.
