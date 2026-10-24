@@ -353,7 +353,7 @@
     label: 'Save translated results for each site'|t('ai-alt-text'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',
-    instructions: "If enabled, the plugin will queue an extra job for each site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the site (`en-GB` for British english, `en-US` for American english, `de` for German etc). When disabled, alt text will generate for assets on the site the control panel is currently working with. Either way, sites that share alt text under the volume's **Alternative Text Translation Method** (e.g. Translate for each language, or each site group) are generated once, in the language of the site it's generated for, and the result is saved to each of them. On a Not translatable volume, only sites in the same language share it."|t("ai-alt-text"),
+    instructions: "Also generate alt text for the asset's other sites, each in its site's language. Sites that share alt text under the volume's **Alternative Text Translation Method** get one result between them, from one request: sites in the same language on Translate for each language or Not translatable, or all the sites in a site group on Translate for each site group. When off, only the site you're working in, and the sites that share its alt text, get alt text."|t("ai-alt-text"),
     on: settings.saveTranslatedResultsToEachSite,
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}
