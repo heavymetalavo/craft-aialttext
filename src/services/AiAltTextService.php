@@ -211,6 +211,11 @@ class AiAltTextService extends Component
      */
     private function siteIdsBySharedAltText(Asset $asset): array
     {
+        // Not translatable gives every site the same key, so there's no need to load the asset on each site
+        if ($asset->getVolume()->altTranslationMethod === Field::TRANSLATION_METHOD_NONE) {
+            return [$this->sharedAltTextKey($asset) => array_map(fn($site) => $site->id, Craft::$app->getSites()->getAllSites())];
+        }
+
         $siteAssets = ArrayHelper::index(Asset::find()->id($asset->id)->site('*')->all(), 'siteId');
         $siteIds = [];
 
@@ -230,20 +235,12 @@ class AiAltTextService extends Component
 
     /**
      * The key shared by the sites that share an asset's alt text, for the asset on one of them: Craft's
-     * alt translation key, so for example every site in a site group shares one alt text, in the
-     * language of the site it's generated for.
+     * alt translation key, so for example every site in a site group, or every site on a Not translatable
+     * volume, shares one alt text, in the language of the site it's generated for.
      */
     private function sharedAltTextKey(Asset $siteAsset): string
     {
-        $key = $siteAsset->getAltTranslationKey();
-
-        // Not translatable gives every site the same key, which would save one language to them all, so on
-        // those volumes sites only share alt text with sites in the same language
-        if ($siteAsset->getVolume()->altTranslationMethod === Field::TRANSLATION_METHOD_NONE) {
-            $key .= '|' . $siteAsset->getSite()->language;
-        }
-
-        return $key;
+        return $siteAsset->getAltTranslationKey();
     }
 
     /**
