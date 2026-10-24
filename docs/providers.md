@@ -49,9 +49,10 @@ OpenRouter takes the same request for every model, so there is no model author t
 
 ## 🧠 Model Options
 
-All vision models should work, these small models seem to hit the sweetspot between quality & cost:
-- `claude-haiku-5-5` - For Anthropic: the fastest and most cost-efficient Claude model
-- `gpt-6-luna` - For OpenAI: "Our most efficient model for focused, high-volume tasks"
+All vision models should work. In our tests these small models hit the sweet spot between quality and cost:
+- **Top pick:** `claude-haiku-5-5` (`anthropic/claude-haiku-5.5` on OpenRouter), on Anthropic, Langdock or OpenRouter. The most accurate in our tests, and the most consistent across languages.
+- **Runner-up:** `google/gemini-3.5-flash-lite`, on OpenRouter only. Nearly as accurate, faster and a little cheaper.
+- **Cheapest:** `gpt-6-luna`, on OpenAI or OpenRouter. Fine for most photos, but it got more details wrong on illustrations, logos and animations.
 
 See [Estimated cost per alt text](costs.md) to compare providers and models.
 

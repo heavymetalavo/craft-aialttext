@@ -1,5 +1,17 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+> {tip} Craft 5.11 stopped copying an asset's first alt text to every site regardless of the volume's **Alternative Text Translation Method** ([craftcms/cms#19067](https://github.com/craftcms/cms/pull/19067)), so the plugin's workaround for that, and the **Propagate** setting, have been removed. On Craft 5.10 and earlier, the first alt text generated for an asset is copied to its other sites until they get their own; update Craft to 5.11 or later to avoid this.
+
+- Changed generated alt text to be saved to the sites that share it under the volume's **Alternative Text Translation Method**, so it's generated once for them, in the language of the site it's generated for. For example, two French sites on a volume set to Translate for each language now make one API request instead of two, and get the same alt text. On a volume set to Translate for each site group, every site in a site group gets the same alt text, whatever its language. On a Not translatable volume, every site gets the same alt text, as Craft gives them all one value.
+- Changed bulk generation across all sites, in the utility and the `missing` and `all` console commands, to queue one job for the sites that share alt text, and generation for assets without alt text to copy a sharing site's existing alt text to the sites missing it instead of making a request.
+- Changed SVGs to get alt text whenever the **Process SVGs** setting is on. They were also skipped when Craft's `transformSvgs` setting was off, which no longer matters, as the plugin renders SVGs itself rather than through Craft's transforms.
+- Removed the **Propagate** setting. Generated alt text is saved to the sites that share it, as above, instead of being propagated to every site.
+- Fixed alt text for animated GIFs describing their last frame instead of their first when Craft uses the Imagick image driver. The first frame is now sent to the AI provider as base64, rather than as a URL to Craft's JPG transform, which flattens every frame into one.
+- Fixed alt text for SVGs with gradients describing them in the wrong colours, as ImageMagick's built-in SVG renderer draws gradients as solid black. SVGs are now rendered by the plugin and sent to the AI provider as base64, and where ImageMagick can't draw gradients, each one is replaced by the average of its colours first. This also lets alt text be generated for SVGs on volumes without public URLs. For accurate SVG rendering, install Inkscape on the server, or `imagemagick-svg` on Alpine, see [Images](docs/images.md).
+- Fixed alt text for images with transparency describing them as a solid colour, or on the wrong background, e.g. "a solid black square" for a black line on transparent, or "a plain white image" for a white logo. AI providers ignore transparency and see the colour stored under transparent pixels, and SVGs were rendered onto white. Transparent areas of PNG, WebP, GIF, AVIF, HEIC and HEIF images and SVGs are now filled with white, or mid grey where what's drawn is mostly light, these images are sent to the AI provider as base64, and the request tells the model that the background is transparent, see [Images](docs/images.md).
+
 ## 5.3.0 - 2026-10-20
 
 - Added [OpenRouter](https://openrouter.ai/) as an AI provider, sending requests through its Responses API. OpenAI and Anthropic models are supported, and many other models that accept images as input work too.
