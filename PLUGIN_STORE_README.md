@@ -21,7 +21,7 @@ Write alt text for every image on your Craft site with AI: one click, in bulk, o
 - **Your prompt, your rules.** Edit the instructions sent to the AI, with `{asset.*}` and `{site.*}` variables. See [Settings](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/settings.md#-default-prompt).
 - **Permissions built in.** Bulk generation has its own utility permission, and single assets follow the asset's own save permission.
 
-![How it works, in four steps. 1, triggered: on upload or file replacement, from an asset's action menu, for selected assets, from the bulk actions utility or the command line. 2, prepared: SVG, AVIF, HEIC, HEIF and animated GIFs are converted, and large images are scaled to the provider's limits. 3, described: sent with your prompt to Anthropic, OpenAI, Langdock or OpenRouter, which writes the alt text in the site's language. 4, saved: written to the asset's native alt field for that site, and to its other sites if you choose.](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/5.x/docs/images/how-it-works.png)
+![How it works, in four steps. 1, triggered: on upload or file replacement, from an asset's action menu, for selected assets, from the bulk actions utility or the command line. 2, prepared: SVG, AVIF, HEIC, HEIF and animated GIFs are converted, and large images are scaled to the provider's limits. 3, described: sent with your prompt to a vision model through Anthropic, OpenAI, Langdock or OpenRouter, which writes the alt text in the site's language. 4, saved: written to the asset's native alt field for that site, and to its other sites if you choose.](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/5.x/docs/images/how-it-works.png)
 
 ## 🎬 Video walkthrough
 
