@@ -18,6 +18,8 @@ use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use heavymetalavo\craftaialttext\AiAltText;
+use Imagine\Image\Box;
+use Imagine\Image\Point;
 use Imagick;
 use ImagickPixel;
 use ImagickPixelException;
@@ -47,6 +49,12 @@ abstract class ApiService extends Component
     protected const GENERATE_TRIGGER = 'Generate the alt text for this image now.';
 
     /**
+     * @var string Added to the trigger when flattenTransparency() has filled the image's transparent areas, so the model
+     * knows the fill isn't part of the image. %s is the fill's colour.
+     */
+    protected const TRANSPARENCY_NOTE = 'The image has a transparent background, filled with %s here so you can see what is drawn.';
+
+    /**
      * @var int Default request timeout in seconds, used unless the project sets its own `timeout`
      * in config/guzzle.php.
      */
@@ -66,6 +74,12 @@ abstract class ApiService extends Component
      * @var string The provider's name in log lines and error messages, set by each provider service.
      */
     protected string $providerLabel = 'API';
+
+    /**
+     * @var string|null The colour flattenTransparency() filled the image's transparent areas with, or null if it didn't.
+     * Each provider resets it before preparing an image.
+     */
+    protected ?string $transparencyFill = null;
 
     public function __construct($config = [])
     {
@@ -152,6 +166,14 @@ abstract class ApiService extends Component
         );
 
         return $prefix . substr($base64, 0, 40) . '…';
+    }
+
+    /**
+     * The text sent with the image: GENERATE_TRIGGER, and TRANSPARENCY_NOTE if the image's transparent areas were filled.
+     */
+    protected function generateTrigger(): string
+    {
+        return self::GENERATE_TRIGGER . ($this->transparencyFill !== null ? ' ' . sprintf(self::TRANSPARENCY_NOTE, $this->transparencyFill) : '');
     }
 
     /**
@@ -286,28 +308,19 @@ abstract class ApiService extends Component
     /**
      * Validates if the asset is an accepted image format natively.
      *
+     * SVGs are only checked against the Process SVGs setting. The plugin renders them itself (see getSvgBase64()), not
+     * through Craft's transforms, so Craft's `transformSvgs` setting doesn't apply.
+     *
      * @param Asset $asset The asset to validate
-     * @param bool $allowSvgs Whether the endpoint natively supports SVGs or relies on Craft's SVG transform pipeline
      * @throws Exception If the asset format is invalid or fundamentally unsupported
      */
-    protected function validateImageSupport(Asset $asset, bool $allowSvgs = false): bool
+    protected function validateImageSupport(Asset $asset): bool
     {
         $mimeType = $asset->getMimeType();
 
-        if ($mimeType === 'image/svg+xml') {
-            if (!AiAltText::getInstance()->getSettings()->processSvgs) {
-                Craft::info("Skipping SVG asset (processSvgs disabled): $asset->filename", __METHOD__);
-                return false;
-            }
-
-            if (!$allowSvgs) {
-                if (!Craft::$app->getConfig()->getGeneral()->transformSvgs) {
-                    Craft::warning("SVG asset $asset->filename requires transformSvgs to be enabled in Craft general config to be processed; skipping.", __METHOD__);
-                    return false;
-                }
-                
-                Craft::debug("SVG asset $asset->filename is not natively supported by the provider, will attempt transformation.", __METHOD__);
-            }
+        if ($mimeType === 'image/svg+xml' && !AiAltText::getInstance()->getSettings()->processSvgs) {
+            Craft::info("Skipping SVG asset (processSvgs disabled): $asset->filename", __METHOD__);
+            return false;
         }
 
         $images = Craft::$app->getImages();
@@ -449,7 +462,8 @@ abstract class ApiService extends Component
     }
 
     /**
-     * Renders the first frame of an animated GIF as a JPG, scaled to fit $transformParams, and returns it base64 encoded.
+     * Renders the first frame of an animated GIF as a JPG, scaled to fit $transformParams and with any transparent areas
+     * filled by flattenTransparency(), and returns it base64 encoded.
      *
      * Craft's own JPG transform of an animated GIF shows the last frame on the Imagick driver, which flattens every
      * frame into one, so the frame is rendered here instead. GD only reads the first frame, so it's unaffected.
@@ -463,6 +477,7 @@ abstract class ApiService extends Component
         /** @var Raster $image */
         $image = Craft::$app->getImages()->loadImage(ImageTransforms::getLocalImageSource($asset));
         $image->disableAnimation()->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
+        $this->flattenTransparency($image);
 
         $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false) . '.jpg');
         $image->saveAs($path);
@@ -475,7 +490,90 @@ abstract class ApiService extends Component
     }
 
     /**
-     * Renders an SVG as a PNG and returns it base64 encoded.
+     * Renders an image with transparency as a JPG, its transparent areas filled by flattenTransparency(), scaled to fit
+     * $transformParams, and returns it base64 encoded.
+     *
+     * AI providers ignore the alpha channel, so models see whatever colour is stored under the transparent pixels: often
+     * the colour of what's drawn, so a black line on transparent comes out as a solid black square, or an unrelated one,
+     * such as green. Animated GIFs and SVGs are flattened by getFirstFrameBase64() and getSvgBase64() instead.
+     *
+     * @param Asset $asset The image, checked before a transform is set on it
+     * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
+     * @return string|null The base64 encoded JPG, or null if the image has no transparency
+     */
+    protected function getFlattenedBase64(Asset $asset, array $transformParams): ?string
+    {
+        // JPGs can't be transparent
+        if ($asset->getMimeType() === 'image/jpeg') {
+            return null;
+        }
+
+        $image = Craft::$app->getImages()->loadImage(ImageTransforms::getLocalImageSource($asset));
+
+        // An SVG whose MIME type Craft misreads, e.g. as text/html, loads as an Svg and is left to Craft's transform
+        if (!$image instanceof Raster) {
+            return null;
+        }
+
+        // An animated WebP would have every frame flattened into one, so only its first frame is kept, as for GIFs
+        $image->disableAnimation()->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
+
+        if (!$this->flattenTransparency($image)) {
+            return null;
+        }
+
+        $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false) . '.jpg');
+        $image->saveAs($path);
+
+        try {
+            return base64_encode(file_get_contents($path));
+        } finally {
+            FileHelper::unlink($path);
+        }
+    }
+
+    /**
+     * Fills an image's transparent areas with white, or with mid grey if what's drawn is mostly light, so a white logo
+     * doesn't disappear. Providers ignore the alpha channel, see getFlattenedBase64().
+     *
+     * @param Raster $image The image
+     * @return bool Whether the image had any transparency
+     */
+    protected function flattenTransparency(Raster $image): bool
+    {
+        // A small copy is enough to tell whether any of it is transparent, and how light the rest is
+        $sample = $image->getImagineImage()->copy()->resize(new Box(64, 64));
+        $transparent = false;
+        $lightness = 0;
+        $opacity = 0;
+
+        for ($x = 0; $x < 64; $x++) {
+            for ($y = 0; $y < 64; $y++) {
+                $colour = $sample->getColorAt(new Point($x, $y));
+                // CMYK colours have no alpha, and are always opaque
+                $alpha = $colour->isOpaque() ? 1 : $colour->getAlpha() / 100;
+                $transparent = $transparent || $alpha < 1;
+
+                // Gray and RGB colours both print as #rrggbb
+                [$r, $g, $b] = sscanf((string)$colour, '#%2x%2x%2x');
+                $lightness += $alpha * (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
+                $opacity += $alpha;
+            }
+        }
+
+        if (!$transparent) {
+            return false;
+        }
+
+        // Grey shows light content better than white does once it's lighter than 75%
+        [$background, $this->transparencyFill] = $opacity > 0 && $lightness / $opacity > 0.75 ? ['#808080', 'grey'] : ['#ffffff', 'white'];
+        $image->scaleToFitAndFill($image->getWidth(), $image->getHeight(), $background, 'center-center', false);
+
+        return true;
+    }
+
+    /**
+     * Renders an SVG as a PNG, its transparent areas filled by flattenTransparency(), and returns it base64 encoded.
      *
      * Craft loads SVGs into Imagick from a string, which ImageMagick often renders with its own built-in SVG renderer,
      * and that renderer draws gradients as solid black. So the SVG is rendered here, with its gradients flattened first
@@ -501,7 +599,20 @@ abstract class ApiService extends Component
         try {
             // Rendered at the provider's size limit if the SVG is larger, otherwise at 1000px, as Craft's transforms do
             $size = max($transformParams['width'] ?? 0, $transformParams['height'] ?? 0) ?: 1000;
-            $images->loadImage("$path.svg", true, $size)->saveAs("$path.png");
+
+            if ($images->getIsImagick()) {
+                // Craft reads SVGs onto white, which hides white artwork, so it's read onto transparent here instead
+                $imagick = new Imagick();
+                $imagick->setBackgroundColor(new ImagickPixel('transparent'));
+                $imagick->readImageBlob($images->loadImage("$path.svg")->scaleToFit($size, $size)->getSvgString());
+                $imagick->writeImage("png32:$path.png");
+                $image = $images->loadImage("$path.png");
+            } else {
+                $image = $images->loadImage("$path.svg", true, $size);
+            }
+
+            $this->flattenTransparency($image);
+            $image->saveAs("$path.png");
 
             return base64_encode(file_get_contents("$path.png"));
         } finally {

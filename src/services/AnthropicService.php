@@ -70,6 +70,9 @@ class AnthropicService extends ApiService
             return '';
         }
 
+        // Set by flattenTransparency() if this image's transparent areas are filled
+        $this->transparencyFill = null;
+
         $targetDimension = match ($this->detailLevel) {
             'low' => 500,
             'medium' => 1000,
@@ -83,20 +86,23 @@ class AnthropicService extends ApiService
         // Checked before setTransform(), after which the asset reports the transform's MIME type instead of GIF or SVG
         $isAnimatedGif = $this->isAnimatedGif($asset);
         $isSvg = AiAltText::getInstance()->aiAltTextService->isSvg($asset);
+        // Transparent images are flattened here, as providers ignore the alpha channel, see getFlattenedBase64()
+        $flattenedBase64 = $isAnimatedGif || $isSvg ? null : $this->getFlattenedBase64($asset, $transformParams);
 
         if (!empty($transformParams)) {
             $asset->setTransform($transformParams);
         }
 
-        // After setTransform(), getMimeType() reflects the output format of the transform
-        $mimeType = $asset->getMimeType();
+        // After setTransform(), getMimeType() reflects the output format of the transform. A flattened image is a JPG
+        $mimeType = $flattenedBase64 !== null ? 'image/jpeg' : $asset->getMimeType();
         
         if (!$this->isAcceptedMimeType($mimeType)) {
             throw new Exception("Asset transform produced unsupported MIME type: $mimeType. Supported formats are: " . implode(', ', self::ACCEPTED_MIME_TYPES));
         }
         
-        // Animated GIFs and SVGs are rendered here and sent as base64, see getFirstFrameBase64() and getSvgBase64()
-        $imageUrl = $isAnimatedGif || $isSvg ? null : $asset->getUrl($transformParams, true);
+        // Animated GIFs, SVGs and transparent images are rendered here and sent as base64, see getFirstFrameBase64(),
+        // getSvgBase64() and getFlattenedBase64()
+        $imageUrl = $isAnimatedGif || $isSvg || $flattenedBase64 !== null ? null : $asset->getUrl($transformParams, true);
 
         // If we have a URL, resolve root-relative URLs to the site base; leave absolute URLs as-is
         if (!empty($imageUrl)) {
@@ -108,6 +114,7 @@ class AnthropicService extends ApiService
         // If no public URL is available, or base64 is forced
         if ($forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
             $base64Image = match (true) {
+                $flattenedBase64 !== null => $flattenedBase64,
                 $isAnimatedGif => $this->getFirstFrameBase64($asset, $transformParams),
                 $isSvg => $this->getSvgBase64($asset, $transformParams),
                 default => $this->getAssetBase64String($asset, $transformParams),
@@ -137,7 +144,7 @@ class AnthropicService extends ApiService
             $requestModel = new AnthropicRequest();
             $requestModel->model = $this->model;
             $requestModel->setSystem($prompt);
-            $requestModel->setPrompt(self::GENERATE_TRIGGER);
+            $requestModel->setPrompt($this->generateTrigger());
             if ($base64ImageSource) {
                 $requestModel->setImageSource($base64ImageSource);
             } elseif ($imageUrl) {
