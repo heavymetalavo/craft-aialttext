@@ -4,7 +4,7 @@
 
 How the plugin prepares images for each AI provider, and the limits to know about.
 
-![How images are prepared. Your image, any JPG, PNG, WebP, GIF, SVG, AVIF, HEIC or HEIF asset on a public or private volume, is converted: SVG, AVIF, HEIC and HEIF are converted, animated GIFs use their first frame, and transparent areas are filled white, or grey for light artwork. It's scaled down if it's over the provider's limits, using your image detail setting. It's sent as a URL, or as base64 for SVGs, animated GIFs, transparent images, private volumes, OpenRouter and Langdock's Anthropic models. A vision model, through Anthropic, OpenAI, Langdock or OpenRouter, describes it and returns the alt text. Opaque PNG, JPG, WebP and still GIF images within the limits are sent unchanged, and filled images tell the AI their background is transparent.](images/image-preparation.png)
+![How images are prepared. Your image, any JPG, PNG, WebP, GIF, SVG, AVIF, HEIC or HEIF asset on a public or private volume, is converted: SVG, AVIF, HEIC and HEIF are converted, animated GIFs use their first frame, and transparent areas are filled white, or grey for light artwork. It's scaled down if it's over the provider's limits, using your image detail setting. It's sent as a URL, or as base64 for SVGs, animated GIFs, transparent images, private volumes, OpenRouter and Langdock's Anthropic models. A vision model, through Anthropic, OpenAI, Langdock or OpenRouter, describes it and returns the alt text. Opaque PNG, JPG, WebP and still GIF images within the limits are sent unchanged, and filled images tell the model their background is transparent.](images/image-preparation.png)
 
 ## Provider-Specific Limits
 
