@@ -230,11 +230,11 @@ abstract class ResponsesApiService extends ApiService
 
         $transformParams = $this->visionTransformParams($asset);
 
-        // Checked before setTransform(), after which the asset reports the transform's MIME type instead of GIF or SVG
-        $isAnimatedGif = $this->isAnimatedGif($asset);
+        // Checked before setTransform(), after which the asset reports the transform's MIME type instead of GIF, WebP or SVG
+        $isAnimated = $this->isAnimated($asset);
         $isSvg = AiAltText::getInstance()->aiAltTextService->isSvg($asset);
         // Transparent images are flattened here, as providers ignore the alpha channel, see getFlattenedBase64()
-        $flattenedBase64 = $isAnimatedGif || $isSvg ? null : $this->getFlattenedBase64($asset, $transformParams);
+        $flattenedBase64 = $isAnimated || $isSvg ? null : $this->getFlattenedBase64($asset, $transformParams);
 
         if (!empty($transformParams)) {
             $asset->setTransform($transformParams);
@@ -247,24 +247,28 @@ abstract class ResponsesApiService extends ApiService
             throw new Exception("Asset transform produced unsupported MIME type: $mimeType. Supported formats are: " . implode(', ', self::ACCEPTED_MIME_TYPES));
         }
         
-        // Make sure that we do not get a "generate transform" url, but a real url with true. Animated GIFs, SVGs and
-        // transparent images are rendered here and sent as base64, see getFirstFrameBase64(), getSvgBase64() and getFlattenedBase64()
-        $imageUrl = $isAnimatedGif || $isSvg || $flattenedBase64 !== null ? null : $asset->getUrl($transformParams, true);
+        // Make sure that we do not get a "generate transform" url, but a real url with true. Animated images, SVGs and
+        // transparent images are rendered here and sent as base64, see getFramesBase64(), getSvgBase64() and getFlattenedBase64()
+        $imageUrl = $isAnimated || $isSvg || $flattenedBase64 !== null ? null : $asset->getUrl($transformParams, true);
 
         // If we have a URL, resolve root-relative URLs to the site base; leave absolute URLs as-is
         if (!empty($imageUrl)) {
             $imageUrl = $this->resolveAssetUrl($asset, $imageUrl);
         }
 
+        $imageUrls = [$imageUrl];
+
         // If no public URL is available, or base64 is forced
         if ($forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            $base64Image = match (true) {
-                $flattenedBase64 !== null => $flattenedBase64,
-                $isAnimatedGif => $this->getFirstFrameBase64($asset, $transformParams),
-                $isSvg => $this->getSvgBase64($asset, $transformParams),
-                default => $this->getAssetBase64String($asset, $transformParams),
+            $base64Images = match (true) {
+                $flattenedBase64 !== null => [$flattenedBase64],
+                $isAnimated => $this->getFramesBase64($asset, $transformParams),
+                $isSvg => [$this->getSvgBase64($asset, $transformParams)],
+                default => [$this->getAssetBase64String($asset, $transformParams)],
             };
-            $imageUrl = "data:$mimeType;base64,$base64Image"; // Replace URL with data string
+            // Replace URL with data strings
+            $imageUrls = array_map(fn(string $base64Image) => "data:$mimeType;base64,$base64Image", $base64Images);
+            $imageUrl = $imageUrls[0];
         }
 
         // Use the configured detail level for images over 512px on either side. Smaller images keep the request
@@ -285,8 +289,8 @@ abstract class ResponsesApiService extends ApiService
         $request = new OpenAiRequest();
         $request->model = $this->model;
         $request->setInstructions($prompt)
-            ->setPrompt($this->generateTrigger())
-            ->setImageUrl($imageUrl)
+            ->setPrompt($this->generateTrigger(count($imageUrls)))
+            ->setImageUrls($imageUrls)
             ->setReasoningEffort($this->reasoningEffort());
             
         // Only set detail if the image is large enough

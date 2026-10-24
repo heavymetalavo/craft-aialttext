@@ -51,5 +51,6 @@ If you are concerned about unexpected charges we recommend:
 - **Prefer Generate missing.** **Generate all** regenerates every asset, including ones that already have alt text.
 - **Count your sites.** The bulk actions and console commands cover every site unless you pick one, and with **Save translated results for each site** each site is a request of its own, so the cost multiplies by the number of sites.
 - **Mind automatic generation.** With **Generate for new image assets** on, every upload and file replacement is a request, so a large upload is a large batch.
+- **Keep Animation frames at 1 unless you need more.** At 3 or 5, each animated GIF or WebP is sent as that many images, so it costs roughly 3 or 5 times as much as a still image. Other images aren't affected.
 - **Keep the default `low` settings.** `low` image detail and reasoning effort keep token use down: on `gpt-6-luna`, a large photo used 350 input tokens at `low` and about 2,000 at `high`, which made each alt text about four times the cost, and `xhigh` reasoning effort about doubled it. Consider raising them if the results aren't good enough in testing.
 - **Check your usage regularly** on your provider's usage page. OpenRouter's *Activity* page shows the cost of each request.

@@ -32,6 +32,7 @@ use craft\helpers\App;
  * @property string $openRouterModel The OpenRouter model to use, as named by OpenRouter
  * @property string $openRouterImageInputDetailLevel The image detail level for OpenRouter's Responses API
  * @property string $openRouterReasoningEffort The reasoning effort level for OpenRouter's Responses API
+ * @property int $animationFrames How many frames of an animated GIF or WebP to send (1, 3 or 5)
  */
 class Settings extends Model
 {
@@ -164,6 +165,13 @@ class Settings extends Model
     public bool $processSvgs = false;
 
     /**
+     * @var int How many frames of an animated GIF or WebP to send, evenly spaced from the first to the last
+     *
+     * Options: 1 (the first frame only), 3, 5
+     */
+    public int $animationFrames = 1;
+
+    /**
      * @inheritdoc
      */
     public function setAttributes($values, $safeOnly = true): void
@@ -244,6 +252,7 @@ class Settings extends Model
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
+            ['animationFrames', 'in', 'range' => [1, 3, 5]],
         ];
     }
 

@@ -55,6 +55,12 @@ abstract class ApiService extends Component
     protected const TRANSPARENCY_NOTE = 'The image has a transparent background, filled with %s here so you can see what is drawn.';
 
     /**
+     * @var string Added to the trigger when several frames of an animated image are sent, see getFramesBase64(). %d is
+     * how many.
+     */
+    protected const FRAMES_NOTE = 'The %d images are frames of one animated image, in order from its first frame to its last, so write one alt text for the animation as a whole.';
+
+    /**
      * @var int Default request timeout in seconds, used unless the project sets its own `timeout`
      * in config/guzzle.php.
      */
@@ -169,11 +175,16 @@ abstract class ApiService extends Component
     }
 
     /**
-     * The text sent with the image: GENERATE_TRIGGER, and TRANSPARENCY_NOTE if the image's transparent areas were filled.
+     * The text sent with the image: GENERATE_TRIGGER, FRAMES_NOTE if several frames of an animated image are sent, and
+     * TRANSPARENCY_NOTE if the image's transparent areas were filled.
+     *
+     * @param int $frames How many images are sent
      */
-    protected function generateTrigger(): string
+    protected function generateTrigger(int $frames = 1): string
     {
-        return self::GENERATE_TRIGGER . ($this->transparencyFill !== null ? ' ' . sprintf(self::TRANSPARENCY_NOTE, $this->transparencyFill) : '');
+        return self::GENERATE_TRIGGER
+            . ($frames > 1 ? ' ' . sprintf(self::FRAMES_NOTE, $frames) : '')
+            . ($this->transparencyFill !== null ? ' ' . sprintf(self::TRANSPARENCY_NOTE, $this->transparencyFill) : '');
     }
 
     /**
@@ -339,6 +350,42 @@ abstract class ApiService extends Component
     }
 
     /**
+     * Checks if an asset is an animated GIF or WebP.
+     *
+     * @param Asset $asset The asset to check
+     * @return bool Whether it's animated
+     */
+    protected function isAnimated(Asset $asset): bool
+    {
+        return $this->isAnimatedGif($asset) || $this->isAnimatedWebp($asset);
+    }
+
+    /**
+     * Checks if a WebP asset is animated: an extended WebP, which starts with a VP8X chunk, with its animation flag set.
+     * Its frames follow in ANIM and ANMF chunks.
+     *
+     * @param Asset $asset The asset to check
+     * @return bool Whether the WebP is animated
+     */
+    protected function isAnimatedWebp(Asset $asset): bool
+    {
+        if ($asset->getMimeType() !== 'image/webp') {
+            return false;
+        }
+
+        $stream = $asset->getStream();
+
+        try {
+            // "RIFF", the file size, "WEBP", then the first chunk's name, its size and the VP8X flags byte
+            $header = stream_get_contents($stream, 21);
+        } finally {
+            fclose($stream);
+        }
+
+        return is_string($header) && strlen($header) === 21 && substr($header, 12, 4) === 'VP8X' && (ord($header[20]) & 0x02) !== 0;
+    }
+
+    /**
      * Checks if a GIF asset contains multiple frames (animated).
      *
      * Only the first GIF_FRAME_SCAN_BYTES of the file are read, a small piece at a time. If that
@@ -462,23 +509,66 @@ abstract class ApiService extends Component
     }
 
     /**
-     * Renders the first frame of an animated GIF as a JPG, scaled to fit $transformParams and with any transparent areas
-     * filled by flattenTransparency(), and returns it base64 encoded.
+     * Renders frames of an animated GIF or WebP as JPGs, each scaled to fit $transformParams and with any transparent
+     * areas filled by flattenTransparency(), and returns them base64 encoded, in order.
      *
-     * Craft's own JPG transform of an animated GIF shows the last frame on the Imagick driver, which flattens every
-     * frame into one, so the frame is rendered here instead. GD only reads the first frame, so it's unaffected.
+     * The Animation frames setting says how many: the first frame only, or 3 or 5 evenly spaced from the first to the
+     * last. Craft's own JPG transform of an animated image shows the last frame on the Imagick driver, which flattens
+     * every frame into one, so the frames are rendered here instead. GD only reads the first frame, so it's the only
+     * one sent there.
      *
-     * @param Asset $asset The animated GIF
+     * @param Asset $asset The animated GIF or WebP
      * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
+     * @return string[] The base64 encoded JPGs
+     */
+    protected function getFramesBase64(Asset $asset, array $transformParams): array
+    {
+        $images = Craft::$app->getImages();
+        $count = AiAltText::getInstance()->getSettings()->animationFrames;
+
+        /** @var Raster $image */
+        $image = $images->loadImage(ImageTransforms::getLocalImageSource($asset));
+        $layers = $image->getImagineImage()->layers();
+        $total = count($layers);
+
+        if ($count < 2 || $total < 2) {
+            $image->disableAnimation()->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
+            $this->flattenTransparency($image);
+
+            return [$this->getJpgBase64($image, $asset)];
+        }
+
+        // Later frames often hold only what changed since the one before, so each is drawn in full first
+        $layers->coalesce();
+        $frames = [];
+
+        foreach (array_unique(array_map(fn(int $i) => (int)round($i * ($total - 1) / ($count - 1)), range(0, $count - 1))) as $index) {
+            // Craft's images can only be loaded from a file
+            $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false) . '.png');
+            $layers->get($index)->save($path);
+
+            try {
+                $frame = $images->loadImage($path);
+                $frame->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
+                $this->flattenTransparency($frame);
+                $frames[] = $this->getJpgBase64($frame, $asset);
+            } finally {
+                FileHelper::unlink($path);
+            }
+        }
+
+        return $frames;
+    }
+
+    /**
+     * Saves an image as a JPG and returns it base64 encoded.
+     *
+     * @param Raster $image The image
+     * @param Asset $asset The asset it was rendered from, which names the temporary file
      * @return string The base64 encoded JPG
      */
-    protected function getFirstFrameBase64(Asset $asset, array $transformParams): string
+    private function getJpgBase64(Raster $image, Asset $asset): string
     {
-        /** @var Raster $image */
-        $image = Craft::$app->getImages()->loadImage(ImageTransforms::getLocalImageSource($asset));
-        $image->disableAnimation()->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
-        $this->flattenTransparency($image);
-
         $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false) . '.jpg');
         $image->saveAs($path);
 
@@ -495,7 +585,7 @@ abstract class ApiService extends Component
      *
      * AI providers ignore the alpha channel, so models see whatever colour is stored under the transparent pixels: often
      * the colour of what's drawn, so a black line on transparent comes out as a solid black square, or an unrelated one,
-     * such as green. Animated GIFs and SVGs are flattened by getFirstFrameBase64() and getSvgBase64() instead.
+     * such as green. Animated GIFs and WebPs, and SVGs, are flattened by getFramesBase64() and getSvgBase64() instead.
      *
      * @param Asset $asset The image, checked before a transform is set on it
      * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
@@ -515,21 +605,14 @@ abstract class ApiService extends Component
             return null;
         }
 
-        // An animated WebP would have every frame flattened into one, so only its first frame is kept, as for GIFs
+        // Only the first frame is kept if there are several, as saving a JPG would flatten them into one
         $image->disableAnimation()->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
 
         if (!$this->flattenTransparency($image)) {
             return null;
         }
 
-        $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false) . '.jpg');
-        $image->saveAs($path);
-
-        try {
-            return base64_encode(file_get_contents($path));
-        } finally {
-            FileHelper::unlink($path);
-        }
+        return $this->getJpgBase64($image, $asset);
     }
 
     /**
@@ -787,9 +870,9 @@ abstract class ApiService extends Component
             $transformParams['format'] = $preferPng ? 'png' : 'jpg';
         }
         
-        // Animated GIFs need to be converted to a static format (extracts first frame)
-        if ($this->isAnimatedGif($asset)) {
-            Craft::warning("Asset {$asset->filename} is an animated GIF. Converting to JPG to extract the first frame for AI Vision analysis.", __METHOD__);
+        // Animated GIFs and WebPs are sent as JPGs of their frames, see getFramesBase64()
+        if ($this->isAnimated($asset)) {
+            Craft::warning("Asset {$asset->filename} is animated. Converting its frames to JPGs for AI Vision analysis.", __METHOD__);
             $transformParams['format'] = 'jpg';
         }
         
