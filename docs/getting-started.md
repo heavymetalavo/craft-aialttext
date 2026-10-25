@@ -12,7 +12,7 @@ This plugin requires:
 - An Anthropic, OpenAI, Langdock or OpenRouter API key, see [AI providers](providers.md)
 
 Recommended:
-- For accurate alt text for SVGs, an SVG renderer for ImageMagick: Inkscape on Debian or Ubuntu (`apt install inkscape`), or `imagemagick-svg` on Alpine. See [Images](images.md#provider-specific-limits)
+- For accurate alt text for SVGs, an SVG renderer for ImageMagick: Inkscape on Debian or Ubuntu (`apt install inkscape`), or `imagemagick-svg` on Alpine. See [Images](images.md#oddities-logic--limitations)
 
 ## 📥 Installation
 
