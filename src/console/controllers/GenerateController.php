@@ -373,7 +373,7 @@ class GenerateController extends Controller
             }
             
             $this->note("Found {$totalCount} assets to process.");
-            $this->note("Batch size: {$this->batchSize}");
+            $this->note("Reading assets in batches of {$this->batchSize}.");
             
             if (!$this->force && $totalCount > 1000) {
                 if (!$this->confirm("This will process {$totalCount} assets. Continue?")) {
@@ -383,7 +383,7 @@ class GenerateController extends Controller
             }
             
             // Initialize progress bar
-            Console::startProgress(0, $totalCount, 'Processing assets: ');
+            Console::startProgress(0, $totalCount, 'Queueing assets: ');
             $processed = 0;
             
             foreach ($sites as $site) {
