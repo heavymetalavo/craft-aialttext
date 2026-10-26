@@ -8,8 +8,7 @@ use craft\web\Controller;
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltTextForAssets;
-use yii\web\ForbiddenHttpException;
-use yii\web\Response;
+use yii\web\{ForbiddenHttpException, Response};
 
 /**
  * Generate Controller

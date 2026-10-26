@@ -3,13 +3,11 @@
 namespace heavymetalavo\craftaialttext\services;
 
 use Craft;
-use craft\base\Component;
-use craft\base\Field;
+use craft\base\{Component, Field};
 use craft\elements\Asset;
 use craft\enums\MenuItemType;
 use craft\events\DefineMenuItemsEvent;
-use craft\helpers\App;
-use craft\helpers\ArrayHelper;
+use craft\helpers\{App, ArrayHelper};
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
