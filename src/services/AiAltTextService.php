@@ -131,13 +131,12 @@ class AiAltTextService extends Component
     }
 
     /**
-     * Handles an asset a bulk run has reached on one site, once for the sites that share its alt text
-     * (see siteIdsBySharedAltText()), so they cost at most one request between them:
+     * Handles an asset in a bulk run for its group of sites that share alt text (see siteIdsBySharedAltText()),
+     * so the group costs one request at most:
      *
-     * - In a run for assets without alt text, if one of those sites has some, it's copied to the ones
-     *   without, instead of generating text that would overwrite it.
-     * - Otherwise a job is queued for the first of those sites in the run, which saves to all of them,
-     *   and the others skip the asset. In a run for one site, that's the site.
+     * - In a run for missing alt text, alt text a site in the group already has is copied to the ones without.
+     * - Otherwise one job is queued, generating for one site and saving to the group. In an all-sites run
+     *   that's the group's first site, and the group's other sites are skipped.
      *
      * @param Asset $asset The asset, on the site the run reached it on
      * @param bool $includeExisting Whether the run includes assets that already have alt text
