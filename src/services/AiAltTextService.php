@@ -385,7 +385,7 @@ class AiAltTextService extends Component
 
             Craft::info("Saving AI alt text for asset {$asset->id}", __METHOD__);
 
-            // Not propagated, so sites in other languages never get it. The sites sharing it are saved below.
+            // Not propagated, so only the sites that share its alt text get it, saved below.
             if (!Craft::$app->elements->saveElement($asset, true, false)) {
                 throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
             }
