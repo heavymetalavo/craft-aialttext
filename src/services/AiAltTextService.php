@@ -202,7 +202,9 @@ class AiAltTextService extends Component
 
     /**
      * The asset's site IDs, by the alt text they share: the same key under the volume's Alternative
-     * Text Translation Method (see sharedAltTextKey()). Keyed by that, with the sites in site order.
+     * Text Translation Method (see sharedAltTextKey()). Keyed by that, with the sites in site order, e.g.
+     * `['en-GB' => [5], 'de-DE' => [4], 'fr-FR' => [6, 8]]` on a volume set to Translate for each language,
+     * where sites 6 and 8 are both French.
      *
      * @return int[][]
      */
