@@ -87,7 +87,7 @@ class AnthropicService extends ApiService
         $isAnimatedGif = $this->isAnimatedGif($asset);
         $isSvg = AiAltText::getInstance()->aiAltTextService->isSvg($asset);
         // Transparent images are flattened here, as models don't reliably see transparency, see getFlattenedBase64()
-        $flattenedBase64 = $isAnimatedGif || $isSvg ? null : $this->getFlattenedBase64($asset, $transformParams);
+        $flattenedBase64 = ($isAnimatedGif || $isSvg) ? null : $this->getFlattenedBase64($asset, $transformParams);
 
         if (!empty($transformParams)) {
             $asset->setTransform($transformParams);
@@ -107,7 +107,7 @@ class AnthropicService extends ApiService
         
         // Animated GIFs, SVGs and transparent images are rendered here and sent as base64, see getFirstFrameBase64(),
         // getSvgBase64() and getFlattenedBase64()
-        $imageUrl = $isAnimatedGif || $isSvg || $flattenedBase64 !== null ? null : $asset->getUrl($transformParams, true);
+        $imageUrl = ($isAnimatedGif || $isSvg || $flattenedBase64 !== null) ? null : $asset->getUrl($transformParams, true);
 
         // If we have a URL, resolve root-relative URLs to the site base; leave absolute URLs as-is
         if (!empty($imageUrl)) {
