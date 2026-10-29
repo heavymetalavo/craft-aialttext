@@ -93,8 +93,9 @@ class AnthropicService extends ApiService
             $asset->setTransform($transformParams);
         }
 
-        // After setTransform(), getMimeType() reflects the output format of the transform. A flattened image is a JPG,
-        // and an SVG is a PNG from getSvgBase64(), as Craft ignores the transform for SVGs when transformSvgs is off
+        // The MIME type of the image sent: a JPG for a filled image and a PNG for an SVG, as both are rendered here
+        // (an SVG can't use getMimeType(), which stays image/svg+xml when Craft's transformSvgs is off). Anything
+        // else uses getMimeType(): the transform's output format after setTransform(), or the original's without one
         $mimeType = match (true) {
             $flattenedBase64 !== null => 'image/jpeg',
             $isSvg => 'image/png',
