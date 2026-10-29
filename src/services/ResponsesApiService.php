@@ -233,7 +233,7 @@ abstract class ResponsesApiService extends ApiService
         // Checked before setTransform(), after which the asset reports the transform's MIME type instead of GIF or SVG
         $isAnimatedGif = $this->isAnimatedGif($asset);
         $isSvg = AiAltText::getInstance()->aiAltTextService->isSvg($asset);
-        // Transparent images are flattened here, as providers ignore the alpha channel, see getFlattenedBase64()
+        // Transparent images are flattened here, as models don't reliably see transparency, see getFlattenedBase64()
         $flattenedBase64 = $isAnimatedGif || $isSvg ? null : $this->getFlattenedBase64($asset, $transformParams);
 
         if (!empty($transformParams)) {

@@ -488,9 +488,11 @@ abstract class ApiService extends Component
      * Renders an image with transparency as a JPG, its transparent areas filled by flattenTransparency(), scaled to fit
      * $transformParams, and returns it base64 encoded.
      *
-     * AI providers ignore the alpha channel, so models see whatever colour is stored under the transparent pixels: often
-     * the colour of what's drawn, so a black line on transparent comes out as a solid black square, or an unrelated one,
-     * such as green. Animated GIFs and SVGs are flattened by getFirstFrameBase64() and getSvgBase64() instead.
+     * Models don't reliably see transparency. Some, such as GPT and Gemini, see the colour each transparent pixel still
+     * stores: often the colour of what's drawn, so a black line on transparent comes out as a solid black square, but
+     * it can be anything, even a hidden image that would then be described. Others, such as Claude, see white, which
+     * hides white artwork. Filling the transparent areas ourselves means every model sees the same, chosen background.
+     * Animated GIFs and SVGs are flattened by getFirstFrameBase64() and getSvgBase64() instead.
      *
      * @param Asset $asset The image, checked before a transform is set on it
      * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
@@ -529,7 +531,7 @@ abstract class ApiService extends Component
 
     /**
      * Fills an image's transparent areas with white, or with mid grey if what's drawn is mostly light, so a white logo
-     * doesn't disappear. Providers ignore the alpha channel, see getFlattenedBase64().
+     * doesn't disappear. Models don't reliably see transparency, see getFlattenedBase64().
      *
      * @param Raster $image The image
      * @return bool Whether the image had any transparency
