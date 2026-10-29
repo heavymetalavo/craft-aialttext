@@ -54,7 +54,7 @@ class GenerateController extends Controller
             if (!$service->createJob($asset, true)) {
                 return $this->asJson([
                     'success' => false,
-                    'message' => Craft::t('ai-alt-text', 'Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off'),
+                    'message' => Craft::t('ai-alt-text', 'Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off or Craft isn\'t using Imagick'),
                 ]);
             }
 

@@ -164,7 +164,9 @@ abstract class ApiService extends Component
     }
 
     /**
-     * The text sent with the image: GENERATE_TRIGGER, and TRANSPARENCY_NOTE if the image's transparent areas were filled.
+     * The text sent with the image: GENERATE_TRIGGER, and TRANSPARENCY_NOTE if the image's transparent areas were filled,
+     * e.g. `Generate the alt text for this image now. The image has a transparent background, filled with white here so
+     * you can see what is drawn.`
      */
     protected function generateTrigger(): string
     {
@@ -303,8 +305,9 @@ abstract class ApiService extends Component
     /**
      * Validates if the asset is an accepted image format natively.
      *
-     * SVGs are only checked against the Process SVGs setting. The plugin renders them itself (see getSvgBase64()), not
-     * through Craft's transforms, so Craft's `transformSvgs` setting doesn't apply.
+     * SVGs are only checked against the Process SVGs setting and Craft's image driver (see canProcessSvgs()). The plugin
+     * renders them itself (see getSvgBase64()), not through Craft's transforms, so Craft's `transformSvgs` setting
+     * doesn't apply.
      *
      * @param Asset $asset The asset to validate
      * @throws Exception If the asset format is invalid or fundamentally unsupported
@@ -313,8 +316,8 @@ abstract class ApiService extends Component
     {
         $mimeType = $asset->getMimeType();
 
-        if ($mimeType === 'image/svg+xml' && !AiAltText::getInstance()->getSettings()->processSvgs) {
-            Craft::info("Skipping SVG asset (processSvgs disabled): $asset->filename", __METHOD__);
+        if ($mimeType === 'image/svg+xml' && !AiAltText::getInstance()->aiAltTextService->canProcessSvgs()) {
+            Craft::info("Skipping SVG asset (processSvgs off, or Craft isn't using Imagick): $asset->filename", __METHOD__);
             return false;
         }
 
@@ -460,8 +463,8 @@ abstract class ApiService extends Component
      * Renders the first frame of an animated GIF as a JPG, scaled to fit $transformParams and with any transparent areas
      * filled by flattenTransparency(), and returns it base64 encoded.
      *
-     * Craft's own JPG transform of an animated GIF shows the last frame on the Imagick driver, which flattens every
-     * frame into one, so the frame is rendered here instead. GD only reads the first frame, so it's unaffected.
+     * Craft's own JPG transform of an animated GIF stacks its frames on the Imagick driver, leaving the last one showing,
+     * so the first frame is rendered here instead. GD only reads the first frame, so it's unaffected.
      *
      * @param Asset $asset The animated GIF
      * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
@@ -512,7 +515,8 @@ abstract class ApiService extends Component
             return null;
         }
 
-        // An animated WebP would have every frame flattened into one, so only its first frame is kept, as for GIFs
+        // An animated WebP would have its frames stacked, leaving the last one showing, so only its first frame is
+        // kept, as for GIFs
         $image->disableAnimation()->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
 
         if (!$this->flattenTransparency($image)) {
@@ -770,7 +774,8 @@ abstract class ApiService extends Component
         $asset->setTransform(null);
 
         $aiAltTextService = AiAltText::getInstance()->aiAltTextService;
-        // SVG, AVIF and HEIC can carry transparency, so convert those to PNG to preserve it
+        // SVG, AVIF and HEIC are converted to PNG, which is lossless. Any transparency is filled before this transform is
+        // used, see getFlattenedBase64() and getSvgBase64()
         $preferPng = $aiAltTextService->isSvg($asset) || $aiAltTextService->isAvif($asset) || $aiAltTextService->isHeic($asset);
         
         // Set up transform parameters
@@ -784,9 +789,9 @@ abstract class ApiService extends Component
             $transformParams['format'] = $preferPng ? 'png' : 'jpg';
         }
         
-        // Animated GIFs need to be converted to a static format (extracts first frame)
+        // Animated GIFs are sent as a JPG of their first frame, rendered by getFirstFrameBase64(), so the format matches
         if ($this->isAnimatedGif($asset)) {
-            Craft::warning("Asset {$asset->filename} is an animated GIF. Converting to JPG to extract the first frame for AI Vision analysis.", __METHOD__);
+            Craft::info("Asset {$asset->filename} is an animated GIF. Sending its first frame as a JPG.", __METHOD__);
             $transformParams['format'] = 'jpg';
         }
         

@@ -23,12 +23,15 @@ class AiAltTextService extends Component
 {
 
     /**
-     * Creates a job for the given element
+     * Generates or queues alt text for an asset, once for each group of sites that share it (see
+     * sitesSharingAltText()): the current site's group straight away or as a queued job, and, when
+     * Save translated results for each site is on, a queued job for each other group.
      *
      * @param Asset $asset The asset to create a job for
      * @param bool $saveCurrentSiteOffQueue Whether to process the current site off queue
      * @param int|null $currentSiteId The current site ID
      * @param bool $skipExistingJobCheck Whether to skip the check for existing jobs (useful for bulk operations)
+     * @param bool $skipSaveTranslatedResultsToEachSiteSetting Whether to only do the current site's group, whatever the setting
      * @param array|null $existingJobs Queue job info to check against, so bulk callers can fetch it once instead of per asset
      * @return bool Whether anything was generated or queued, false if the asset was skipped
      * @throws Exception
@@ -68,9 +71,9 @@ class AiAltTextService extends Component
             return false;
         }
 
-        // Skip SVG assets if SVG processing is disabled
-        if ($this->isSvg($asset) && !AiAltText::getInstance()->getSettings()->processSvgs) {
-            Craft::debug("Skipping alt text generation for SVG asset {$asset->id} because SVG processing is disabled.", __METHOD__);
+        // Skip SVG assets if SVG processing is off, or Craft's image driver can't read them
+        if ($this->isSvg($asset) && !$this->canProcessSvgs()) {
+            Craft::debug("Skipping alt text generation for SVG asset {$asset->id} because SVG processing is off or Craft isn't using Imagick.", __METHOD__);
             return false;
         }
 
@@ -413,6 +416,15 @@ class AiAltTextService extends Component
 
         Craft::info('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
         return $altText;
+    }
+
+    /**
+     * Whether SVGs get alt text: the Process SVGs setting is on and Craft uses the Imagick image driver, as GD
+     * can't read SVGs.
+     */
+    public function canProcessSvgs(): bool
+    {
+        return AiAltText::getInstance()->getSettings()->processSvgs && Craft::$app->getImages()->getIsImagick();
     }
 
     /**

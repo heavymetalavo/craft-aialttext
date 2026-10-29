@@ -20,7 +20,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **OpenAI Reasoning Effort**| The reasoning effort level for OpenAI reasoning models. |
 | **Prompt** | The instructions sent to the AI provider as the system / instruction message (example [below](#-default-prompt)). Supports `{asset.property}` and `{site.property}` variables, plus `{site.languageName}` for the language's display name (e.g. `English (United Kingdom)`). |
 | **Generate for new image assets (on upload or file replacement)** | Automatically generate alt text when new assets are created, or when an asset's file is replaced. On replacement, the alt text for the site the replacement was made in, and the sites that share it, is overwritten, since it describes the old image; other sites keep their existing alt text unless **Save translated results for each site** is enabled. |
-| **Process SVGs** | Attempt to generate alt text for SVG files when they are uploaded or batch processed. |
+| **Process SVGs** | Attempt to generate alt text for SVG files when they are uploaded or batch processed. SVGs need Craft's Imagick image driver, and are skipped with GD, which can't read them. |
 | **Save translated results for each site** | Follows the asset volume's **Alternative Text Translation Method**: sites that share alt text (all sites on Not translatable, or sites in the same site group or language) get one result between them, from one request, in the language of the site it's generated for. When on, every site gets alt text. When off, only the current site and the sites that share its alt text do. |
 
 ## 💬 Default prompt
