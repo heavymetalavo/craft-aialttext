@@ -349,19 +349,50 @@
     errors: settings.getErrors('processSvgs'),
 }) }}
 
-{{ forms.selectField({
+{{ forms.textField({
     label: 'Animation frames'|t('ai-alt-text'),
     id: 'animationFrames',
     name: 'animationFrames',
-    instructions: "How many frames of an animated GIF or WebP to send, evenly spaced from the first to the last, so the alt text can describe the animation rather than only its first frame. Each frame is sent as an image of its own, so the cost rises roughly with the number of frames. With Craft's GD image driver, only the first frame is sent."|t("ai-alt-text"),
-    options: [
-        { label: '1 - The first frame only'|t('ai-alt-text'), value: 1 },
-        { label: '3', value: 3 },
-        { label: '5', value: 5 },
-    ],
+    type: 'number',
+    min: 1,
+    max: 20,
+    size: 4,
+    instructions: "How many frames of an animated GIF or WebP to send, from 1 (the first frame only) to 20, evenly spaced through its running time from the first frame to the last, so the alt text can describe the animation rather than only its first frame. The cost rises with the number of frames. With Craft's GD image driver, only the first frame is sent."|t("ai-alt-text"),
     value: settings.animationFrames,
     errors: settings.getErrors('animationFrames'),
 }) }}
+
+{{ forms.selectField({
+    label: 'Animation strategy'|t('ai-alt-text'),
+    id: 'animationStrategy',
+    name: 'animationStrategy',
+    instructions: "How the frames are sent when there are several. **Separate images** sends them in one request, each costing about as much as a still image. A **film strip** lays them out in one image, so the request costs about as much as one large image, but each frame is smaller. **One request per frame** asks for each frame's alt text, then combines them in one more request, which costs the most but looks at each frame on its own."|t("ai-alt-text"),
+    options: [
+        { label: 'Separate images in one request'|t('ai-alt-text'), value: 'images' },
+        { label: 'Film strip: one image of all the frames'|t('ai-alt-text'), value: 'filmStrip' },
+        { label: 'One request per frame, then combined'|t('ai-alt-text'), value: 'perFrame' },
+    ],
+    value: settings.animationStrategy,
+    errors: settings.getErrors('animationStrategy'),
+    toggle: true,
+    targetPrefix: '#animation-strategy-',
+}) }}
+
+<div id="animation-strategy-filmStrip" class="{{ settings.animationStrategy != 'filmStrip' ? 'hidden' }}">
+    {{ forms.selectField({
+        label: 'Film strip size'|t('ai-alt-text'),
+        id: 'animationFilmStripSize',
+        name: 'animationFilmStripSize',
+        instructions: "The long edge of the film strip. Providers scale larger images down before the model sees them (Anthropic's Claude models above 1568px, OpenAI's above 2048px), so the strip is never larger than that. Frames aren't scaled up, so small animations give a smaller strip. For OpenAI models through the OpenAI, Langdock or OpenRouter providers, set the image detail level to `high`, as `low` shows them the strip at 512px."|t("ai-alt-text"),
+        options: [
+            { label: 'Small (1000px)'|t('ai-alt-text'), value: 'small' },
+            { label: 'Large (2000px)'|t('ai-alt-text'), value: 'large' },
+            { label: "The provider's largest"|t('ai-alt-text'), value: 'max' },
+        ],
+        value: settings.animationFilmStripSize,
+        errors: settings.getErrors('animationFilmStripSize'),
+    }) }}
+</div>
 
 {{ forms.lightswitchField({
     label: 'Save translated results for each site'|t('ai-alt-text'),

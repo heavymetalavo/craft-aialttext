@@ -32,7 +32,9 @@ use craft\helpers\App;
  * @property string $openRouterModel The OpenRouter model to use, as named by OpenRouter
  * @property string $openRouterImageInputDetailLevel The image detail level for OpenRouter's Responses API
  * @property string $openRouterReasoningEffort The reasoning effort level for OpenRouter's Responses API
- * @property int $animationFrames How many frames of an animated GIF or WebP to send (1, 3 or 5)
+ * @property int $animationFrames How many frames of an animated GIF or WebP to send (1 to 20)
+ * @property string $animationStrategy How the frames are sent ('images', 'filmStrip' or 'perFrame')
+ * @property string $animationFilmStripSize The film strip's long edge ('small', 'large' or 'max')
  */
 class Settings extends Model
 {
@@ -165,11 +167,28 @@ class Settings extends Model
     public bool $processSvgs = false;
 
     /**
-     * @var int How many frames of an animated GIF or WebP to send, evenly spaced from the first to the last
-     *
-     * Options: 1 (the first frame only), 3, 5
+     * @var int|string How many frames of an animated GIF or WebP to send, evenly spaced through its running time from the
+     * first frame to the last: 1 (the first frame only) to 20. A string while the settings page's number field is being
+     * validated
      */
-    public int $animationFrames = 1;
+    public int|string $animationFrames = 1;
+
+    /**
+     * @var string How the frames of an animated GIF or WebP are sent, when there are several
+     *
+     * Options:
+     * - images: as separate images in one request
+     * - filmStrip: laid out in one image, a film strip, in one request
+     * - perFrame: one request for each frame's alt text, then one that combines them
+     */
+    public string $animationStrategy = 'images';
+
+    /**
+     * @var string The long edge of a film strip, when the Animation strategy is filmStrip
+     *
+     * Options: small (1000px), large (2000px), max (the largest the provider uses without scaling it down)
+     */
+    public string $animationFilmStripSize = 'small';
 
     /**
      * @inheritdoc
@@ -252,7 +271,10 @@ class Settings extends Model
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
-            ['animationFrames', 'in', 'range' => [1, 3, 5]],
+            ['animationFrames', 'required'],
+            ['animationFrames', 'integer', 'min' => 1, 'max' => 20],
+            ['animationStrategy', 'in', 'range' => ['images', 'filmStrip', 'perFrame']],
+            ['animationFilmStripSize', 'in', 'range' => ['small', 'large', 'max']],
         ];
     }
 
