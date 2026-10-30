@@ -408,7 +408,20 @@ abstract class ApiService extends Component
     }
 
     /**
-     * Checks if the asset format requires conversion to a natively supported format (JPEG/PNG).
+     * The format SVG, AVIF, HEIC and HEIF images are converted to before they're sent: WebP if Craft's image driver can
+     * write it, as every provider accepts it and it's usually much smaller than PNG, otherwise PNG. Both keep fine detail
+     * that a JPG would blur, such as text in a logo. Craft saves WebP at its image quality setting, or lossless when its
+     * `optimizeImageFilesize` setting is off.
+     *
+     * @return string `webp` or `png`
+     */
+    protected function convertedFormat(): string
+    {
+        return Craft::$app->getImages()->getSupportsWebP() ? 'webp' : 'png';
+    }
+
+    /**
+     * Checks if the asset format requires conversion to a natively supported format (JPEG/WebP/PNG).
      *
      * @param Asset $asset The asset to check
      * @return bool
@@ -574,7 +587,8 @@ abstract class ApiService extends Component
     }
 
     /**
-     * Renders an SVG as a PNG, its transparent areas filled by flattenTransparency(), and returns it base64 encoded.
+     * Renders an SVG as a WebP, or a PNG where Craft's image driver can't write WebP (see convertedFormat()), its
+     * transparent areas filled by flattenTransparency(), and returns it base64 encoded.
      *
      * Craft loads SVGs into Imagick from a string, which ImageMagick often renders with its own built-in SVG renderer,
      * and that renderer draws gradients as solid black. So the SVG is rendered here, with its gradients flattened first
@@ -584,7 +598,7 @@ abstract class ApiService extends Component
      *
      * @param Asset $asset The SVG
      * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
-     * @return string The base64 encoded PNG
+     * @return string The base64 encoded WebP or PNG
      */
     protected function getSvgBase64(Asset $asset, array $transformParams): string
     {
@@ -600,6 +614,7 @@ abstract class ApiService extends Component
         // files, deleted at the end
         $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false));
         FileHelper::writeToFile("$path.svg", $svg);
+        $format = $this->convertedFormat();
 
         try {
             // Rendered at the provider's size limit if the SVG is larger, otherwise at 1000px, as Craft's transforms do
@@ -615,12 +630,13 @@ abstract class ApiService extends Component
             $image = $images->loadImage("$path.png");
 
             $this->flattenTransparency($image);
-            $image->saveAs("$path.png");
+            $image->saveAs("$path.converted.$format");
 
-            return base64_encode(file_get_contents("$path.png"));
+            return base64_encode(file_get_contents("$path.converted.$format"));
         } finally {
             FileHelper::unlink("$path.svg");
             FileHelper::unlink("$path.png");
+            FileHelper::unlink("$path.converted.$format");
         }
     }
 
@@ -790,7 +806,7 @@ abstract class ApiService extends Component
 
     /**
      * Generates a standardized array of transform parameters across AI Vision boundaries.
-     * Handles unsupported MIME type fallback conversions (SVG/WEBP to PNG/JPG) and dimensional bounding.
+     * Handles unsupported MIME type fallback conversions (SVG, AVIF and HEIC to WebP or PNG, others to JPG) and dimensional bounding.
      *
      * @param Asset $asset The original asset
      * @param int|null $maxLongEdge The maximum allowed length for the longest edge of the image
@@ -807,9 +823,9 @@ abstract class ApiService extends Component
         $asset->setTransform(null);
 
         $aiAltTextService = AiAltText::getInstance()->aiAltTextService;
-        // SVG, AVIF and HEIC are converted to PNG, which is lossless. Any transparency is filled before this transform is
-        // used, see getFlattenedBase64() and getSvgBase64()
-        $preferPng = $aiAltTextService->isSvg($asset) || $aiAltTextService->isAvif($asset) || $aiAltTextService->isHeic($asset);
+        // SVG, AVIF and HEIC are converted to WebP, or PNG where WebP can't be written, see convertedFormat(). Any
+        // transparency is filled before this transform is used, see getFlattenedBase64() and getSvgBase64()
+        $keepDetail = $aiAltTextService->isSvg($asset) || $aiAltTextService->isAvif($asset) || $aiAltTextService->isHeic($asset);
         
         // Set up transform parameters
         $transformParams = [];
@@ -819,7 +835,7 @@ abstract class ApiService extends Component
         
         // Always convert format if needed, regardless of dimensions
         if ($needsFormatConversion) {
-            $transformParams['format'] = $preferPng ? 'png' : 'jpg';
+            $transformParams['format'] = $keepDetail ? $this->convertedFormat() : 'jpg';
         }
         
         // Animated GIFs are sent as a JPG of their first frame, rendered by getFirstFrameBase64(), so the format matches
