@@ -10,10 +10,6 @@ Planned work, not yet scheduled or promised. Shipped changes are in [CHANGELOG.m
 - **Animation process strategy** let admins decide if webp/gif animations should be processed as a "film strip" in small (1000x1000) or larger (2000x2000) or whatever an ai provider can support, e.g. up to 8000x8000, or whether we send each frame individually as it's own image, combine all the ai responses into a single description saved agained the gif/webp. admins may also want to decide how many frames get sent on a separate field, e.g. 3, 5, 10 and so on where each frame captured is spread evenly throughout the duration of the clip
 - **png file format** - in some scenarios we send png files up to ai providers, but they could be PNG which offers transparency and better file sizes, we no longer need to use png I don't think, even with storing basic images which were basic vectors I think this would be better?
 
-## Providers
-
-- **Hugging Face.** Its Inference Providers router (`https://router.huggingface.co/v1`) works like OpenRouter: one Hugging Face token, open-weight models from providers such as Groq and Scaleway (a model id is `org/model` with an optional `:provider` suffix), billed at the providers' own prices. Its Responses API (beta) at `/v1/responses` documents text and image input (`input_text` and `input_image`), so it should fit the same request shape as OpenAI, Langdock and OpenRouter. Still to check with a real token: whether it accepts `detail`, base64 images and `store: false`, what its errors look like, and which vision models work.
-
 ## Platform support
 
 - **Craft 6.** In progress on `feature/craft-6`, tested against Craft 6 alpha.

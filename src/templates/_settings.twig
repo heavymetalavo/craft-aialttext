@@ -30,7 +30,8 @@
     { label: 'Anthropic', value: 'anthropic' },
     { label: 'OpenAI', value: 'openai' },
     { label: 'Langdock', value: 'langdock' },
-    { label: 'OpenRouter', value: 'openrouter' }
+    { label: 'OpenRouter', value: 'openrouter' },
+    { label: 'Hugging Face', value: 'huggingface' }
 ] %}
 {% set providerValues = providerOptions|map(o => o.value) %}
 
@@ -313,6 +314,35 @@
         allowedEnvValues: null,
         value: settings.openRouterReasoningEffort,
         errors: settings.getErrors('openRouterReasoningEffort')
+    }) }}
+</div>
+
+
+<div id="provider-huggingface" class="{{ 'huggingface' in hiddenProviders ? 'hidden' }}">
+    <hr />
+
+    <h3>Hugging Face Settings</h3>
+
+    {{ forms.autosuggestField({
+        label: "Hugging Face Token"|t("ai-alt-text"),
+        instructions: "A [fine-grained token](https://huggingface.co/settings/tokens/new?ownUserPermissions=inference.serverless.write&tokenType=fineGrained) with the **Make calls to Inference Providers** permission. The account needs Inference Providers credit."|t("ai-alt-text"),
+        id: "huggingFaceApiKey",
+        name: "huggingFaceApiKey",
+        placeholder: '$HF_TOKEN',
+        suggestEnvVars: true,
+        value: settings.huggingFaceApiKey,
+        errors: settings.getErrors("huggingFaceApiKey"),
+    }) }}
+
+    {{ forms.autosuggestField({
+        label: 'Hugging Face Model'|t('ai-alt-text'),
+        id: 'huggingFaceModel',
+        name: 'huggingFaceModel',
+        instructions: "The model's id on Hugging Face, e.g. `Qwen/Qwen2.5-VL-7B-Instruct`. Add `:cheapest`, or a provider such as `:groq`, to choose who runs it; without one, the fastest provider is used. It must accept image input: [browse the vision models](https://huggingface.co/models?pipeline_tag=image-text-to-text&inference_provider=all)."|t("ai-alt-text"),
+        value: settings.huggingFaceModel,
+        placeholder: 'Qwen/Qwen2.5-VL-7B-Instruct',
+        errors: settings.getErrors('huggingFaceModel'),
+        suggestEnvVars: true,
     }) }}
 </div>
 

@@ -1,5 +1,9 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+- Added Hugging Face as an AI provider, through its Inference Providers router's Responses API, for open-weight vision models such as `Qwen/Qwen2.5-VL-7B-Instruct`, with one Hugging Face token. It's in beta at Hugging Face and hasn't been tested against the real API yet, see [AI providers](docs/providers.md#hugging-face).
+
 ## 5.4.0 - 2026-10-30
 
 > {tip} The **Propagate** setting has been removed. When on, before Craft 5.11, it saved the same alt text to every site. When off, the plugin worked around Craft copying an asset's first alt text to every site regardless of the volume's **Alternative Text Translation Method**, which Craft 5.11 fixed ([craftcms/cms#19067](https://github.com/craftcms/cms/pull/19067)). Generated alt text now follows that translation method instead.

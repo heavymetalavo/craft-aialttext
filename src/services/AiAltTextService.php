@@ -303,8 +303,8 @@ class AiAltTextService extends Component
             return Craft::t('ai-alt-text', 'No AI provider is configured. Choose one in the AI Alt Text plugin settings.');
         }
 
-        if (!in_array($provider, ['openai', 'anthropic', 'langdock', 'openrouter'], true)) {
-            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Langdock or OpenRouter in the AI Alt Text plugin settings.', ['provider' => $provider]);
+        if (!in_array($provider, ['openai', 'anthropic', 'langdock', 'openrouter', 'huggingface'], true)) {
+            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Langdock, OpenRouter or Hugging Face in the AI Alt Text plugin settings.', ['provider' => $provider]);
         }
 
         [$label, $apiKey] = match ($provider) {
@@ -312,6 +312,7 @@ class AiAltTextService extends Component
             'langdock' => ['Langdock', $settings->langdockApiKey],
             'openai' => ['OpenAI', $settings->openAiApiKey],
             'openrouter' => ['OpenRouter', $settings->openRouterApiKey],
+            'huggingface' => ['Hugging Face', $settings->huggingFaceApiKey],
         };
 
         $apiKey = App::parseEnv($apiKey);
@@ -343,6 +344,7 @@ class AiAltTextService extends Component
                 : $plugin->langdockAnthropicService,
             'openai' => $plugin->openAiService,
             'openrouter' => $plugin->openRouterService,
+            'huggingface' => $plugin->huggingFaceService,
         };
     }
 

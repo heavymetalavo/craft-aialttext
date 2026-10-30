@@ -36,6 +36,18 @@ OpenRouter takes the same request for every model, so there is no model author t
 - A few models need a setting in your OpenRouter account, and the error says which and links to it.
 - Requests send your primary site's URL as the `HTTP-Referer` header, with `heavymetalavo/craft-aialttext` as the title, so your OpenRouter logs list them under that app name. The app is marked hidden, which keeps it out of OpenRouter's public rankings. This works from the console and the queue as well, as long as the primary site's URL is a full URL (an environment variable that holds one is fine). A URL that uses the `@web` alias has no value in the console, so requests made there send none of these headers.
 
+## Hugging Face
+
+Hugging Face's [Inference Providers](https://huggingface.co/docs/inference-providers/index) router works like OpenRouter: one Hugging Face token reaches open-weight models run by providers such as Groq and Scaleway, billed at the providers' own prices with no extra fee.
+
+1. Visit [https://huggingface.co/](https://huggingface.co/) and sign up or log in.
+2. Make sure the account has Inference Providers credit: PRO accounts get some each month, otherwise buy some under **Billing**.
+3. Create a [fine-grained token with the "Make calls to Inference Providers" permission](https://huggingface.co/settings/tokens/new?ownUserPermissions=inference.serverless.write&tokenType=fineGrained).
+4. Copy the token and save it to an environment variable (`.env`), for example `HF_TOKEN`, then set **Hugging Face Token** to `$HF_TOKEN`.
+5. Set **Hugging Face Model** to a vision model's id, e.g. `Qwen/Qwen2.5-VL-7B-Instruct`. Without a suffix the fastest provider runs it; add `:cheapest`, or a provider such as `:groq`, to choose. [Browse the vision models](https://huggingface.co/models?pipeline_tag=image-text-to-text&inference_provider=all).
+
+Hugging Face's Responses API is in beta, and its docs only show images sent as URLs, so this provider hasn't been tested against the real API yet. Images are always sent as base64, as for OpenRouter, and no image detail or reasoning setting is sent, so each model uses its own defaults. How good the alt text is varies between models more than on the other providers.
+
 ## OpenAI
 
 1. Visit [https://platform.openai.com/](https://platform.openai.com/) and [sign up](https://platform.openai.com/signup) in the top-right.

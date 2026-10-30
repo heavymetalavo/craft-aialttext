@@ -13,7 +13,7 @@ Write alt text for every image on your Craft site with AI: one click, in bulk, o
 
 ## ✨ What you get
 
-- **Any vision model, one key.** Use Anthropic or OpenAI directly, Langdock (hosted in the EU), or OpenRouter, which offers over 300 image-capable models, including Claude, GPT, Gemini, Grok, Qwen and DeepSeek. Switching model is one setting. OpenAI and Anthropic models are supported, and more than 50 others worked in our tests. See [AI providers](docs/providers.md).
+- **Any vision model, one key.** Use Anthropic or OpenAI directly, Langdock (hosted in the EU), OpenRouter, which offers over 300 image-capable models, including Claude, GPT, Gemini, Grok, Qwen and DeepSeek, or Hugging Face for open-weight models. Switching model is one setting. OpenAI and Anthropic models are supported, and more than 50 others worked in our tests. See [AI providers](docs/providers.md).
 - **Pennies for a whole library.** With our top pick, `claude-haiku-5-5`, alt text for 1,000 images costs about 23 cents, or about 6 cents with `gpt-6-luna`. [Compare models](docs/costs.md).
 - **Every site's language.** Alt text is written in the site's language, and can be saved to each site of a multi-site install.
 - **One click, in bulk, or automatically.** From an asset's action menu, for selected assets, from the bulk actions utility, on upload or file replacement, or from the [command line](docs/console-commands.md). Bulk work runs through Craft's queue, where failed jobs can be retried.
@@ -51,7 +51,7 @@ Then use it in your templates:
 ## 📚 Documentation
 
 - [Getting started](docs/getting-started.md) - requirements, installation, the `alt` field, generating alt text, troubleshooting
-- [AI providers](docs/providers.md) - API keys for Anthropic, OpenAI, Langdock and OpenRouter, and choosing a model
+- [AI providers](docs/providers.md) - API keys for Anthropic, OpenAI, Langdock, OpenRouter and Hugging Face, and choosing a model
 - [Settings](docs/settings.md) - every setting, the default prompt, image detail, reasoning effort and permissions
 - [Console commands](docs/console-commands.md) - stats, missing, all and single
 - [Images](docs/images.md) - supported file types, scaling and conversion, private volumes and limitations
