@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed compatibility with Craft 6.0.0-alpha.16, which removed the event the plugin used to register the templates for its settings page and bulk actions utility. The plugin now requires alpha.16 or later.
 - Fixed a duplicate job being queued for the site being worked in when "Save translated results for each site" was enabled, so that site's alt text was generated (and charged for) twice.
 - Fixed existing alt text being lost if a save failed. When **Propagate** is off, generation blanks the alt value in a preliminary save before writing the new one; both saves now run in one transaction so a failure leaves the previous value intact.
 - Fixed alt text generation falling back to OpenAI for any unrecognised **AI Provider** value, including no value at all. Generation now fails immediately with a message naming what's missing, and does the same when the chosen provider has no API key.
