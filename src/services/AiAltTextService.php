@@ -4,7 +4,6 @@ namespace heavymetalavo\craftaialttext\services;
 
 use CraftCms\Cms\Asset\Elements\Asset;
 use CraftCms\Cms\Asset\Enums\FileKind;
-use CraftCms\Cms\Database\Table;
 use CraftCms\Cms\Element\Enums\MenuItemType;
 use CraftCms\Cms\Field\Enums\TranslationMethod;
 use CraftCms\Cms\Element\Events\ElementActionMenuItemsResolving;
@@ -389,17 +388,6 @@ class AiAltTextService
         // fails - a validation error, a veto from another plugin, a DB problem - they all keep their
         // previous alt text, rather than some sites having the new value and some not.
         DB::transaction(function() use ($asset, $altText, $sharedSiteIds) {
-            // Craft 6 still shows a site with no alt text of its own the asset's site-agnostic
-            // `assets.alt`, and fills that from the first alt text saved on any site, so the text
-            // generated here would show on sites that don't share it, in another language. A blank
-            // save first fills it with an empty value instead. (Craft 5.11 stopped both,
-            // craftcms/cms#19067, which is why the 5.x line has no such save.)
-            if (DB::table(Table::ASSETS)->where('id', $asset->id)->value('alt') === null) {
-                $asset->alt = '';
-                Log::debug("Performing preliminary save for asset {$asset->id} so its alt text isn't shown on sites that don't share it.");
-                Elements::saveElement($asset, true, false);
-            }
-
             $asset->alt = $altText;
 
             Log::info("Saving AI alt text for asset {$asset->id}");

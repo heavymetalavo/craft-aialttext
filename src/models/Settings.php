@@ -180,20 +180,6 @@ class Settings extends PluginSettings
     }
 
     /**
-     * Returns errors for an attribute or all attributes, compatible with Craft 5 template helpers.
-     *
-     * @param string|null $attribute Attribute name, or null for all errors
-     * @return array
-     */
-    public function getErrors(?string $attribute = null): array
-    {
-        if ($attribute !== null) {
-            return $this->errors()->get($attribute) ?? [];
-        }
-        return $this->errors()->toArray();
-    }
-
-    /**
      * @inheritdoc
      */
     public function getRules(): array

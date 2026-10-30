@@ -47,8 +47,8 @@ class AiAltTextBootstrapProvider extends ServiceProvider
     }
 
     /**
-     * Registers `src/templates` as the control panel template root, so `ai-alt-text/_settings`
-     * and `ai-alt-text/_utility` resolve.
+     * Registers `src/templates` as the control panel template root, so the bulk actions
+     * utility's `ai-alt-text/_utility` resolves.
      *
      * Craft's HasViews concern registers the same directory when the plugin boots. Doing it here
      * as well means the root is in place whether or not the plugin has loaded yet, and TemplateRoots
