@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-> {tip} The **Propagate** setting has been removed. When on, before Craft 5.11, it saved the same alt text to every site. When off, the plugin worked around Craft copying an asset's first alt text to every site regardless of the volume's **Alternative Text Translation Method**, which Craft 5.11 fixed ([craftcms/cms#19067](https://github.com/craftcms/cms/pull/19067)). Generated alt text now follows that translation method instead, so update Craft to 5.11 or later.
+> {tip} The **Propagate** setting has been removed. When on, before Craft 5.11, it saved the same alt text to every site. When off, the plugin worked around Craft copying an asset's first alt text to every site regardless of the volume's **Alternative Text Translation Method**, which Craft 5.11 fixed ([craftcms/cms#19067](https://github.com/craftcms/cms/pull/19067)). Generated alt text now follows that translation method instead.
 
 - Changed generated alt text to be saved to the sites that share it under the volume's **Alternative Text Translation Method**, so it's generated once for them, in the language of the site it's generated for. For example, two French sites on a volume set to Translate for each language now make one API request instead of two, and get the same alt text. On a volume set to Translate for each site group, every site in a site group gets the same alt text, whatever its language. On a Not translatable volume, every site gets the same alt text, as Craft gives them all one value.
 - Changed generating missing alt text to copy it between sites that share it, when one has alt text and another doesn't, e.g. after the volume's **Alternative Text Translation Method** was changed. Generating new alt text instead would replace the existing alt text on both.
