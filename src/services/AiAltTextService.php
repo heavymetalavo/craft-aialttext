@@ -3,8 +3,8 @@
 namespace heavymetalavo\craftaialttext\services;
 
 use Craft;
-use craft\base\{Component, Field};
-use craft\elements\Asset;
+use craft\base\{Component, Field, NestedElementInterface};
+use craft\elements\{Asset, Entry};
 use craft\enums\MenuItemType;
 use craft\events\DefineMenuItemsEvent;
 use craft\helpers\{App, ArrayHelper};
@@ -145,12 +145,17 @@ class AiAltTextService extends Component
      * @param bool $includeExisting Whether the run includes assets that already have alt text
      * @param bool $allSites Whether the run covers every site, rather than just the asset's
      * @param array|null $existingJobs Queue job info for the duplicate-job check
-     * @return string `queued`, `copied`, or `skipped` when an earlier site sharing its alt text handles
-     * it, a job is already queued, or the asset isn't eligible
+     * @return string `queued`, `copied`, `excluded` by the Excluded assets settings (see exclusionReason()), or
+     * `skipped` when an earlier site sharing its alt text handles it, a job is already queued, or the asset isn't eligible
      * @throws Exception
      */
     public function createBulkJob(Asset $asset, bool $includeExisting, bool $allSites, ?array $existingJobs = null): string
     {
+        if (($reason = $this->exclusionReason($asset)) !== null) {
+            Craft::info("Skipping {$asset->filename} (ID: {$asset->id}) in a bulk run: $reason", __METHOD__);
+            return 'excluded';
+        }
+
         $siteIds = $this->siteIdsBySharedAltText($asset)[$this->sharedAltTextKey($asset)];
 
         if (!$includeExisting) {
@@ -179,6 +184,63 @@ class AiAltTextService extends Component
 
         // The caller has already chosen the sites, so skip the saveTranslatedResultsToEachSite fan-out
         return $this->createJob($asset, false, $asset->siteId, false, true, $existingJobs) ? 'queued' : 'skipped';
+    }
+
+    /**
+     * Why bulk and automatic generation skip an asset under the Excluded assets settings, or null if they don't.
+     * Generating for chosen assets on request isn't affected.
+     *
+     * - Its volume is an excluded volume.
+     * - Its folder is an excluded folder, or inside one. Folders are written `volumeHandle/path`, e.g. `images/icons`.
+     * - It's related to entries in the excluded sections: any of them, or, with the match set to `all`, every one.
+     *   An asset in a nested entry, such as one in a Matrix field, counts as related to the entry that owns it.
+     *   A newly uploaded asset isn't related to any entry yet, so this only applies once it's used.
+     *
+     * @return string|null The reason, e.g. `its volume is excluded`
+     */
+    public function exclusionReason(Asset $asset): ?string
+    {
+        $settings = AiAltText::getInstance()->getSettings();
+        $volume = $asset->getVolume();
+
+        if (in_array($volume->uid, $settings->excludedVolumes, true)) {
+            return "its volume ($volume->handle) is excluded";
+        }
+
+        // e.g. `images/icons/` for an asset in the icons folder of the images volume, and `images/` for its root
+        $path = $volume->handle . '/' . ltrim($asset->getFolder()->path ?? '', '/');
+        foreach (preg_split('/\R/', $settings->excludedFolders, -1, PREG_SPLIT_NO_EMPTY) as $folder) {
+            $folder = trim(trim($folder), '/') . '/';
+            if ($folder !== '/' && str_starts_with($path, $folder)) {
+                return "its folder ($folder) is excluded";
+            }
+        }
+
+        if (empty($settings->excludedSections)) {
+            return null;
+        }
+
+        // The sections of the entries it's related to, on any site, by the entry that owns any nested ones
+        $sectionUids = [];
+        foreach (Entry::find()->relatedTo(['targetElement' => $asset->id])->site('*')->unique()->status(null)->all() as $entry) {
+            while ($entry instanceof NestedElementInterface && ($owner = $entry->getOwner()) !== null) {
+                $entry = $owner;
+            }
+
+            // An entry nested in something other than an entry, such as a global set, has no section
+            $sectionUids[] = $entry instanceof Entry ? $entry->getSection()?->uid : null;
+        }
+
+        $excluded = array_intersect($sectionUids, $settings->excludedSections);
+
+        if ($settings->excludedSectionsMatch === 'all'
+            ? !empty($sectionUids) && count($excluded) === count($sectionUids)
+            : !empty($excluded)
+        ) {
+            return 'it is used in an excluded section';
+        }
+
+        return null;
     }
 
     /**

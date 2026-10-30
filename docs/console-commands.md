@@ -2,7 +2,7 @@
 
 [← README](../README.md) · [Getting started](getting-started.md) · [AI providers](providers.md) · [Settings](settings.md) · **Console commands** · [Images](images.md) · [Costs](costs.md)
 
-**Important**: `missing` and `all` create **queue** jobs which when run will generate the alt text, while `single` generates straight away (queueing the other sites when **Save translated results for each site** is enabled). By default, all commands process **all sites** unless `--site-id` is specified. Sites that share alt text under the volume's **Alternative Text Translation Method** (on a Not translatable volume, every site) are handled once: `missing` copies alt text one of them already has to the others, and otherwise one job generates it for all of them.
+**Important**: `missing` and `all` create **queue** jobs which when run will generate the alt text, while `single` generates straight away (queueing the other sites when **Save translated results for each site** is enabled). By default, all commands process **all sites** unless `--site-id` is specified. Sites that share alt text under the volume's **Alternative Text Translation Method** (on a Not translatable volume, every site) are handled once: `missing` copies alt text one of them already has to the others, and otherwise one job generates it for all of them. `missing` and `all` skip assets excluded by the **Excluded volumes**, **Excluded folders** and **Excluded sections** settings, and `single` doesn't.
 
 ## Available Commands
 

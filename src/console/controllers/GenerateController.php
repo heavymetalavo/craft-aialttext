@@ -345,6 +345,7 @@ class GenerateController extends Controller
         $totalCount = 0;
         $queuedCount = 0;
         $copiedCount = 0;
+        $excludedCount = 0;
 
         try {
             // First, count total assets to process
@@ -454,12 +455,15 @@ class GenerateController extends Controller
                                 $queuedCount++;
                             } elseif ($result === 'copied') {
                                 $copiedCount++;
+                            } elseif ($result === 'excluded') {
+                                $excludedCount++;
                             }
 
                             if ($this->verbose) {
                                 $this->note(match ($result) {
                                     'queued' => "Queued: {$asset->filename} (ID: {$asset->id})",
                                     'copied' => "Copied: {$asset->filename} (ID: {$asset->id}) alt text from a site that shares it",
+                                    'excluded' => "Excluded: {$asset->filename} (ID: {$asset->id}) by the Excluded assets settings",
                                     default => "Skipped: {$asset->filename} (ID: {$asset->id}) is already queued, handled by an earlier site that shares its alt text, or not eligible",
                                 });
                             }
@@ -498,6 +502,10 @@ class GenerateController extends Controller
 
             if ($copiedCount > 0) {
                 $this->success("✓ Copied existing alt text to {$copiedCount} assets from sites that share it.");
+            }
+
+            if ($excludedCount > 0) {
+                $this->note("Skipped {$excludedCount} assets excluded by the Excluded assets settings.");
             }
 
             $this->tip("Monitor progress with: ./craft queue/info");
