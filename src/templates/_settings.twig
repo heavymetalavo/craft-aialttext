@@ -360,5 +360,57 @@
 }) }}
 
 
+<hr />
+
+<h3>{{ 'Excluded assets'|t('ai-alt-text') }}</h3>
+
+<p>{{ "Skip assets in bulk generation (the bulk actions utility and the `missing` and `all` console commands) and on upload or file replacement. Generating for assets you choose, from the action menu, the element action or the `single` console command, still works."|t('ai-alt-text')|markdown(inlineOnly=true) }}</p>
+
+{{ forms.checkboxSelectField({
+    label: 'Excluded volumes'|t('ai-alt-text'),
+    id: 'excludedVolumes',
+    name: 'excludedVolumes',
+    instructions: "Assets in these volumes are skipped, e.g. a volume of icons."|t('ai-alt-text'),
+    options: craft.app.volumes.allVolumes|map(v => { label: v.name, value: v.uid }),
+    values: settings.excludedVolumes,
+    errors: settings.getErrors('excludedVolumes'),
+}) }}
+
+{{ forms.textareaField({
+    label: 'Excluded folders'|t('ai-alt-text'),
+    id: 'excludedFolders',
+    name: 'excludedFolders',
+    instructions: "Assets in these folders, and their subfolders, are skipped. One per line, as the volume handle and the folder's path, e.g. `images/icons`."|t('ai-alt-text'),
+    placeholder: 'images/icons',
+    rows: 3,
+    code: true,
+    value: settings.excludedFolders,
+    errors: settings.getErrors('excludedFolders'),
+}) }}
+
+{{ forms.checkboxSelectField({
+    label: 'Excluded sections'|t('ai-alt-text'),
+    id: 'excludedSections',
+    name: 'excludedSections',
+    instructions: "Assets related to entries in these sections are skipped, including assets in their nested entries, such as Matrix fields. A new upload isn't related to an entry until the entry is saved, so this applies to file replacements and bulk generation."|t('ai-alt-text'),
+    options: craft.app.entries.allSections|map(s => { label: s.name, value: s.uid }),
+    values: settings.excludedSections,
+    errors: settings.getErrors('excludedSections'),
+}) }}
+
+{{ forms.selectField({
+    label: 'Excluded sections match'|t('ai-alt-text'),
+    id: 'excludedSectionsMatch',
+    name: 'excludedSectionsMatch',
+    instructions: "An asset can be related to entries in several sections. Choose whether one entry in an excluded section is enough to skip it, or whether every entry it's related to must be in one."|t('ai-alt-text'),
+    options: [
+        { label: 'Any - one related entry in an excluded section'|t('ai-alt-text'), value: 'any' },
+        { label: 'All - every related entry in an excluded section'|t('ai-alt-text'), value: 'all' },
+    ],
+    value: settings.excludedSectionsMatch,
+    errors: settings.getErrors('excludedSectionsMatch'),
+}) }}
+
+
 
 

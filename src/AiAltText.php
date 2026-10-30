@@ -130,6 +130,7 @@ class AiAltText extends Plugin
                     $event->isNew
                     && $asset->kind === Asset::KIND_IMAGE
                     && $this->getSettings()->generateForNewAssets
+                    && !$this->isExcludedFromAutomaticGeneration($asset)
                 ) {
                     // Save current site ID. Cp::requestedSite() returns null when the asset is
                     // saved via a console command / a queue job, which used to fail the save.
@@ -152,6 +153,7 @@ class AiAltText extends Plugin
                 if (
                     $asset->kind === Asset::KIND_IMAGE
                     && $this->getSettings()->generateForNewAssets
+                    && !$this->isExcludedFromAutomaticGeneration($asset)
                 ) {
                     // Save current site ID. Cp::requestedSite() can return null (e.g. no
                     // resolvable CP site context) — createJob() falls back to the asset's
@@ -196,6 +198,20 @@ class AiAltText extends Plugin
                 ]);
             }
         );
+    }
+
+    /**
+     * Whether the Excluded assets settings skip an asset on upload or file replacement, logged when they do.
+     */
+    private function isExcludedFromAutomaticGeneration(Asset $asset): bool
+    {
+        $reason = $this->aiAltTextService->exclusionReason($asset);
+
+        if ($reason !== null) {
+            Craft::info("Not generating alt text for {$asset->filename} (ID: {$asset->id}): $reason", __METHOD__);
+        }
+
+        return $reason !== null;
     }
 
     /**

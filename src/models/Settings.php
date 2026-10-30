@@ -32,6 +32,10 @@ use craft\helpers\App;
  * @property string $openRouterModel The OpenRouter model to use, as named by OpenRouter
  * @property string $openRouterImageInputDetailLevel The image detail level for OpenRouter's Responses API
  * @property string $openRouterReasoningEffort The reasoning effort level for OpenRouter's Responses API
+ * @property string[] $excludedVolumes UIDs of the volumes whose assets bulk and automatic generation skip
+ * @property string $excludedFolders Folders whose assets bulk and automatic generation skip, one `volumeHandle/path` per line
+ * @property string[] $excludedSections UIDs of the sections whose entries' assets bulk and automatic generation skip
+ * @property string $excludedSectionsMatch Whether one related entry in an excluded section is enough ('any') or every one must be ('all')
  */
 class Settings extends Model
 {
@@ -164,6 +168,29 @@ class Settings extends Model
     public bool $processSvgs = false;
 
     /**
+     * @var string[] UIDs of the volumes whose assets are skipped by bulk and automatic generation
+     */
+    public array $excludedVolumes = [];
+
+    /**
+     * @var string Folders whose assets, including those in subfolders, are skipped by bulk and automatic generation,
+     * one per line as the volume handle and the folder's path, e.g. `images/icons`
+     */
+    public string $excludedFolders = '';
+
+    /**
+     * @var string[] UIDs of the sections whose entries' related assets are skipped by bulk and automatic generation
+     */
+    public array $excludedSections = [];
+
+    /**
+     * @var string How an asset related to several entries is matched against the excluded sections
+     *
+     * Options: any (one entry in an excluded section is enough), all (every entry must be in one)
+     */
+    public string $excludedSectionsMatch = 'any';
+
+    /**
      * @inheritdoc
      */
     public function setAttributes($values, $safeOnly = true): void
@@ -174,6 +201,13 @@ class Settings extends Model
         if (is_array($values) && isset($values['langdockModelFamily'])) {
             $values['langdockModelAuthor'] = $values['langdockModelFamily'];
             unset($values['langdockModelFamily']);
+        }
+
+        // A checkbox select with nothing checked posts an empty string
+        foreach (['excludedVolumes', 'excludedSections'] as $key) {
+            if (is_array($values) && array_key_exists($key, $values) && !is_array($values[$key])) {
+                $values[$key] = array_filter([$values[$key]]);
+            }
         }
 
         parent::setAttributes($values, $safeOnly);
@@ -244,6 +278,9 @@ class Settings extends Model
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
+            [['excludedVolumes', 'excludedSections'], 'each', 'rule' => ['string']],
+            ['excludedFolders', 'string'],
+            [['excludedSectionsMatch'], 'validateOneOf', 'params' => ['allowed' => ['any', 'all'], 'message' => 'Invalid Excluded Sections match configured.']],
         ];
     }
 

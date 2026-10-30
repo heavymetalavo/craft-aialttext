@@ -1,5 +1,9 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+- Added the **Excluded volumes**, **Excluded folders** and **Excluded sections** settings, which skip assets in bulk generation and on upload or file replacement, e.g. a volume or folder of icons, or images used in a section that doesn't need alt text. **Excluded sections match** says whether an asset related to several entries is skipped when one of them is in an excluded section or only when all of them are. Generating for assets you choose still works. See [Settings](docs/settings.md).
+
 ## 5.4.0 - 2026-10-30
 
 > {tip} The **Propagate** setting has been removed. When on, before Craft 5.11, it saved the same alt text to every site. When off, the plugin worked around Craft copying an asset's first alt text to every site regardless of the volume's **Alternative Text Translation Method**, which Craft 5.11 fixed ([craftcms/cms#19067](https://github.com/craftcms/cms/pull/19067)). Generated alt text now follows that translation method instead.
