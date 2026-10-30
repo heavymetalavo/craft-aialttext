@@ -23,6 +23,31 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **Process SVGs** | Attempt to generate alt text for SVG files when they are uploaded or batch processed. |
 | **Save translated results for each site** | Follows the asset volume's **Alternative Text Translation Method**: sites that share alt text (all sites on Not translatable, or sites in the same site group or language) get one result between them, from one request, in the language of the site it's generated for. When on, every site gets alt text. When off, only the current site and the sites that share its alt text do. |
 
+## 📁 Config file
+
+Settings can also be set in `config/ai-alt-text.php`, for example to use a different provider or model in each environment. Each key is a setting's name, as listed in the plugin's [`Settings` model](../src/models/Settings.php), and the file can use Craft's [multi-environment config](https://craftcms.com/docs/5.x/configure.html#multi-environment-configs):
+
+```php
+<?php
+
+return [
+    // Every environment
+    '*' => [
+        'aiProvider' => 'openrouter',
+        'openRouterApiKey' => '$OPENROUTER_API_KEY',
+        'openRouterModel' => 'anthropic/claude-haiku-5.5',
+    ],
+    // A cheaper model while developing
+    'dev' => [
+        'openRouterModel' => 'google/gemini-3.5-flash-lite',
+    ],
+];
+```
+
+A setting in this file wins over the one saved on the settings page. Its field still shows the file's value and can still be edited and saved, but the change has no effect while the file sets it, so the field is marked with a warning naming the setting. Keep API keys in environment variables, as above, rather than in the file.
+
+For most projects, environment variables in the settings fields (e.g. `$OPENROUTER_MODEL`) are simpler: the values can differ per environment without a file, and the settings page stays in charge.
+
 ## 💬 Default prompt
 
 This is sent to the provider as the system / instruction message (Anthropic `system`, OpenAI `instructions`); the image is sent in the user turn with a short trigger. `{site.languageName}` resolves to the language's display name and `{site.language}` to its BCP 47 language tag (e.g. `en-GB`), so the default pairs them - edit the parenthesised format freely.
