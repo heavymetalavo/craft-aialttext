@@ -317,7 +317,7 @@ abstract class ApiService extends Component
         $mimeType = $asset->getMimeType();
 
         if ($mimeType === 'image/svg+xml' && !AiAltText::getInstance()->aiAltTextService->canProcessSvgs()) {
-            Craft::info("Skipping SVG asset (processSvgs off, or Craft isn't using Imagick): $asset->filename", __METHOD__);
+            Craft::info("Skipping SVG asset (processSvgs off, or Craft's image driver can't read SVGs): $asset->filename", __METHOD__);
             return false;
         }
 
@@ -578,8 +578,9 @@ abstract class ApiService extends Component
      *
      * Craft loads SVGs into Imagick from a string, which ImageMagick often renders with its own built-in SVG renderer,
      * and that renderer draws gradients as solid black. So the SVG is rendered here, with its gradients flattened first
-     * where ImageMagick can't draw them, see canRenderSvgGradients() and flattenSvgGradients(). Rendering it here also
-     * works for SVGs on volumes without public URLs, whose transforms Craft can't hand over.
+     * where ImageMagick can't draw them, see canRenderSvgGradients() and flattenSvgGradients(). Craft also draws SVGs
+     * onto white, which hides white artwork, so here they're drawn onto transparent and filled by flattenTransparency().
+     * Rendering it here also works for SVGs on volumes without public URLs, whose transforms Craft can't hand over.
      *
      * @param Asset $asset The SVG
      * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
@@ -590,10 +591,13 @@ abstract class ApiService extends Component
         $images = Craft::$app->getImages();
         $svg = $asset->getContents();
 
-        if ($images->getIsImagick() && !$this->canRenderSvgGradients()) {
+        // Only Imagick reaches here, as SVGs are skipped on GD, see canProcessSvgs()
+        if (!$this->canRenderSvgGradients()) {
             $svg = $this->flattenSvgGradients($svg);
         }
 
+        // Craft's image classes load from files, so the SVG and the PNG drawn from it go in uniquely named temp
+        // files, deleted at the end
         $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false));
         FileHelper::writeToFile("$path.svg", $svg);
 
@@ -601,16 +605,14 @@ abstract class ApiService extends Component
             // Rendered at the provider's size limit if the SVG is larger, otherwise at 1000px, as Craft's transforms do
             $size = max($transformParams['width'] ?? 0, $transformParams['height'] ?? 0) ?: 1000;
 
-            if ($images->getIsImagick()) {
-                // Craft reads SVGs onto white, which hides white artwork, so it's read onto transparent here instead
-                $imagick = new Imagick();
-                $imagick->setBackgroundColor(new ImagickPixel('transparent'));
-                $imagick->readImageBlob($images->loadImage("$path.svg")->scaleToFit($size, $size)->getSvgString());
-                $imagick->writeImage("png32:$path.png");
-                $image = $images->loadImage("$path.png");
-            } else {
-                $image = $images->loadImage("$path.svg", true, $size);
-            }
+            // Craft's Svg sets the SVG's width and height to $size, still as SVG code, then Imagick draws it with the
+            // server's SVG renderer. It's drawn onto transparent, as Craft's own drawing uses white, which hides white
+            // artwork, and saved as png32, a PNG that keeps the transparency for flattenTransparency() to fill.
+            $imagick = new Imagick();
+            $imagick->setBackgroundColor(new ImagickPixel('transparent'));
+            $imagick->readImageBlob($images->loadImage("$path.svg")->scaleToFit($size, $size)->getSvgString());
+            $imagick->writeImage("png32:$path.png");
+            $image = $images->loadImage("$path.png");
 
             $this->flattenTransparency($image);
             $image->saveAs("$path.png");
@@ -661,38 +663,50 @@ abstract class ApiService extends Component
      * built-in SVG renderer, which draws gradients as solid black, shows about the right colour. The SVG is returned
      * unchanged if it can't be parsed.
      *
+     * For example, `fill="url(#a)"`, where gradient `a` runs from `#ffeb3b` to `#ff9800`, becomes `fill="#ffc21e"`. The
+     * gradient elements themselves are left in place, unused.
+     *
      * @param string $svg The SVG markup
      * @return string The SVG markup with solid colours in place of gradients
      */
     protected function flattenSvgGradients(string $svg): string
     {
         $doc = new DOMDocument();
+        // LIBXML_NONET stops the parser fetching anything from the network, such as an external DTD
         if (!@$doc->loadXML($svg, LIBXML_NONET)) {
             return $svg;
         }
 
+        // XPath queries find elements anywhere in the SVG, however deeply nested
         $xpath = new DOMXPath($doc);
 
+        // local-name() matches the gradients whether or not the SVG declares a namespace prefix
         $gradients = [];
         foreach ($xpath->query('//*[local-name()="linearGradient" or local-name()="radialGradient"]') as $gradient) {
             $gradients[$gradient->getAttribute('id')] = $gradient;
         }
 
+        // Nothing to flatten, so the SVG is returned exactly as it was, rather than re-serialised
         if (empty($gradients)) {
             return $svg;
         }
 
+        // Each gradient's average colour, by id, or null when it has no colour Imagick can read
         $colours = [];
         foreach (array_keys($gradients) as $id) {
             $colours[$id] = $this->averageGradientColour($gradients, (string)$id);
         }
 
+        // A function, used by both loops below. Swaps each url(#id) that points at a gradient for its average colour.
+        // Anything else, such as a pattern or a gradient without a readable colour, is left as it is. The pattern
+        // matches url(#a), url('#a') and url("#a"), with or without spaces inside the brackets, and captures the id
         $replace = fn(string $value): string => preg_replace_callback(
             '/url\(\s*[\'"]?#([^\'")\s]+)[\'"]?\s*\)/',
             fn(array $match) => $colours[$match[1]] ?? $match[0],
             $value
         );
 
+        // Fills and strokes can be set as attributes, or in a style attribute
         foreach ($xpath->query('//*[@fill or @stroke or @style]') as $element) {
             foreach (['fill', 'stroke', 'style'] as $attribute) {
                 if ($element->hasAttribute($attribute)) {
@@ -706,6 +720,7 @@ abstract class ApiService extends Component
             $style->textContent = $replace($style->textContent);
         }
 
+        // Back to SVG markup, with the gradients swapped for solid colours
         return $doc->saveXML();
     }
 
@@ -720,35 +735,49 @@ abstract class ApiService extends Component
      */
     private function averageGradientColour(array $gradients, string $id, int $depth = 0): ?string
     {
+        // An id that isn't a gradient in this SVG, or a chain of href links that loops, has no colour
         $gradient = $gradients[$id] ?? null;
         if ($gradient === null || $depth > 10) {
             return null;
         }
 
+        // Each <stop> sets one of the gradient's colours, as RGB channels from 0 to 255
         $colours = [];
         foreach ($gradient->childNodes as $stop) {
+            // Skips whitespace, comments and anything else that isn't a <stop>
             if (!$stop instanceof DOMElement || $stop->localName !== 'stop') {
                 continue;
             }
 
+            // A stop's colour can be in its style attribute, e.g. style="stop-color:#ff9800", which wins over a
+            // stop-color attribute: the pattern pulls the value out of the style, and if there isn't one, the
+            // stop-color attribute is read instead
             $colour = preg_match('/stop-color\s*:\s*([^;]+)/', $stop->getAttribute('style'), $match)
                 ? trim($match[1])
                 : $stop->getAttribute('stop-color');
 
             try {
-                // An unset stop-color is black
+                // ImagickPixel reads any CSS colour, e.g. #ff9800, #f90, rgb(255, 152, 0) or orange, and getColor()
+                // returns its channels, e.g. ['r' => 255, 'g' => 152, 'b' => 0, 'a' => 1]. An unset stop-color is black
                 $colours[] = (new ImagickPixel($colour ?: 'black'))->getColor();
             } catch (ImagickPixelException) {
                 // A colour Imagick can't read, e.g. currentColor
             }
         }
 
+        // No stops of its own, so it borrows them from the gradient it links to, e.g. href="#b". SVG 2 uses href,
+        // older SVGs xlink:href
         if (empty($colours)) {
             $href = $gradient->getAttribute('href') ?: $gradient->getAttributeNS('http://www.w3.org/1999/xlink', 'href');
 
+            // This method calls itself for the linked gradient, with $depth one higher, so a chain of links is
+            // followed until a gradient has stops. A link to another file, rather than to #id, gives no colour
             return str_starts_with($href, '#') ? $this->averageGradientColour($gradients, substr($href, 1), $depth + 1) : null;
         }
 
+        // The mean of each channel across the stops, as a hex colour, e.g. #ffeb3b and #ff9800 give #ffc21e. For each
+        // of r, g and b, array_column() takes that channel from every stop, which is averaged and rounded, and the
+        // three results are passed to sprintf() (the ... spreads the array into separate arguments) as 2-digit hex
         return sprintf('#%02x%02x%02x', ...array_map(
             fn(string $channel) => (int)round(array_sum(array_column($colours, $channel)) / count($colours)),
             ['r', 'g', 'b']

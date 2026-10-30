@@ -118,7 +118,7 @@ class GenerateController extends Controller
             $service = AiAltText::getInstance()->aiAltTextService;
 
             if (!$service->createJob($asset, true, $targetSiteId)) {
-                $this->failure("Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off or Craft isn't using Imagick");
+                $this->failure("Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off or Craft's image driver can't read SVGs");
                 return ExitCode::DATAERR;
             }
 

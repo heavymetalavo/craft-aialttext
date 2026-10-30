@@ -73,7 +73,7 @@ class AiAltTextService extends Component
 
         // Skip SVG assets if SVG processing is off, or Craft's image driver can't read them
         if ($this->isSvg($asset) && !$this->canProcessSvgs()) {
-            Craft::debug("Skipping alt text generation for SVG asset {$asset->id} because SVG processing is off or Craft isn't using Imagick.", __METHOD__);
+            Craft::debug("Skipping alt text generation for SVG asset {$asset->id} because SVG processing is off or Craft's image driver can't read SVGs.", __METHOD__);
             return false;
         }
 

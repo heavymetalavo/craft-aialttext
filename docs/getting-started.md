@@ -12,7 +12,7 @@ This plugin requires:
 - An Anthropic, OpenAI, Langdock or OpenRouter API key, see [AI providers](providers.md)
 
 Recommended:
-- For SVGs, Craft's Imagick image driver, and for accurate alt text, an SVG renderer for ImageMagick: librsvg (`imagemagick-svg` on Alpine), or Inkscape (`apt install inkscape` on Debian or Ubuntu) with ImageMagick 6 or 7.1.2-34 and later. See [Images](images.md#oddities-logic--limitations)
+- ImageMagick with an SVG renderer, so SVGs are described accurately; without one, gradients lose their shading. GD can't read SVGs, so they're skipped. See [Images](images.md#svg-renderers) for what each server may need.
 
 ## 📥 Installation
 

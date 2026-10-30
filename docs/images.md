@@ -11,7 +11,7 @@ How the plugin prepares images for each AI provider, and the limits to know abou
 AI providers accept PNG, JPEG, WebP and GIF images, but not animated GIFs ([OpenAI](https://developers.openai.com/api/docs/guides/images-vision#image-input-requirements), [Anthropic](https://platform.claude.com/docs/en/build-with-claude/vision#supported-formats), [OpenRouter](https://openrouter.ai/docs/guides/overview/multimodal/image-understanding)). None of them accepts SVG, AVIF, HEIC or HEIF, or says how it handles transparency, so the plugin prepares images first:
 
 - **Automatic Scaling**: The plugin automatically detects when an image exceeds provider limits and applies transforms (resizing or quality reduction) before sending the payload.
-- **SVG Support**: When the **Process SVGs** setting is on, SVGs are rendered to PNG by the plugin and sent as base64, whatever Craft's `transformSvgs` setting is. They need Craft's Imagick image driver, as GD can't read SVGs. ⚠️ For accurate colours the server needs an SVG renderer, see [SVG rendering](#oddities-logic--limitations) below.
+- **SVG Support**: When the **Process SVGs** setting is on, SVGs are rendered to PNG by the plugin and sent as base64, whatever Craft's `transformSvgs` setting is. They need Craft's Imagick image driver, as GD can't read SVGs. ⚠️ For accurate colours the server needs an SVG renderer, see [SVG renderers](#svg-renderers) below.
 - **Transparency**: In our tests, no model reliably saw transparency. Given a black line on a transparent background, GPT and Gemini models described "a solid black square": every transparent pixel still stores a colour, hidden by its transparency, and here it was black. Claude models saw white. So the plugin fills transparent areas with white, or grey for light artwork, and tells the model the background is transparent.
 - **AVIF, HEIC & HEIF Support**: These image types are converted to PNG before being sent to an AI provider. This requires an image driver (ImageMagick built with AVIF/HEIF/HEIC support) that can decode them on environments without that support these assets are skipped.
 - **Animated GIFs**: Only the first frame is processed.
@@ -19,9 +19,23 @@ AI providers accept PNG, JPEG, WebP and GIF images, but not animated GIFs ([Open
 - **Servd/Cloud**: Support for specialized asset bundles (like Servd) depends on the environment's ability to handle raster transforms.
 - **Consider AI Provider level boundaries**: e.g. OpenAI: "No watermarks or logos - No NSFW content - Clear enough for a human to understand"
 
+## SVG renderers
+
+How accurately an SVG is described depends on the server's SVG renderer. Without one, ImageMagick uses its own basic renderer, which draws gradients as solid black, and from ImageMagick 7.1.1-28 also skips most strokes, so the plugin replaces each gradient with the average of its colours first: the colours come out about right, but the shading is lost. For accurate rendering, use ImageMagick built with librsvg (`--with-rsvg` when building it yourself), or install Inkscape (`apt install inkscape` on Debian or Ubuntu), which works with ImageMagick 6 and 7.1.2-34 or later, but not earlier ImageMagick 7 releases.
+
+Checked in October 2026 by installing each distribution's ImageMagick package. Packages change between releases, so check your server: `magick -list format | grep RSVG` (`convert -list format | grep RSVG` on ImageMagick 6) prints a line if librsvg is built in.
+
+| Server | ImageMagick package | librsvg built in? | For accurate SVGs |
+|---|---|---|---|
+| Rocky Linux 9 with EPEL (RHEL family) | 6.9.13 | Yes | Nothing extra |
+| Alpine | 7.1.2-34 | Only with `imagemagick-svg`, which is needed to read SVGs at all | `apk add imagemagick-svg` |
+| Ubuntu 22.04 and 24.04 | 6.9.11 and 6.9.12 | No | `apt install inkscape` |
+| Debian 12 | 6.9.11 | No | `apt install inkscape` |
+| Debian 13 (used by DDEV) | 7.1.1 | No | Too old for Inkscape, so build ImageMagick with `--with-rsvg` |
+| ImageMagick built from source | Any | If built with `--with-rsvg` | Install librsvg's development files (e.g. `librsvg2-dev`), build with `--with-rsvg`, then rebuild PHP's Imagick extension against it |
+
 ## Oddities, Logic & Limitations
 
-- **SVG rendering**: How accurately an SVG is described depends on the server's SVG renderer. Without one, ImageMagick uses its own basic renderer, which draws gradients as solid black, and from ImageMagick 7.1.1-28 also skips most strokes, so the plugin replaces each gradient with the average of its colours first: the colours come out about right, but the shading is lost. For accurate rendering, use ImageMagick built with librsvg, such as `imagemagick-svg` on Alpine, or install Inkscape (`apt install inkscape` on Debian or Ubuntu), which works with ImageMagick 6 and 7.1.2-34 or later. Earlier ImageMagick 7 releases, e.g. ImageMagick 7.1.1 on Debian 13 (used by DDEV), can't pass Inkscape the SVGs Craft loads, and Debian's ImageMagick 7 isn't built with librsvg.
 - **Transparency**: PNG, WebP, GIF, AVIF, HEIC and HEIF images, and SVGs, are filled with white, or with mid grey when what's drawn is mostly light, such as a white logo. They're sent as base64 JPGs (PNGs for SVGs) rather than as URLs, and the request names the fill colour, so the Prompt's guidance on transparency still applies.
 - The OpenAI API has [image input requirements](https://platform.openai.com/docs/guides/images-vision?api-mode=responses#image-input-requirements) which over the lifespan of this plugin have changed without notice, the requirements are not always enforced, e.g. base64 encoded images above the required image dimensions have been accepted by the API.
 - Craft CMS uses the [Imagine library](https://github.com/php-imagine/Imagine) for image processing, which can only transform [select image formats](https://github.com/php-imagine/Imagine/blob/develop/src/Image/Format.php#L14-L32). Support for these formats may vary depending on what ImageMagick drivers are available in your environment. If a source image is in a supported format, the plugin will generate a transform in one of the supported file types to send to the OpenAI API.
