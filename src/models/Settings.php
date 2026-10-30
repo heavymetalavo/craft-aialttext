@@ -2,8 +2,11 @@
 
 namespace heavymetalavo\craftaialttext\models;
 
+use Craft;
 use craft\base\Model;
+use craft\elements\Asset;
 use craft\helpers\App;
+use craft\models\Site;
 
 /**
  * Plugin Settings Model
@@ -210,6 +213,7 @@ class Settings extends Model
             ],
 
             ['prompt', 'string'],
+            ['prompt', 'validatePromptVariables'],
             ['openAiImageInputDetailLevel', 'string'],
             [
                 ['openAiImageInputDetailLevel'],
@@ -245,6 +249,81 @@ class Settings extends Model
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
         ];
+    }
+
+    /**
+     * Inline validator: the prompt's `{asset.…}` and `{site.…}` variables must name something an asset or a site has,
+     * so a typo like `{asset.filenmae}` is caught when the setting is saved rather than when alt text is generated.
+     *
+     * Only names that can be ruled out are rejected, as a false positive would block a prompt that works. An asset
+     * variable passes if an asset has the property (including custom fields' and other plugins' behaviours), if it's a
+     * field or generated field handle in any volume's field layout, `field:` and such a handle, an image transform's
+     * handle, or `transform:` and anything. Whether the value can be used as text isn't checked: `{asset.volume}` passes,
+     * and ApiService::resolvePrompt() still fails on it at generation time. An environment variable prompt isn't checked,
+     * nor is a prompt applied from project config, so that runtime error stays as the safety net.
+     */
+    public function validatePromptVariables(string $attribute): void
+    {
+        if (App::parseEnv($this->$attribute) !== $this->$attribute) {
+            return;
+        }
+
+        preg_match_all('/{(asset|site)\.(.*?)}/', $this->$attribute, $matches, PREG_SET_ORDER);
+        if (empty($matches)) {
+            return;
+        }
+
+        $asset = new Asset();
+        $site = new Site();
+        $layoutHandles = null;
+
+        foreach ($matches as [$variable, $model, $name]) {
+            if ($model === 'site') {
+                $valid = $name === 'languageName' || $site->canGetProperty($name);
+            } else {
+                $layoutHandles ??= $this->volumeFieldHandles();
+                $valid = $asset->canGetProperty($name)
+                    || in_array($name, $layoutHandles, true)
+                    || (str_starts_with($name, 'field:') && in_array(substr($name, 6), $layoutHandles, true))
+                    || str_starts_with($name, 'transform:')
+                    || Craft::$app->getImageTransforms()->getTransformByHandle($name) !== null;
+            }
+
+            if (!$valid) {
+                $this->addError($attribute, Craft::t('ai-alt-text', "Prompt variable \"{variable}\" isn't a property of {model}. Check its spelling.", [
+                    'variable' => $variable,
+                    'model' => $model === 'site'
+                        ? Craft::t('ai-alt-text', 'a site')
+                        : Craft::t('ai-alt-text', "an asset, or a field in a volume's field layout"),
+                ]));
+            }
+        }
+    }
+
+    /**
+     * The handles of the custom fields, and generated fields (Craft 5.8 and later), in every volume's field layout.
+     *
+     * @return string[]
+     */
+    private function volumeFieldHandles(): array
+    {
+        $handles = [];
+
+        foreach (Craft::$app->getVolumes()->getAllVolumes() as $volume) {
+            $layout = $volume->getFieldLayout();
+
+            foreach ($layout->getCustomFields() as $field) {
+                $handles[] = $field->handle;
+            }
+
+            if (method_exists($layout, 'getGeneratedFields')) {
+                foreach ($layout->getGeneratedFields() as $field) {
+                    $handles[] = $field['handle'] ?? '';
+                }
+            }
+        }
+
+        return $handles;
     }
 
     /**
