@@ -9,8 +9,7 @@ use CraftCms\Cms\Plugin\Plugin;
 use CraftCms\Cms\ProjectConfig\ProjectConfig;
 use CraftCms\Cms\Support\Facades\{Images, Plugins};
 use heavymetalavo\craftaialttext\Commands\{GenerateAll, GenerateMissing, GenerateSingle, GenerateStats};
-use CraftCms\Cms\View\Events\CpTemplateRootsResolving;
-use heavymetalavo\craftaialttext\listeners\{AddAssetActionMenuItem, AddConfigurationAlert, QueueAltTextForNewAsset, RegenerateAltTextOnReplace, RegisterAssetElementActions, RegisterCpTemplateRoot, RestoreFailedJobDescription};
+use heavymetalavo\craftaialttext\listeners\{AddAssetActionMenuItem, AddConfigurationAlert, QueueAltTextForNewAsset, RegenerateAltTextOnReplace, RegisterAssetElementActions, RestoreFailedJobDescription};
 use heavymetalavo\craftaialttext\models\Settings;
 use heavymetalavo\craftaialttext\utilities\AiAltTextUtility;
 use Illuminate\Queue\Events\JobFailed;
@@ -61,7 +60,6 @@ class AiAltText extends Plugin
         JobFailed::class => RestoreFailedJobDescription::class,
         ElementLifecycleSaved::class => QueueAltTextForNewAsset::class,
         AssetReplaced::class => RegenerateAltTextOnReplace::class,
-        CpTemplateRootsResolving::class => RegisterCpTemplateRoot::class,
         CpAlertsResolving::class => AddConfigurationAlert::class,
     ];
 

@@ -3,10 +3,9 @@
 namespace heavymetalavo\craftaialttext;
 
 use CraftCms\Cms\Route\Routes;
-use CraftCms\Cms\View\Events\CpTemplateRootsResolving;
+use CraftCms\Cms\View\TemplateMode;
+use CraftCms\Cms\View\TemplateRoots;
 use heavymetalavo\craftaialttext\Commands\{GenerateAll, GenerateMissing, GenerateSingle, GenerateStats};
-use heavymetalavo\craftaialttext\listeners\RegisterCpTemplateRoot;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -18,8 +17,8 @@ use Illuminate\Support\ServiceProvider;
  * database isn't reachable yet. It also returns without marking plugins as loaded, so they get
  * loaded lazily later instead. By then two things have already happened:
  *
- *  - ViewServiceProvider has memoised the CP template roots on `app->booted`, with once(), so a
- *    root registered afterwards is never picked up and plugin templates can't resolve.
+ *  - ViewServiceProvider has passed the CP template roots to Laravel's view factory, which it
+ *    does once, straight after the service providers boot.
  *  - The Artisan application has been created, so the `Artisan::starting` callback that plugin
  *    console commands rely on never fires.
  *
@@ -29,13 +28,12 @@ use Illuminate\Support\ServiceProvider;
  */
 class AiAltTextBootstrapProvider extends ServiceProvider
 {
-    public function register(): void
-    {
-        Event::listen(CpTemplateRootsResolving::class, RegisterCpTemplateRoot::class);
-    }
+    private const HANDLE = 'ai-alt-text';
 
-    public function boot(): void
+    public function boot(TemplateRoots $templateRoots): void
     {
+        $this->registerCpTemplateRoot($templateRoots);
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 GenerateSingle::class,
@@ -49,6 +47,19 @@ class AiAltTextBootstrapProvider extends ServiceProvider
     }
 
     /**
+     * Registers `src/templates` as the control panel template root, so `ai-alt-text/_settings`
+     * and `ai-alt-text/_utility` resolve.
+     *
+     * Craft's HasViews concern registers the same directory when the plugin boots. Doing it here
+     * as well means the root is in place whether or not the plugin has loaded yet, and TemplateRoots
+     * keys roots by path, so the two registrations don't produce a duplicate.
+     */
+    private function registerCpTemplateRoot(TemplateRoots $templateRoots): void
+    {
+        $templateRoots->register(TemplateMode::Cp, self::HANDLE, __DIR__ . '/templates');
+    }
+
+    /**
      * Registers routes/actions.php under Craft's action-trigger prefixes.
      *
      * Mirrors what Craft's HasRoutes concern does, for the same reason the template root is
@@ -56,7 +67,7 @@ class AiAltTextBootstrapProvider extends ServiceProvider
      * and both the bulk actions and the single-asset action return 405.
      *
      * The `web` middleware is included so the session is started, and with it the authenticated
-     * user — HasRoutes applies only ['craft', 'craft.cp'] to the CP variant.
+     * user. Both prefixes get the CP middleware, because the actions are only called from the CP.
      */
     private function registerActionRoutes(): void
     {
@@ -71,11 +82,10 @@ class AiAltTextBootstrapProvider extends ServiceProvider
         }
 
         $routes = $this->app->get(Routes::class);
-        $handle = 'ai-alt-text';
 
         $prefixes = array_unique([
-            $routes->joinRoutePrefix([$routes->cpActionTriggerRoutePrefix(), $handle]),
-            $routes->joinRoutePrefix([$routes->actionTriggerRoutePrefix(), $handle]),
+            $routes->joinRoutePrefix([$routes->cpActionTriggerRoutePrefix(), self::HANDLE]),
+            $routes->joinRoutePrefix([$routes->actionTriggerRoutePrefix(), self::HANDLE]),
         ]);
 
         foreach ($prefixes as $prefix) {
