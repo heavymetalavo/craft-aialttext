@@ -1,5 +1,9 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+- Changed SVG, AVIF, HEIC and HEIF images to be converted to WebP rather than PNG before they're sent, where Craft's image driver can write WebP, so requests are much smaller: in testing, a HEIC photo went from 1.4MB to 86KB. PNG is still used where WebP isn't supported.
+
 ## 5.4.0 - 2026-10-30
 
 > {tip} The **Propagate** setting has been removed. When on, before Craft 5.11, it saved the same alt text to every site. When off, the plugin worked around Craft copying an asset's first alt text to every site regardless of the volume's **Alternative Text Translation Method**, which Craft 5.11 fixed ([craftcms/cms#19067](https://github.com/craftcms/cms/pull/19067)). Generated alt text now follows that translation method instead.
