@@ -1,5 +1,9 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+- Added a check of the **Prompt** setting's `{asset.…}` and `{site.…}` variables when the settings are saved, so a misspelt one, such as `{asset.filenmae}`, is reported on the settings page rather than failing every generation. A prompt set by an environment variable, or applied by a project config change, is still only checked when alt text is generated.
+
 ## 5.4.0 - 2026-10-30
 
 > {tip} The **Propagate** setting has been removed. When on, before Craft 5.11, it saved the same alt text to every site. When off, the plugin worked around Craft copying an asset's first alt text to every site regardless of the volume's **Alternative Text Translation Method**, which Craft 5.11 fixed ([craftcms/cms#19067](https://github.com/craftcms/cms/pull/19067)). Generated alt text now follows that translation method instead.
