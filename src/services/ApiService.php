@@ -706,7 +706,9 @@ abstract class ApiService extends Component
             $value
         );
 
-        // Fills and strokes can be set as attributes, or in a style attribute
+        // Fills and strokes can be set as attributes, e.g. fill="url(#a)", or in a style attribute, e.g.
+        // style="fill:url(#a)". Each one is read, has its gradient references swapped for colours by $replace, and is
+        // written back, so fill="url(#a)" becomes fill="#ffc21e". Values without a gradient come back unchanged
         foreach ($xpath->query('//*[@fill or @stroke or @style]') as $element) {
             foreach (['fill', 'stroke', 'style'] as $attribute) {
                 if ($element->hasAttribute($attribute)) {
@@ -765,8 +767,10 @@ abstract class ApiService extends Component
             }
         }
 
-        // No stops of its own, so it borrows them from the gradient it links to, e.g. href="#b". SVG 2 uses href,
-        // older SVGs xlink:href
+        // No stops of its own, so it borrows them from the gradient it links to, e.g. href="#b". Inkscape and
+        // Illustrator exports often give each shape its own gradient for its position and angle, linking to one
+        // shared gradient that holds the colours, so without following the link these shapes would get no colour and
+        // stay black. SVG 2 uses href, older SVGs xlink:href
         if (empty($colours)) {
             $href = $gradient->getAttribute('href') ?: $gradient->getAttributeNS('http://www.w3.org/1999/xlink', 'href');
 

@@ -21,14 +21,22 @@ AI providers accept PNG, JPEG, WebP and GIF images, but not animated GIFs ([Open
 
 ## SVG renderers
 
-How accurately an SVG is described depends on the server's SVG renderer. Without one, ImageMagick uses its own basic renderer, which draws gradients as solid black, and from ImageMagick 7.1.1-28 also skips most strokes, so the plugin replaces each gradient with the average of its colours first: the colours come out about right, but the shading is lost. For accurate rendering, use ImageMagick built with librsvg (`--with-rsvg` when building it yourself), or install Inkscape (`apt install inkscape` on Debian or Ubuntu), which works with ImageMagick 6 and 7.1.2-34 or later, but not earlier ImageMagick 7 releases.
+How accurately an SVG is described depends on the server's SVG renderer: ImageMagick built with librsvg (`--with-rsvg` when building it yourself), or Inkscape (`apt install inkscape` on Debian or Ubuntu). Without one, ImageMagick uses its own basic renderer, which draws gradients as solid black, so the plugin replaces each gradient with the average of its colours first: the colours come out about right, but the shading is lost.
+
+| ImageMagick | Its own basic renderer | librsvg built in | Inkscape |
+|---|---|---|---|
+| 6 | Gradients black | Works | Works |
+| 7.0 to 7.1.1-27 | Gradients black | Works | Doesn't work |
+| 7.1.1-28 to 7.1.2-33 | Gradients black, most strokes skipped | Works | Doesn't work |
+| 7.1.2-34 and later | Gradients black, most strokes skipped | Works | Works |
 
 Checked in October 2026 by installing each distribution's ImageMagick package. Packages change between releases, so check your server: `magick -list format | grep RSVG` (`convert -list format | grep RSVG` on ImageMagick 6) prints a line if librsvg is built in.
 
 | Server | ImageMagick package | librsvg built in? | For accurate SVGs |
 |---|---|---|---|
 | Rocky Linux 9 with EPEL (RHEL family) | 6.9.13 | Yes | Nothing extra |
-| Alpine | 7.1.2-34 | Only with `imagemagick-svg`, which is needed to read SVGs at all | `apk add imagemagick-svg` |
+| Alpine 3.19 and later | 7.1.1-32 to 7.1.2-34 | Only with `imagemagick-svg`, which is needed to read SVGs at all | `apk add imagemagick-svg` |
+| Alpine 3.18 and earlier | 7.0 to 7.1.1-13 | Yes, in the `imagemagick` package | Nothing extra |
 | Ubuntu 22.04 and 24.04 | 6.9.11 and 6.9.12 | No | `apt install inkscape` |
 | Debian 12 | 6.9.11 | No | `apt install inkscape` |
 | Debian 13 (used by DDEV) | 7.1.1 | No | Too old for Inkscape, so build ImageMagick with `--with-rsvg` |
