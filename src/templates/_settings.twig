@@ -2,6 +2,12 @@
 {# @var settings \heavymetalavo\craftaialttext\models\Settings #}
 {% import '_includes/forms.twig' as forms %}
 
+{# Marks a field whose setting config/ai-alt-text.php sets, as the file's value wins over the one saved here #}
+{% macro configWarning(setting) -%}
+    {{ 'This is being overridden by the `{setting}` setting in `config/ai-alt-text.php`.'|t('ai-alt-text', { setting: setting })|markdown(inlineOnly=true) }}
+{%- endmacro %}
+{% from _self import configWarning %}
+
 <h2>Instructions</h2>
 
 <p>Lots of info in <a target="_blank" href="https://github.com/heavymetalavo/craft-aialttext">the plugin docs</a>, but a short summary;</p>
@@ -50,6 +56,7 @@
     instructions: "Choose which AI service to use for generating alt text. Only the chosen provider's settings are shown below. If you choose an environment variable, save and reload to show its provider's settings."|t("ai-alt-text"),
     id: "aiProvider",
     name: "aiProvider",
+    warning: config.aiProvider is defined ? configWarning('aiProvider'),
     options: providerOptions,
     includeEnvVars: true,
     allowedEnvValues: null,
@@ -70,6 +77,7 @@
         instructions: "The API key from your [Anthropic Console account](https://console.anthropic.com/)"|t("ai-alt-text"),
         id: "anthropicApiKey",
         name: "anthropicApiKey",
+        warning: config.anthropicApiKey is defined ? configWarning('anthropicApiKey'),
         placeholder: '$ANTHROPIC_API_KEY',
         suggestEnvVars: true,
         value: settings.anthropicApiKey,
@@ -80,6 +88,7 @@
         label: 'Anthropic Model'|t('ai-alt-text'),
         id: 'anthropicModel',
         name: 'anthropicModel',
+        warning: config.anthropicModel is defined ? configWarning('anthropicModel'),
         instructions: "The Anthropic model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-haiku-5-5`."|t("ai-alt-text"),
         value: settings.anthropicModel,
         placeholder: 'claude-haiku-5-5',
@@ -91,6 +100,7 @@
         label: 'Anthropic Image Detail Level'|t('ai-alt-text'),
         id: 'anthropicImageDetailLevel',
         name: 'anthropicImageDetailLevel',
+        warning: config.anthropicImageDetailLevel is defined ? configWarning('anthropicImageDetailLevel'),
         instructions: "Pre-scale the image to reduce [token cost and latency](https://platform.claude.com/docs/en/build-with-claude/vision#evaluate-image-size)."|t("ai-alt-text"),
         options: [
             { label: 'Low (500px x 500px)', value: 'low' },
@@ -115,6 +125,7 @@
         instructions: "The API key from your Open AI account"|t("ai-alt-text"),
         id: "openAiApiKey",
         name: "openAiApiKey",
+        warning: config.openAiApiKey is defined ? configWarning('openAiApiKey'),
         placeholder: '$OPENAI_API_KEY',
         suggestEnvVars: true,
         value: settings.openAiApiKey,
@@ -125,6 +136,7 @@
         label: 'OpenAI Model'|t('ai-alt-text'),
         id: 'openAiModel',
         name: 'openAiModel',
+        warning: config.openAiModel is defined ? configWarning('openAiModel'),
         instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models) E.g., `gpt-6-luna`."|t("ai-alt-text"),
         value: settings.openAiModel,
         placeholder: 'gpt-6-luna',
@@ -136,6 +148,7 @@
         label: 'OpenAI Image Detail Level'|t('ai-alt-text'),
         id: 'openAiImageInputDetailLevel',
         name: 'openAiImageInputDetailLevel',
+        warning: config.openAiImageInputDetailLevel is defined ? configWarning('openAiImageInputDetailLevel'),
         instructions: "Controls the [detail level](https://developers.openai.com/api/docs/guides/images-vision#choose-an-image-detail-level) OpenAI uses to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest."|t("ai-alt-text"),
         options: [
             { label: 'Low - Fast, low-cost (512px x 512px)', value: 'low' },
@@ -153,6 +166,7 @@
         label: 'OpenAI Reasoning Effort'|t('ai-alt-text'),
         id: 'openAiReasoningEffort',
         name: 'openAiReasoningEffort',
+        warning: config.openAiReasoningEffort is defined ? configWarning('openAiReasoningEffort'),
         instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values work depends on the model: `gpt-5` models (like `gpt-5-nano` and `gpt-5-mini`) accept `minimal` but not `none` or `xhigh`, while newer models (like `gpt-6-luna`) accept `none` and `xhigh` but not `minimal`. `low` works on both."|t("ai-alt-text"),
         options: [
             { label: 'None', value: 'none' },
@@ -180,6 +194,7 @@
         instructions: "An API key from your [Langdock workspace](https://docs.langdock.com/en/developer/overview/api-introduction). One key works for both model authors."|t("ai-alt-text"),
         id: "langdockApiKey",
         name: "langdockApiKey",
+        warning: config.langdockApiKey is defined ? configWarning('langdockApiKey'),
         placeholder: '$LANGDOCK_API_KEY',
         suggestEnvVars: true,
         value: settings.langdockApiKey,
@@ -190,6 +205,7 @@
         label: 'Langdock Model Author'|t('ai-alt-text'),
         id: 'langdockModelAuthor',
         name: 'langdockModelAuthor',
+        warning: config.langdockModelAuthor is defined ? configWarning('langdockModelAuthor'),
         instructions: "The author of the model below, so requests go to the matching Langdock API: `Anthropic` for models such as Claude, or `OpenAI` for models such as GPT. Only these two model authors are supported. If you choose an environment variable, it must resolve to `anthropic` or `openai`, then save and reload to show the matching settings."|t("ai-alt-text"),
         options: [
             { label: 'Anthropic (e.g. Claude)', value: 'anthropic' },
@@ -207,6 +223,7 @@
         label: 'Langdock Model'|t('ai-alt-text'),
         id: 'langdockModel',
         name: 'langdockModel',
+        warning: config.langdockModel is defined ? configWarning('langdockModel'),
         instructions: "The model to use, as named in Langdock. It must have vision capabilities and come from the model author above. See how to list the models in your workspace for the [Anthropic](https://docs.langdock.com/en/developer/completion-api/anthropic) or [OpenAI](https://docs.langdock.com/en/developer/completion-api/openai-responses) API."|t("ai-alt-text"),
         value: settings.langdockModel,
         errors: settings.getErrors('langdockModel'),
@@ -218,6 +235,7 @@
             label: 'Langdock Image Detail Level'|t('ai-alt-text'),
             id: 'langdockImageInputDetailLevel',
             name: 'langdockImageInputDetailLevel',
+            warning: config.langdockImageInputDetailLevel is defined ? configWarning('langdockImageInputDetailLevel'),
             instructions: "Controls the [detail level](https://developers.openai.com/api/docs/guides/images-vision#choose-an-image-detail-level) used to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest."|t("ai-alt-text"),
             options: [
                 { label: 'Low - Fast, low-cost (512px x 512px)', value: 'low' },
@@ -234,6 +252,7 @@
             label: 'Langdock Reasoning Effort'|t('ai-alt-text'),
             id: 'langdockReasoningEffort',
             name: 'langdockReasoningEffort',
+            warning: config.langdockReasoningEffort is defined ? configWarning('langdockReasoningEffort'),
             instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values work depends on the model: `gpt-5` models (like `gpt-5-nano` and `gpt-5-mini`) accept `minimal` but not `none` or `xhigh`, while newer models (like `gpt-6-luna`) accept `none` and `xhigh` but not `minimal`. `low` works on both."|t("ai-alt-text"),
             options: [
                 { label: 'None', value: 'none' },
@@ -262,6 +281,7 @@
         instructions: "An API key from your [OpenRouter account](https://openrouter.ai/keys). The account needs credit."|t("ai-alt-text"),
         id: "openRouterApiKey",
         name: "openRouterApiKey",
+        warning: config.openRouterApiKey is defined ? configWarning('openRouterApiKey'),
         placeholder: '$OPENROUTER_API_KEY',
         suggestEnvVars: true,
         value: settings.openRouterApiKey,
@@ -272,6 +292,7 @@
         label: 'OpenRouter Model'|t('ai-alt-text'),
         id: 'openRouterModel',
         name: 'openRouterModel',
+        warning: config.openRouterModel is defined ? configWarning('openRouterModel'),
         instructions: "The model's name on OpenRouter, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` (our top pick) or `google/gemini-3.5-flash-lite`. It must accept image input: [browse the vision models](https://openrouter.ai/models?input_modalities=image&output_modalities=text)."|t("ai-alt-text"),
         value: settings.openRouterModel,
         placeholder: 'anthropic/claude-haiku-5.5',
@@ -283,6 +304,7 @@
         label: 'OpenRouter Image Detail Level'|t('ai-alt-text'),
         id: 'openRouterImageInputDetailLevel',
         name: 'openRouterImageInputDetailLevel',
+        warning: config.openRouterImageInputDetailLevel is defined ? configWarning('openRouterImageInputDetailLevel'),
         instructions: "Controls the [detail level](https://openrouter.ai/docs/guides/overview/multimodal/image-understanding) used to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest. OpenAI and Gemini models use it, and in testing Qwen, GLM and Grok models ignored it. For Claude models it picks the size limit, as the Anthropic setting does."|t("ai-alt-text"),
         options: [
             { label: 'Low - Fast, low-cost (512px x 512px)', value: 'low' },
@@ -300,6 +322,7 @@
         label: 'OpenRouter Reasoning Effort'|t('ai-alt-text'),
         id: 'openRouterReasoningEffort',
         name: 'openRouterReasoningEffort',
+        warning: config.openRouterReasoningEffort is defined ? configWarning('openRouterReasoningEffort'),
         instructions: "Controls the [reasoning effort](https://openrouter.ai/docs/api_reference/responses/reasoning) value when using OpenAI models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values work depends on the model: `gpt-5` models (like `gpt-5-nano`) accept `minimal` but not `none`, while newer models (like `gpt-6-luna`) accept `none` but, directly with OpenAI, not `minimal` (OpenRouter accepted it). `low` works on both. Other models are sent no reasoning setting."|t("ai-alt-text"),
         options: [
             { label: 'None', value: 'none' },
@@ -324,6 +347,7 @@
     label: 'Prompt'|t('ai-alt-text'),
     id: 'prompt',
     name: 'prompt',
+    warning: config.prompt is defined ? configWarning('prompt'),
     rows: 8,
     instructions: "Sent to the AI provider as the system / instruction message. The field supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`. Consider `{site.languageName}` for the site's language display name (e.g. `English (United Kingdom)`) which can help with translations on non-english sites. Checkout [the docs](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/settings.md#-default-prompt) for the most up to date suggestion prompt template."|t("ai-alt-text"),
     value: settings.prompt,
@@ -335,6 +359,7 @@
     label: 'Generate for new image assets (on upload or file replacement)'|t('ai-alt-text'),
     id: 'generateForNewAssets',
     name: 'generateForNewAssets',
+    warning: config.generateForNewAssets is defined ? configWarning('generateForNewAssets'),
     instructions: "If enabled, the plugin will automatically generate alt text when an image asset is created (on upload) or its file is replaced. On replacement, the alt text for the site the replacement was made in, and the sites that share it, is overwritten, since it describes the old image; other sites keep their existing alt text unless Save translated results for each site is enabled."|t("ai-alt-text"),
     on: settings.generateForNewAssets,
     errors: settings.getErrors('generateForNewAssets'),
@@ -345,7 +370,10 @@
     id: 'processSvgs',
     name: 'processSvgs',
     instructions: "Attempt to generate alt text for SVG files when they are uploaded or batch processed."|t("ai-alt-text"),
-    warning: not craft.app.images.isImagick ? "Craft is using the GD image driver, which can't read SVGs, so SVGs are skipped. They need Craft's Imagick image driver."|t("ai-alt-text"),
+    warning: [
+        config.processSvgs is defined ? configWarning('processSvgs'),
+        not craft.app.images.isImagick ? "Craft is using the GD image driver, which can't read SVGs, so SVGs are skipped. They need Craft's Imagick image driver."|t("ai-alt-text"),
+    ]|filter|join(' '),
     on: settings.processSvgs,
     errors: settings.getErrors('processSvgs'),
 }) }}
@@ -354,6 +382,7 @@
     label: 'Save translated results for each site'|t('ai-alt-text'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',
+    warning: config.saveTranslatedResultsToEachSite is defined ? configWarning('saveTranslatedResultsToEachSite'),
     instructions: "Follows the asset volume's **Alternative Text Translation Method**: sites that share alt text (all sites on Not translatable, or sites in the same site group or language) get one result between them, from one request, in the language of the site it's generated for. When on, every site gets alt text. When off, only the current site and the sites that share its alt text do."|t("ai-alt-text"),
     on: settings.saveTranslatedResultsToEachSite,
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),

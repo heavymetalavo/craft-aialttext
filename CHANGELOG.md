@@ -1,5 +1,9 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+- Added a warning to each settings field whose setting `config/ai-alt-text.php` sets, as the file's value wins over the one saved on the settings page. The file, e.g. for a different provider or model per environment, is described in [Settings](docs/settings.md#-config-file).
+
 ## 5.4.0 - 2026-10-30
 
 > {tip} The **Propagate** setting has been removed. When on, before Craft 5.11, it saved the same alt text to every site. When off, the plugin worked around Craft copying an asset's first alt text to every site regardless of the volume's **Alternative Text Translation Method**, which Craft 5.11 fixed ([craftcms/cms#19067](https://github.com/craftcms/cms/pull/19067)). Generated alt text now follows that translation method instead.

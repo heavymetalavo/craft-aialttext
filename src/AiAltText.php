@@ -211,10 +211,19 @@ class AiAltText extends Plugin
      */
     protected function settingsHtml(): ?string
     {
+        // The settings config/ai-alt-text.php sets, which win over the ones saved here, so their fields can say so
+        $config = Craft::$app->getConfig()->getConfigFromFile($this->handle);
+
+        // The old name of the Langdock Model Author, still read, see Settings::setAttributes()
+        if (isset($config['langdockModelFamily'])) {
+            $config['langdockModelAuthor'] = $config['langdockModelFamily'];
+        }
+
         return Craft::$app->view->renderTemplate(
             'ai-alt-text/_settings',
             [
                 'settings' => $this->getSettings(),
+                'config' => $config,
             ]
         );
     }
