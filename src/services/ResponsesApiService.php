@@ -200,6 +200,43 @@ abstract class ResponsesApiService extends ApiService
     }
 
     /**
+     * @inheritdoc
+     */
+    protected function requestText(string $instructions, string $text, array $base64Jpgs): string
+    {
+        $request = new OpenAiRequest();
+        $request->model = $this->model;
+        $request->setInstructions($instructions)
+            ->setPrompt($text)
+            ->setImageUrls(array_map(fn(string $base64Jpg) => "data:image/jpeg;base64,$base64Jpg", $base64Jpgs))
+            ->setReasoningEffort($this->reasoningEffort());
+
+        // As in generateAltText(), the configured detail level is for images over 512px on either side
+        $size = $base64Jpgs ? getimagesizefromstring(base64_decode($base64Jpgs[0])) : false;
+        if ($size && ($size[0] > 512 || $size[1] > 512)) {
+            $request->setDetail($this->imageDetailLevel());
+        }
+
+        if (!$request->validate()) {
+            throw new Exception('Invalid request: ' . Json::encode($request->getErrors()));
+        }
+
+        $requestArray = $request->toArray();
+
+        if ($this->sendStoreFalse) {
+            $requestArray['store'] = false;
+        }
+
+        $response = $this->sendRequest($requestArray);
+
+        if ($response->hasError()) {
+            throw new Exception($response->getErrorMessage());
+        }
+
+        return $response->getText();
+    }
+
+    /**
      * Generates alt text for an asset using a vision model through the Responses API
      *
      * This method:
@@ -225,13 +262,18 @@ abstract class ResponsesApiService extends ApiService
             return '';
         }
 
-        // Set by flattenTransparency() if this image's transparent areas are filled
+        // Set by flattenTransparency() if this image's transparent areas are filled, and by getFilmStripBase64()
         $this->transparencyFill = null;
+        $this->filmStripFrames = 0;
 
         $transformParams = $this->visionTransformParams($asset);
 
         // Checked before setTransform(), after which the asset reports the transform's MIME type instead of GIF, WebP or SVG
         $isAnimated = $this->isAnimated($asset);
+
+        if ($isAnimated && $this->describesFramesSeparately()) {
+            return $this->describeFramesSeparately($asset, $siteId, $transformParams);
+        }
         $isSvg = AiAltText::getInstance()->aiAltTextService->isSvg($asset);
         // Transparent images are flattened here, as providers ignore the alpha channel, see getFlattenedBase64()
         $flattenedBase64 = $isAnimated || $isSvg ? null : $this->getFlattenedBase64($asset, $transformParams);
@@ -271,12 +313,12 @@ abstract class ResponsesApiService extends ApiService
             $imageUrl = $imageUrls[0];
         }
 
-        // Use the configured detail level for images over 512px on either side. Smaller images keep the request
-        // model's default, `low`.
+        // Use the configured detail level for images over 512px on either side, and for a film strip, which is larger
+        // than the frames it's made of. Smaller images keep the request model's default, `low`.
         $width = $asset->getWidth();
         $height = $asset->getHeight();
         $detail = null;
-        if ($width > 512 || $height > 512) {
+        if ($width > 512 || $height > 512 || $this->filmStripFrames > 1) {
             $detail = $this->imageDetailLevel();
         }
         

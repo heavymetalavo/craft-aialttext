@@ -19,7 +19,9 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use heavymetalavo\craftaialttext\AiAltText;
 use Imagine\Image\Box;
+use Imagine\Image\LayersInterface;
 use Imagine\Image\Point;
+use Imagine\Imagick\Image as ImagickImage;
 use Imagick;
 use ImagickPixel;
 use ImagickPixelException;
@@ -61,6 +63,24 @@ abstract class ApiService extends Component
     protected const FRAMES_NOTE = 'The %d images are frames of one animated image, in order from its first frame to its last, so write one alt text for the animation as a whole.';
 
     /**
+     * @var string Added to the trigger when the frames of an animated image are sent as one film strip, see
+     * getFilmStripBase64(). %d is how many frames.
+     */
+    protected const FILM_STRIP_NOTE = 'The image is a film strip of %d frames of one animated image, separated by dark lines and in order from left to right, then top to bottom, so write one alt text for the animation as a whole.';
+
+    /**
+     * @var string The trigger sent with each frame when the frames are described one request at a time, see
+     * describeFramesSeparately(). The first %d is the frame's number, the second how many there are.
+     */
+    protected const FRAME_TRIGGER = 'This image is frame %d of %d of one animated image. Generate the alt text for this frame now.';
+
+    /**
+     * @var string The trigger of the request that combines the frames' alt texts into one, see
+     * describeFramesSeparately(). %d is how many frames, %s their alt texts as a numbered list.
+     */
+    protected const COMBINE_FRAMES_TRIGGER = "These are the alt texts of %d frames of one animated image, in order from its first frame to its last. Following the same instructions, write one alt text for the animation as a whole.\n\n%s";
+
+    /**
      * @var int Default request timeout in seconds, used unless the project sets its own `timeout`
      * in config/guzzle.php.
      */
@@ -86,6 +106,12 @@ abstract class ApiService extends Component
      * Each provider resets it before preparing an image.
      */
     protected ?string $transparencyFill = null;
+
+    /**
+     * @var int How many frames getFilmStripBase64() put in the film strip it rendered, or 0 if it didn't render one.
+     * Each provider resets it before preparing an image.
+     */
+    protected int $filmStripFrames = 0;
 
     public function __construct($config = [])
     {
@@ -184,6 +210,7 @@ abstract class ApiService extends Component
     {
         return self::GENERATE_TRIGGER
             . ($frames > 1 ? ' ' . sprintf(self::FRAMES_NOTE, $frames) : '')
+            . ($this->filmStripFrames > 1 ? ' ' . sprintf(self::FILM_STRIP_NOTE, $this->filmStripFrames) : '')
             . ($this->transparencyFill !== null ? ' ' . sprintf(self::TRANSPARENCY_NOTE, $this->transparencyFill) : '');
     }
 
@@ -191,6 +218,65 @@ abstract class ApiService extends Component
      * Required implementation for child services to generate their specific payloads.
      */
     abstract public function generateAltText(Asset $asset, ?int $siteId = null, bool $forceBase64 = false): string;
+
+    /**
+     * Sends one request with the given instructions, text and images, and returns the model's text. Used to describe the
+     * frames of an animated image one request at a time, see describeFramesSeparately().
+     *
+     * @param string $instructions The resolved prompt, sent as the system / instruction message
+     * @param string $text The text sent in the user turn
+     * @param string[] $base64Jpgs Base64 encoded JPGs sent with the text, or none for a text-only request
+     * @throws Exception If the provider returns an error
+     */
+    abstract protected function requestText(string $instructions, string $text, array $base64Jpgs): string;
+
+    /**
+     * The longest edge, in pixels, of an image the provider's models see without the provider scaling it down first,
+     * which caps the size of a film strip, see getFilmStripBase64(). OpenAI's models fit high detail images to 2048px.
+     */
+    protected function maxImageLongEdge(): int
+    {
+        return 2048;
+    }
+
+    /**
+     * Whether the Animation strategy setting describes each frame of an animated image in a request of its own.
+     */
+    protected function describesFramesSeparately(): bool
+    {
+        return AiAltText::getInstance()->getSettings()->animationStrategy === 'perFrame';
+    }
+
+    /**
+     * Generates alt text for an animated image one frame at a time: a request for each frame's alt text, then a
+     * text-only request that combines them into one, so it costs a request more than there are frames. Each request
+     * gets the resolved prompt as its instructions, so the alt texts follow it, including its language.
+     *
+     * @param Asset $asset The animated GIF or WebP
+     * @param int|null $siteId The site the alt text is for
+     * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
+     * @return string The combined alt text
+     * @throws Exception If the prompt can't be resolved or the provider returns an error
+     */
+    protected function describeFramesSeparately(Asset $asset, ?int $siteId, array $transformParams): string
+    {
+        $frames = $this->getFramesBase64($asset, $transformParams);
+        $prompt = $this->resolvePrompt($asset, $siteId);
+        $transparencyNote = $this->transparencyFill !== null ? ' ' . sprintf(self::TRANSPARENCY_NOTE, $this->transparencyFill) : '';
+
+        Craft::info('Generating alt text with ' . $this->providerLabel . ' for asset: ' . $asset->filename . ', ' . count($frames) . ' frames one at a time', __METHOD__);
+
+        if (count($frames) === 1) {
+            return $this->requestText($prompt, $this->generateTrigger(), $frames);
+        }
+
+        $altTexts = [];
+        foreach ($frames as $i => $frame) {
+            $altTexts[] = ($i + 1) . '. ' . $this->requestText($prompt, sprintf(self::FRAME_TRIGGER, $i + 1, count($frames)) . $transparencyNote, [$frame]);
+        }
+
+        return $this->requestText($prompt, sprintf(self::COMBINE_FRAMES_TRIGGER, count($frames), implode("\n", $altTexts)), []);
+    }
 
     /**
      * Resolves the configured prompt template into a final instruction string, substituting
@@ -510,12 +596,13 @@ abstract class ApiService extends Component
 
     /**
      * Renders frames of an animated GIF or WebP as JPGs, each scaled to fit $transformParams and with any transparent
-     * areas filled by flattenTransparency(), and returns them base64 encoded, in order.
+     * areas filled by flattenTransparency(), and returns them base64 encoded, in order. With the Animation strategy set
+     * to a film strip, the frames are returned as one image instead, see getFilmStripBase64().
      *
-     * The Animation frames setting says how many: the first frame only, or 3 or 5 evenly spaced from the first to the
-     * last. Craft's own JPG transform of an animated image shows the last frame on the Imagick driver, which flattens
-     * every frame into one, so the frames are rendered here instead. GD only reads the first frame, so it's the only
-     * one sent there.
+     * The Animation frames setting says how many: the first frame only, or up to 20 evenly spaced through the animation's
+     * running time from the first frame to the last, see frameIndexes(). Craft's own JPG transform of an animated image
+     * shows the last frame on the Imagick driver, which flattens every frame into one, so the frames are rendered here
+     * instead. GD only reads the first frame, so it's the only one sent there.
      *
      * @param Asset $asset The animated GIF or WebP
      * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
@@ -524,7 +611,8 @@ abstract class ApiService extends Component
     protected function getFramesBase64(Asset $asset, array $transformParams): array
     {
         $images = Craft::$app->getImages();
-        $count = AiAltText::getInstance()->getSettings()->animationFrames;
+        $settings = AiAltText::getInstance()->getSettings();
+        $count = (int)$settings->animationFrames;
 
         /** @var Raster $image */
         $image = $images->loadImage(ImageTransforms::getLocalImageSource($asset));
@@ -540,24 +628,125 @@ abstract class ApiService extends Component
 
         // Later frames often hold only what changed since the one before, so each is drawn in full first
         $layers->coalesce();
+        $filmStrip = $settings->animationStrategy === 'filmStrip';
         $frames = [];
 
-        foreach (array_unique(array_map(fn(int $i) => (int)round($i * ($total - 1) / ($count - 1)), range(0, $count - 1))) as $index) {
+        foreach ($this->frameIndexes($layers, $count) as $index) {
             // Craft's images can only be loaded from a file
             $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false) . '.png');
             $layers->get($index)->save($path);
 
             try {
                 $frame = $images->loadImage($path);
-                $frame->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
+                // A film strip's frames are scaled when they're laid out
+                if (!$filmStrip) {
+                    $frame->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
+                }
                 $this->flattenTransparency($frame);
-                $frames[] = $this->getJpgBase64($frame, $asset);
+                $frames[] = $filmStrip ? $frame : $this->getJpgBase64($frame, $asset);
             } finally {
                 FileHelper::unlink($path);
             }
         }
 
-        return $frames;
+        return $filmStrip ? [$this->getFilmStripBase64($frames)] : $frames;
+    }
+
+    /**
+     * Picks $count frames, evenly spaced through the animation's running time from the first frame to the last, by
+     * each frame's delay. For example, 3 frames of an animation whose first frame is held for 2 seconds and whose other
+     * 9 frames last 0.1 seconds each are the first, the one showing at about 1.4 seconds (still the first, so it's
+     * dropped) and the last. Without delays, the frames are spaced by their position instead.
+     *
+     * @param LayersInterface $layers The coalesced frames
+     * @param int $count How many frames to pick
+     * @return int[] The frames' indexes, in order, without duplicates
+     */
+    private function frameIndexes(LayersInterface $layers, int $count): array
+    {
+        $total = count($layers);
+
+        // When each frame starts, in hundredths of a second. Only Imagick reads more than one frame, so each layer
+        // is an Imagick image
+        $starts = [];
+        $time = 0;
+        foreach ($layers as $layer) {
+            $starts[] = $time;
+            $time += $layer instanceof ImagickImage ? $layer->getImagick()->getImageDelay() : 0;
+        }
+
+        $last = end($starts);
+        $indexes = [];
+
+        for ($i = 0; $i < $count; $i++) {
+            if ($last > 0) {
+                // The last frame that has started at this point in the running time
+                $at = $i * $last / ($count - 1);
+                $index = 0;
+                while ($index + 1 < $total && $starts[$index + 1] <= $at) {
+                    $index++;
+                }
+                $indexes[] = $index;
+            } else {
+                $indexes[] = (int)round($i * ($total - 1) / ($count - 1));
+            }
+        }
+
+        return array_values(array_unique($indexes));
+    }
+
+    /**
+     * Lays frames out as a grid in one JPG, a film strip, for the Animation strategy setting's film strip option, and
+     * returns it base64 encoded. The grid's rows and columns are picked to make it as close to square as they can, and
+     * the frames are separated by dark lines, so a white frame can't run into the next.
+     *
+     * The Film strip size setting gives the strip's long edge: 1000px, 2000px or the provider's largest, capped by
+     * maxImageLongEdge(), as a provider scales anything larger down before the model sees it. Frames are never scaled
+     * up, so small frames give a smaller strip.
+     *
+     * @param Raster[] $frames The frames, in order, the same size and with any transparency filled
+     * @return string The base64 encoded JPG
+     */
+    protected function getFilmStripBase64(array $frames): string
+    {
+        $count = count($frames);
+        $width = $frames[0]->getWidth();
+        $height = $frames[0]->getHeight();
+        $gap = 4;
+
+        // The number of columns that makes the grid closest to square
+        $columns = 1;
+        for ($c = 1; $c <= $count; $c++) {
+            $rows = (int)ceil($count / $c);
+            if (abs(log(($c * $width) / ($rows * $height))) < abs(log(($columns * $width) / ((int)ceil($count / $columns) * $height)))) {
+                $columns = $c;
+            }
+        }
+        $rows = (int)ceil($count / $columns);
+
+        $longEdge = min(match (AiAltText::getInstance()->getSettings()->animationFilmStripSize) {
+            'large' => 2000,
+            'max' => PHP_INT_MAX,
+            default => 1000,
+        }, $this->maxImageLongEdge());
+        $scale = min(1, ($longEdge - $gap * (max($columns, $rows) - 1)) / max($columns * $width, $rows * $height));
+        $cellWidth = max(1, (int)floor($width * $scale));
+        $cellHeight = max(1, (int)floor($height * $scale));
+
+        $strip = new Imagick();
+        $strip->newImage($columns * $cellWidth + ($columns - 1) * $gap, $rows * $cellHeight + ($rows - 1) * $gap, new ImagickPixel('#333333'), 'jpeg');
+
+        foreach ($frames as $i => $frame) {
+            $frame->resize($cellWidth, $cellHeight);
+            /** @var ImagickImage $imagine */
+            $imagine = $frame->getImagineImage();
+            $strip->compositeImage($imagine->getImagick(), Imagick::COMPOSITE_OVER, ($i % $columns) * ($cellWidth + $gap), intdiv($i, $columns) * ($cellHeight + $gap));
+        }
+
+        $strip->setImageCompressionQuality(Craft::$app->getConfig()->getGeneral()->defaultImageQuality);
+        $this->filmStripFrames = $count;
+
+        return base64_encode($strip->getImageBlob());
     }
 
     /**

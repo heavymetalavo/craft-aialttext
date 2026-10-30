@@ -93,6 +93,16 @@ class OpenRouterService extends ResponsesApiService
     }
 
     /**
+     * Claude models are capped as AnthropicService caps them, other models as OpenAI's are.
+     *
+     * @inheritdoc
+     */
+    protected function maxImageLongEdge(): int
+    {
+        return preg_match('#^~?(anthropic/)?claude#i', $this->model) ? 1568 : parent::maxImageLongEdge();
+    }
+
+    /**
      * OpenRouter reports a failure at the model's own provider as just "Provider returned error" and keeps the cause
      * (a temporary rate limit, an unsupported image, ...) in the error's metadata, so put the cause in the message.
      */

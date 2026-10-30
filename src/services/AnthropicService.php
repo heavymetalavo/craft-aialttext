@@ -70,8 +70,9 @@ class AnthropicService extends ApiService
             return '';
         }
 
-        // Set by flattenTransparency() if this image's transparent areas are filled
+        // Set by flattenTransparency() if this image's transparent areas are filled, and by getFilmStripBase64()
         $this->transparencyFill = null;
+        $this->filmStripFrames = 0;
 
         $targetDimension = match ($this->detailLevel) {
             'low' => 500,
@@ -85,6 +86,11 @@ class AnthropicService extends ApiService
 
         // Checked before setTransform(), after which the asset reports the transform's MIME type instead of GIF, WebP or SVG
         $isAnimated = $this->isAnimated($asset);
+
+        if ($isAnimated && $this->describesFramesSeparately()) {
+            return $this->describeFramesSeparately($asset, $siteId, $transformParams);
+        }
+
         $isSvg = AiAltText::getInstance()->aiAltTextService->isSvg($asset);
         // Transparent images are flattened here, as providers ignore the alpha channel, see getFlattenedBase64()
         $flattenedBase64 = $isAnimated || $isSvg ? null : $this->getFlattenedBase64($asset, $transformParams);
@@ -128,6 +134,65 @@ class AnthropicService extends ApiService
         }
 
         return $this->sendRequest($imageUrl, $imageSources, $mimeType, $asset, $siteId, $forceBase64);
+    }
+
+    /**
+     * Anthropic scales images larger than 1568px on their long edge down before the model sees them.
+     *
+     * @inheritdoc
+     */
+    protected function maxImageLongEdge(): int
+    {
+        return 1568;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function requestText(string $instructions, string $text, array $base64Jpgs): string
+    {
+        $requestModel = new AnthropicRequest();
+        $requestModel->model = $this->model;
+        $requestModel->setSystem($instructions);
+        $requestModel->setPrompt($text);
+        $requestModel->setImageSources(array_map(fn(string $base64Jpg) => [
+            'type' => 'base64',
+            'media_type' => 'image/jpeg',
+            'data' => $base64Jpg,
+        ], $base64Jpgs));
+
+        if (!$requestModel->validate()) {
+            throw new Exception("Invalid " . $this->providerLabel . " request: " . Json::encode($requestModel->getErrors()));
+        }
+
+        $requestArray = $requestModel->toArray();
+        $this->logRequest($this->baseUrl, $requestArray);
+
+        try {
+            $requestStartedAt = microtime(true);
+            $response = $this->client->post($this->baseUrl, [
+                'headers' => $this->requestHeaders(),
+                'json' => $requestArray,
+            ]);
+        } catch (GuzzleException $e) {
+            $errorResponse = ($e instanceof RequestException && $e->hasResponse())
+                ? (string)$e->getResponse()->getBody()
+                : $e->getMessage();
+            Craft::error($this->providerLabel . " API Error: " . trim($errorResponse), __METHOD__);
+
+            $responseModel = (new AnthropicResponse())->setProviderLabel($this->providerLabel);
+            throw new Exception($this->providerLabel . ' API request failed: ' . ($responseModel->parseResponse($errorResponse) && $responseModel->hasError() ? $responseModel->getErrorMessage() : $errorResponse));
+        }
+
+        $responseBody = (string)$response->getBody();
+        $this->logResponse($this->baseUrl, $response->getStatusCode(), $responseBody, microtime(true) - $requestStartedAt);
+
+        $responseModel = (new AnthropicResponse())->setProviderLabel($this->providerLabel);
+        if (!$responseModel->parseResponse($responseBody)) {
+            throw new Exception($this->providerLabel . " API returned error: " . $responseModel->getErrorMessage());
+        }
+
+        return $responseModel->getText();
     }
 
     /**
