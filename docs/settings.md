@@ -8,9 +8,9 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 | Setting | Description |
 |---------|-------------|
-| **AI Provider** | Choose between OpenAI, Anthropic, Langdock or OpenRouter. |
-| **OpenAI/Anthropic/Langdock/OpenRouter API Key** | Your provider's API key. |
-| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-5-5`). For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. |
+| **AI Provider** | Choose between OpenAI, Anthropic, Langdock, OpenRouter or Hugging Face. |
+| **OpenAI/Anthropic/Langdock/OpenRouter API Key, Hugging Face Token** | Your provider's API key. |
+| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-5-5`). For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. For Hugging Face, use the model's id, e.g. `Qwen/Qwen2.5-VL-7B-Instruct`, optionally with `:cheapest` or a provider such as `:groq`. |
 | **Langdock Model Author** | Langdock only. `Anthropic` (models such as Claude) or `OpenAI` (models such as GPT). It must be the author of the model, and decides which of Langdock's compatible APIs requests are sent to. |
 | **Langdock Image Detail Level** | Langdock with the `OpenAI` model author only. Works like the OpenAI image detail level, `low`, `high` or `auto`. |
 | **Langdock Reasoning Effort** | Langdock with the `OpenAI` model author only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). |

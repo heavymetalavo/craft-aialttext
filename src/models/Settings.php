@@ -18,7 +18,7 @@ use craft\helpers\App;
  * @property bool $generateForNewAssets Whether to generate alt text for new assets automatically
  * @property bool $processSvgs Whether to generate alt text for SVGs
  * @property bool $saveTranslatedResultsToEachSite Whether to generate alt text for every site, not just the current site and the sites that share its alt text
- * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'langdock' or 'openrouter')
+ * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'langdock', 'openrouter' or 'huggingface')
  * @property string $anthropicApiKey The Anthropic API key
  * @property string $anthropicModel The Anthropic Model
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
@@ -32,6 +32,8 @@ use craft\helpers\App;
  * @property string $openRouterModel The OpenRouter model to use, as named by OpenRouter
  * @property string $openRouterImageInputDetailLevel The image detail level for OpenRouter's Responses API
  * @property string $openRouterReasoningEffort The reasoning effort level for OpenRouter's Responses API
+ * @property string $huggingFaceApiKey The Hugging Face token
+ * @property string $huggingFaceModel The Hugging Face model to use, as `org/model` with an optional `:provider` suffix
  */
 class Settings extends Model
 {
@@ -149,6 +151,17 @@ class Settings extends Model
     public string $openRouterReasoningEffort = 'low';
 
     /**
+     * @var string The Hugging Face token, which needs the "Make calls to Inference Providers" permission
+     */
+    public string $huggingFaceApiKey = '';
+
+    /**
+     * @var string The Hugging Face model to use, as `org/model` with an optional `:provider`, `:fastest` or `:cheapest`
+     * suffix (e.g. `Qwen/Qwen2.5-VL-7B-Instruct`), must have vision capabilities
+     */
+    public string $huggingFaceModel = '';
+
+    /**
      * @var bool Whether to save the translated result to each Site's Asset's translatable alt text field
      */
     public bool $saveTranslatedResultsToEachSite = false;
@@ -190,7 +203,7 @@ class Settings extends Model
                 ['aiProvider'],
                 function($attribute) {
                     $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['openai', 'anthropic', 'langdock', 'openrouter'], true)) {
+                    if (!in_array($val, ['openai', 'anthropic', 'langdock', 'openrouter', 'huggingface'], true)) {
                         $this->addError($attribute, 'Invalid AI Provider configured.');
                     }
                 }
@@ -241,6 +254,7 @@ class Settings extends Model
             [['openRouterImageInputDetailLevel'], 'validateOneOf', 'params' => ['allowed' => ['low', 'high', 'auto', 'original', ''], 'message' => 'Invalid OpenRouter Image Input Detail Level configured.']],
             ['openRouterReasoningEffort', 'string'],
             [['openRouterReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid OpenRouter Reasoning Effort configured.']],
+            [['huggingFaceApiKey', 'huggingFaceModel'], 'string'],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],

@@ -9,7 +9,7 @@ How to install AI Alt Text, set it up and generate your first alt text. For the 
 This plugin requires: 
 - Craft CMS 5.0.0 or later - running Craft 4? [Use the 4.x branch](https://github.com/heavymetalavo/craft-aialttext/blob/4.x/README.md) instead
 - PHP 8.2 or later
-- An Anthropic, OpenAI, Langdock or OpenRouter API key, see [AI providers](providers.md)
+- An Anthropic, OpenAI, Langdock, OpenRouter or Hugging Face API key, see [AI providers](providers.md)
 
 Recommended:
 - ImageMagick with an SVG renderer, so SVGs are described accurately; without one, gradients lose their shading. GD can't read SVGs, so they're skipped. See [Images](images.md#svg-renderers) for what each server may need.
