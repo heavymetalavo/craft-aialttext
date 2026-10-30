@@ -11,6 +11,9 @@ This plugin requires:
 - PHP 8.2 or later
 - An Anthropic, OpenAI, Langdock or OpenRouter API key, see [AI providers](providers.md)
 
+Recommended:
+- ImageMagick with an SVG renderer, so SVGs are described accurately; without one, gradients lose their shading. GD can't read SVGs, so they're skipped. See [Images](images.md#svg-renderers) for what each server may need.
+
 ## 📥 Installation
 
 You can install this plugin from [the Plugin Store](https://plugins.craftcms.com/ai-alt-text?craft5) or with Composer.
@@ -59,11 +62,7 @@ To add this field:
     4. Upload a new asset (if the upload setting is enabled)
 5. A single asset, selected in the **Assets** manager or on its own page, is generated straight away. Multiple selected assets, the bulk actions, new uploads, and the other sites when **Save translated results for each site** is enabled are queued as jobs instead
 
-![The Bulk Actions table in the AI Alt Text settings page](../src/bulk-actions.png)
-
-![The CraftCMS assets manager with two assets selected and the 'Generate AI Alt Text' option visible in the active element actions menu](../src/assets-manager.png)
-
-![The active actions menu when viewing a single asset shows the 'Generate AI Alt Text' option](../src/single-asset.png)
+![Where to generate alt text: on an asset's page, from its action menu; for selected assets in Assets, from the actions menu (the cog); from an asset's menu in an Assets field; from the bulk actions utility in Utilities, for all sites or one site at a time; from the command line, with ai-alt-text/generate/stats, missing or single; or automatically, with the "Generate for new image assets (on upload or file replacement)" setting turned on](images/where-to-generate.png)
 
 Example twig:
 

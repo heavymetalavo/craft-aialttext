@@ -4,23 +4,55 @@
 
 How the plugin prepares images for each AI provider, and the limits to know about.
 
-## Provider-Specific Limits
+![How images are prepared. Your image, any JPG, PNG, WebP, GIF, SVG, AVIF, HEIC or HEIF asset on a public or private volume, is converted: SVG, AVIF, HEIC and HEIF are converted, animated GIFs use their first frame, and transparent areas are filled white, or grey for light artwork. It's scaled down if it's over the provider's limits, using your image detail setting. It's sent as a URL, or as base64 for SVGs, animated GIFs, transparent images, private volumes, OpenRouter and Langdock's Anthropic models. A vision model, through Anthropic, OpenAI, Langdock or OpenRouter, describes it and returns the alt text. Opaque PNG, JPG, WebP and still GIF images within the limits are sent unchanged, and filled images tell the model their background is transparent.](images/image-preparation.png)
+
+## What AI providers accept
+
+AI providers accept PNG, JPEG, WebP and GIF images, but not animated GIFs ([OpenAI](https://developers.openai.com/api/docs/guides/images-vision#image-input-requirements), [Anthropic](https://platform.claude.com/docs/en/build-with-claude/vision#supported-formats), [OpenRouter](https://openrouter.ai/docs/guides/overview/multimodal/image-understanding)). None of them accepts SVG, AVIF, HEIC or HEIF, or says how it handles transparency, so the plugin prepares images first:
 
 - **Automatic Scaling**: The plugin automatically detects when an image exceeds provider limits and applies transforms (resizing or quality reduction) before sending the payload.
-- **Supported file types**: All providers accept: `png`, `jpeg`, `jpg`, `webp`, `gif` (non-animated)
-- **SVG Support**: SVGs are rasterized to PNG (preserving transparency) before being sent to the AI (where transformSvgs is enabled).
+- **SVG Support**: When the **Process SVGs** setting is on, SVGs are rendered to PNG by the plugin and sent as base64, whatever Craft's `transformSvgs` setting is. They need Craft's Imagick image driver, as GD can't read SVGs. ⚠️ For accurate colours the server needs an SVG renderer, see [SVG renderers](#svg-renderers) below.
+- **Transparency**: In our tests, no model reliably saw transparency. Given a black line on a transparent background, GPT and Gemini models described "a solid black square": every transparent pixel still stores a colour, hidden by its transparency, and here it was black. Claude models saw white. So the plugin fills transparent areas with white, or grey for light artwork, and tells the model the background is transparent.
 - **AVIF, HEIC & HEIF Support**: These image types are converted to PNG before being sent to an AI provider. This requires an image driver (ImageMagick built with AVIF/HEIF/HEIC support) that can decode them on environments without that support these assets are skipped.
 - **Animated GIFs**: Only the first frame is processed.
-- **Private Assets**: Assets on private volumes without public URLs can be sent as base64 encoded strings. Retrieving an image transform's file contents is not currently supported by CraftCMS. Meaning that for file types not supported by an AI provider (e.g. an SVG files) it is not possible to generate alt text for these private assets.
+- **Private Assets**: Assets on private volumes without public URLs can be sent as base64 encoded strings. Retrieving an image transform's file contents is not currently supported by CraftCMS. Meaning that for file types not supported by an AI provider (e.g. AVIF or HEIC files) it is not possible to generate alt text for these private assets. SVGs, animated GIFs and images with transparency are the exception, as the plugin renders them itself.
 - **Servd/Cloud**: Support for specialized asset bundles (like Servd) depends on the environment's ability to handle raster transforms.
 - **Consider AI Provider level boundaries**: e.g. OpenAI: "No watermarks or logos - No NSFW content - Clear enough for a human to understand"
 
+## SVG renderers
+
+How accurately an SVG is described depends on the server's SVG renderer: ImageMagick built with librsvg (`--with-rsvg` when building it yourself), or Inkscape (`apt install inkscape` on Debian or Ubuntu). Without one, ImageMagick uses its own basic renderer, which draws gradients as solid black, so the plugin replaces each gradient with the average of its colours first: the colours come out about right, but the shading is lost.
+
+| ImageMagick | Its own basic renderer | librsvg built in | Inkscape |
+|---|---|---|---|
+| 6 | Gradients black | Works | Works |
+| 7.0 to 7.1.1-27 | Gradients black | Works | Doesn't work |
+| 7.1.1-28 to 7.1.2-33 | Gradients black, most strokes skipped | Works | Doesn't work |
+| 7.1.2-34 and later | Gradients black, most strokes skipped | Works | Works |
+
+Checked in October 2026 by installing each distribution's ImageMagick package. Packages change between releases, so check your server: `magick -list format | grep RSVG` (`convert -list format | grep RSVG` on ImageMagick 6) prints a line if librsvg is built in.
+
+| Server | ImageMagick package | librsvg built in? | For accurate SVGs |
+|---|---|---|---|
+| Rocky Linux 9 with EPEL (RHEL family) | 6.9.13 | Yes | Nothing extra |
+| Alpine 3.19 and later | 7.1.1-32 to 7.1.2-34 | Only with `imagemagick-svg`, which is needed to read SVGs at all | `apk add imagemagick-svg` |
+| Alpine 3.18 and earlier | 7.0 to 7.1.1-13 | Yes, in the `imagemagick` package | Nothing extra |
+| Ubuntu 22.04 and 24.04 | 6.9.11 and 6.9.12 | No | `apt install inkscape` |
+| Debian 12 | 6.9.11 | No | `apt install inkscape` |
+| Debian 13 (used by DDEV) | 7.1.1 | No | Too old for Inkscape, so build ImageMagick with `--with-rsvg` |
+| ImageMagick built from source | Any | If built with `--with-rsvg` | Install librsvg's development files (e.g. `librsvg2-dev`), build with `--with-rsvg`, then rebuild PHP's Imagick extension against it |
+
 ## Oddities, Logic & Limitations
 
+- **Transparency**: PNG, WebP, GIF, AVIF, HEIC and HEIF images, and SVGs, are filled with white, or with mid grey when what's drawn is mostly light, such as a white logo. They're sent as base64 JPGs (PNGs for SVGs) rather than as URLs, and the request names the fill colour, so the Prompt's guidance on transparency still applies.
 - The OpenAI API has [image input requirements](https://platform.openai.com/docs/guides/images-vision?api-mode=responses#image-input-requirements) which over the lifespan of this plugin have changed without notice, the requirements are not always enforced, e.g. base64 encoded images above the required image dimensions have been accepted by the API.
 - Craft CMS uses the [Imagine library](https://github.com/php-imagine/Imagine) for image processing, which can only transform [select image formats](https://github.com/php-imagine/Imagine/blob/develop/src/Image/Format.php#L14-L32). Support for these formats may vary depending on what ImageMagick drivers are available in your environment. If a source image is in a supported format, the plugin will generate a transform in one of the supported file types to send to the OpenAI API.
 - Where an unsupported file type is requested the plugin will attempt an image transform to a jpg to be sent instead
 - The plugin checks a file's mimetype to see if it's valid, or if it needs a format conversion before sending to the API
 - If an asset's dimensions are larger than the dimensions required by the API an image transform is sent instead
 - If an asset has no URL (private) and requires a transform (e.g. if the original asset is an unsupported mime type, or, the dimensions are too large), Craft may be unable to retrieve the transform's file contents for base64 encoding. In that case the plugin will not fall back to sending the original source file unless its MIME type is natively accepted by the AI provider.
-- Where an alternative image transformer is used, e.g. when an application is hosted on [Servd](https://servd.host) and assets are processed through their asset platform this may not support svg -> raster transforms
+- **Blitz Plugin**: Saving alt text saves the asset, so when [Blitz](https://putyourlightson.com/plugins/blitz) uses a refresh mode which regenerates the cache in a queue job, it will try to create a "purge" and a "generate cache" queue job, which could potentially crawl every page of a site after every asset is processed. Both jobs have a higher priority than the plugin's jobs, so when generating for many assets they run in between each alt text job and slow the queue right down. If you use a generate cache refresh mode, consider these options:
+  - Keep the Blitz plugin enabled, but turn off **Caching Enabled** and set the **Refresh Mode** to "Clear the cache, regenerate manually or organically" (`refreshMode` in `config/blitz.php`). Turn them back on afterwards, and refresh the cache. A small purge job is still queued before each alt text job, but it finishes quickly.
+  - Run the jobs from the command line, over SSH if the site is hosted, with isolation turned off, rather than from the control panel: `./craft ai-alt-text/generate/missing && ./craft queue/run --isolate=0 && ./craft queue/run`. The dashboard and console commands by default run each job in its own process, and Blitz refreshes at the end of each of those. With `--isolate=0` every job runs in one process, so Blitz refreshes once at the end. That refresh job is queued last, which is why `queue/run` is run a second time, to process it. Keep the control panel closed while it runs, or set `runQueueAutomatically` to `false` in `config/general.php`, as an open control panel runs jobs one per request too.
+    - On [Servd](https://servd.host) or other hosts using a queue runner, where the runner runs the jobs and its command can't be changed, you could disable the [dedicated queue runner](https://servd.host/docs/dedicated-queue-runner) for the environment, then run the commands above directly on the host's commands page, or via an [SSH session](https://servd.host/docs/shell-sessions-ssh). Turn the queue runner back on afterwards.
+- Where an alternative image transformer is used, e.g. when an application is hosted on [Servd](https://servd.host) and assets are processed through their asset platform this may not support every transform. SVGs, animated GIFs and images with transparency are rendered by the plugin with Craft's image driver, not through the transformer.

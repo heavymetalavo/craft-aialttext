@@ -272,9 +272,9 @@
         label: 'OpenRouter Model'|t('ai-alt-text'),
         id: 'openRouterModel',
         name: 'openRouterModel',
-        instructions: "The model's name on OpenRouter, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. It must accept image input: [browse the vision models](https://openrouter.ai/models?input_modalities=image&output_modalities=text)."|t("ai-alt-text"),
+        instructions: "The model's name on OpenRouter, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` (our top pick) or `google/gemini-3.5-flash-lite`. It must accept image input: [browse the vision models](https://openrouter.ai/models?input_modalities=image&output_modalities=text)."|t("ai-alt-text"),
         value: settings.openRouterModel,
-        placeholder: 'openai/gpt-6-luna',
+        placeholder: 'anthropic/claude-haiku-5.5',
         errors: settings.getErrors('openRouterModel'),
         suggestEnvVars: true,
     }) }}
@@ -332,19 +332,10 @@
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Propagate'|t('ai-alt-text'),
-    id: 'propagate',
-    name: 'propagate',
-    instructions: "Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites."|t("ai-alt-text"),
-    on: settings.propagate,
-    errors: settings.getErrors('propagate'),
-}) }}
-
-{{ forms.lightswitchField({
     label: 'Generate for new image assets (on upload or file replacement)'|t('ai-alt-text'),
     id: 'generateForNewAssets',
     name: 'generateForNewAssets',
-    instructions: "If enabled, the plugin will automatically generate alt text when an image asset is created (on upload) or its file is replaced. On replacement, the alt text for the site the replacement was made in is overwritten, since it describes the old image; other sites keep their existing alt text unless Save translated results for each site is enabled."|t("ai-alt-text"),
+    instructions: "If enabled, the plugin will automatically generate alt text when an image asset is created (on upload) or its file is replaced. On replacement, the alt text for the site the replacement was made in, and the sites that share it, is overwritten, since it describes the old image; other sites keep their existing alt text unless Save translated results for each site is enabled."|t("ai-alt-text"),
     on: settings.generateForNewAssets,
     errors: settings.getErrors('generateForNewAssets'),
 }) }}
@@ -353,8 +344,8 @@
     label: 'Process SVGs'|t('ai-alt-text'),
     id: 'processSvgs',
     name: 'processSvgs',
-    instructions: "Attempt to generate alt text for SVG files when they are uploaded or batched processed. This requires Craft's global `transformSvgs` setting to be enabled."|t("ai-alt-text")
-        ~ (craft.app.config.general.transformSvgs ? "" : "\n\n⚠️ " ~ "**Craft's `transformSvgs` setting is currently disabled, so SVGs will be skipped even with this enabled.**"|t("ai-alt-text")),
+    instructions: "Attempt to generate alt text for SVG files when they are uploaded or batch processed."|t("ai-alt-text"),
+    warning: not craft.app.images.isImagick ? "Craft is using the GD image driver, which can't read SVGs, so SVGs are skipped. They need Craft's Imagick image driver."|t("ai-alt-text"),
     on: settings.processSvgs,
     errors: settings.getErrors('processSvgs'),
 }) }}
@@ -363,7 +354,7 @@
     label: 'Save translated results for each site'|t('ai-alt-text'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',
-    instructions: "If enabled, the plugin will queue an extra job for each site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the site (`en-GB` for British english, `en-US` for American english, `de` for German etc). When disabled, alt text will generate for assets on the site the control panel is currently working with only."|t("ai-alt-text"),
+    instructions: "Follows the asset volume's **Alternative Text Translation Method**: sites that share alt text (all sites on Not translatable, or sites in the same site group or language) get one result between them, from one request, in the language of the site it's generated for. When on, every site gets alt text. When off, only the current site and the sites that share its alt text do."|t("ai-alt-text"),
     on: settings.saveTranslatedResultsToEachSite,
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}

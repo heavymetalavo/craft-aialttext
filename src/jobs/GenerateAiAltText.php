@@ -19,6 +19,11 @@ class GenerateAiAltText extends BaseJob
     public ?int $siteId = null;
 
     /**
+     * @var int[] Other sites that share the site's alt text, saved with the same result
+     */
+    public array $sharedSiteIds = [];
+
+    /**
      * Errors are not caught so Craft marks the job as failed and offers a retry.
      *
      * @throws ElementNotFoundException
@@ -38,7 +43,7 @@ class GenerateAiAltText extends BaseJob
         $plugin = AiAltText::getInstance();
 
         // Generates the alt text and saves the asset, or throws
-        $altText = $plugin->aiAltTextService->generateAltText($asset, $this->siteId);
+        $altText = $plugin->aiAltTextService->generateAltText($asset, $this->siteId, $this->sharedSiteIds);
 
         Craft::info("Successfully generated alt text for asset $this->assetId: " . $altText, __METHOD__);
     }

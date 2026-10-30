@@ -5,13 +5,19 @@ namespace heavymetalavo\craftaialttext\services;
 use Craft;
 use craft\base\Component;
 use craft\elements\Asset;
-use craft\helpers\App;
-use craft\helpers\Json;
-use craft\helpers\UrlHelper;
+use craft\helpers\{App, FileHelper, ImageTransforms, Json, UrlHelper};
+use craft\image\Raster;
+use DOMDocument;
+use DOMElement;
+use DOMXPath;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use heavymetalavo\craftaialttext\AiAltText;
+use Imagine\Image\{Box, Point};
+use Imagick;
+use ImagickPixel;
+use ImagickPixelException;
 
 /**
  * Base API Service
@@ -38,6 +44,12 @@ abstract class ApiService extends Component
     protected const GENERATE_TRIGGER = 'Generate the alt text for this image now.';
 
     /**
+     * @var string Added to the trigger when flattenTransparency() has filled the image's transparent areas, so the model
+     * knows the fill isn't part of the image. %s is the fill's colour.
+     */
+    protected const TRANSPARENCY_NOTE = 'The image has a transparent background, filled with %s here so you can see what is drawn.';
+
+    /**
      * @var int Default request timeout in seconds, used unless the project sets its own `timeout`
      * in config/guzzle.php.
      */
@@ -57,6 +69,12 @@ abstract class ApiService extends Component
      * @var string The provider's name in log lines and error messages, set by each provider service.
      */
     protected string $providerLabel = 'API';
+
+    /**
+     * @var string|null The colour flattenTransparency() filled the image's transparent areas with, or null if it didn't.
+     * Each provider resets it before preparing an image.
+     */
+    protected ?string $transparencyFill = null;
 
     public function __construct($config = [])
     {
@@ -143,6 +161,16 @@ abstract class ApiService extends Component
         );
 
         return $prefix . substr($base64, 0, 40) . '…';
+    }
+
+    /**
+     * The text sent with the image: GENERATE_TRIGGER, and TRANSPARENCY_NOTE if the image's transparent areas were filled,
+     * e.g. `Generate the alt text for this image now. The image has a transparent background, filled with white here so
+     * you can see what is drawn.`
+     */
+    protected function generateTrigger(): string
+    {
+        return self::GENERATE_TRIGGER . ($this->transparencyFill !== null ? ' ' . sprintf(self::TRANSPARENCY_NOTE, $this->transparencyFill) : '');
     }
 
     /**
@@ -277,28 +305,20 @@ abstract class ApiService extends Component
     /**
      * Validates if the asset is an accepted image format natively.
      *
+     * SVGs are only checked against the Process SVGs setting and Craft's image driver (see canProcessSvgs()). The plugin
+     * renders them itself (see getSvgBase64()), not through Craft's transforms, so Craft's `transformSvgs` setting
+     * doesn't apply.
+     *
      * @param Asset $asset The asset to validate
-     * @param bool $allowSvgs Whether the endpoint natively supports SVGs or relies on Craft's SVG transform pipeline
      * @throws Exception If the asset format is invalid or fundamentally unsupported
      */
-    protected function validateImageSupport(Asset $asset, bool $allowSvgs = false): bool
+    protected function validateImageSupport(Asset $asset): bool
     {
         $mimeType = $asset->getMimeType();
 
-        if ($mimeType === 'image/svg+xml') {
-            if (!AiAltText::getInstance()->getSettings()->processSvgs) {
-                Craft::info("Skipping SVG asset (processSvgs disabled): $asset->filename", __METHOD__);
-                return false;
-            }
-
-            if (!$allowSvgs) {
-                if (!Craft::$app->getConfig()->getGeneral()->transformSvgs) {
-                    Craft::warning("SVG asset $asset->filename requires transformSvgs to be enabled in Craft general config to be processed; skipping.", __METHOD__);
-                    return false;
-                }
-                
-                Craft::debug("SVG asset $asset->filename is not natively supported by the provider, will attempt transformation.", __METHOD__);
-            }
+        if ($mimeType === 'image/svg+xml' && !AiAltText::getInstance()->aiAltTextService->canProcessSvgs()) {
+            Craft::info("Skipping SVG asset (processSvgs off, or Craft's image driver can't read SVGs): $asset->filename", __METHOD__);
+            return false;
         }
 
         $images = Craft::$app->getImages();
@@ -440,6 +460,335 @@ abstract class ApiService extends Component
     }
 
     /**
+     * Renders the first frame of an animated GIF as a JPG, scaled to fit $transformParams and with any transparent areas
+     * filled by flattenTransparency(), and returns it base64 encoded.
+     *
+     * Craft's own JPG transform of an animated GIF stacks its frames on the Imagick driver, leaving the last one showing,
+     * so the first frame is rendered here instead. GD only reads the first frame, so it's unaffected.
+     *
+     * @param Asset $asset The animated GIF
+     * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
+     * @return string The base64 encoded JPG
+     */
+    protected function getFirstFrameBase64(Asset $asset, array $transformParams): string
+    {
+        /** @var Raster $image */
+        $image = Craft::$app->getImages()->loadImage(ImageTransforms::getLocalImageSource($asset));
+        $image->disableAnimation()->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
+        $this->flattenTransparency($image);
+
+        $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false) . '.jpg');
+        $image->saveAs($path);
+
+        try {
+            return base64_encode(file_get_contents($path));
+        } finally {
+            FileHelper::unlink($path);
+        }
+    }
+
+    /**
+     * Renders an image with transparency as a JPG, its transparent areas filled by flattenTransparency(), scaled to fit
+     * $transformParams, and returns it base64 encoded.
+     *
+     * Models don't reliably see transparency. Some, such as GPT and Gemini, see the colour each transparent pixel still
+     * stores: often the colour of what's drawn, so a black line on transparent comes out as a solid black square, but
+     * it can be anything, even a hidden image that would then be described. Others, such as Claude, see white, which
+     * hides white artwork. Filling the transparent areas ourselves means every model sees the same, chosen background.
+     * Animated GIFs and SVGs are flattened by getFirstFrameBase64() and getSvgBase64() instead.
+     *
+     * @param Asset $asset The image, checked before a transform is set on it
+     * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
+     * @return string|null The base64 encoded JPG, or null if the image has no transparency
+     */
+    protected function getFlattenedBase64(Asset $asset, array $transformParams): ?string
+    {
+        // JPGs can't be transparent
+        if ($asset->getMimeType() === 'image/jpeg') {
+            return null;
+        }
+
+        $image = Craft::$app->getImages()->loadImage(ImageTransforms::getLocalImageSource($asset));
+
+        // An SVG whose MIME type Craft misreads, e.g. as text/html, loads as an Svg and is left to Craft's transform
+        if (!$image instanceof Raster) {
+            return null;
+        }
+
+        // An animated WebP would have its frames stacked, leaving the last one showing, so only its first frame is
+        // kept, as for GIFs
+        $image->disableAnimation()->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
+
+        if (!$this->flattenTransparency($image)) {
+            return null;
+        }
+
+        $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false) . '.jpg');
+        $image->saveAs($path);
+
+        try {
+            return base64_encode(file_get_contents($path));
+        } finally {
+            FileHelper::unlink($path);
+        }
+    }
+
+    /**
+     * Fills an image's transparent areas with white, or with mid grey if what's drawn is mostly light, so a white logo
+     * doesn't disappear. Models don't reliably see transparency, see getFlattenedBase64().
+     *
+     * @param Raster $image The image
+     * @return bool Whether the image had any transparency
+     */
+    protected function flattenTransparency(Raster $image): bool
+    {
+        // A small copy is enough to tell whether any of it is transparent, and how light the rest is
+        $sample = $image->getImagineImage()->copy()->resize(new Box(64, 64));
+        $transparent = false;
+        $lightness = 0;
+        $opacity = 0;
+
+        for ($x = 0; $x < 64; $x++) {
+            for ($y = 0; $y < 64; $y++) {
+                $colour = $sample->getColorAt(new Point($x, $y));
+                // CMYK colours have no alpha, and are always opaque
+                $alpha = $colour->isOpaque() ? 1 : $colour->getAlpha() / 100;
+                $transparent = $transparent || $alpha < 1;
+
+                // Gray and RGB colours both print as #rrggbb
+                [$r, $g, $b] = sscanf((string)$colour, '#%2x%2x%2x');
+                $lightness += $alpha * (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
+                $opacity += $alpha;
+            }
+        }
+
+        if (!$transparent) {
+            return false;
+        }
+
+        // Grey shows light content better than white does once it's lighter than 75%
+        [$background, $this->transparencyFill] = $opacity > 0 && $lightness / $opacity > 0.75 ? ['#808080', 'grey'] : ['#ffffff', 'white'];
+        $image->scaleToFitAndFill($image->getWidth(), $image->getHeight(), $background, 'center-center', false);
+
+        return true;
+    }
+
+    /**
+     * Renders an SVG as a PNG, its transparent areas filled by flattenTransparency(), and returns it base64 encoded.
+     *
+     * Craft loads SVGs into Imagick from a string, which ImageMagick often renders with its own built-in SVG renderer,
+     * and that renderer draws gradients as solid black. So the SVG is rendered here, with its gradients flattened first
+     * where ImageMagick can't draw them, see canRenderSvgGradients() and flattenSvgGradients(). Craft also draws SVGs
+     * onto white, which hides white artwork, so here they're drawn onto transparent and filled by flattenTransparency().
+     * Rendering it here also works for SVGs on volumes without public URLs, whose transforms Craft can't hand over.
+     *
+     * @param Asset $asset The SVG
+     * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
+     * @return string The base64 encoded PNG
+     */
+    protected function getSvgBase64(Asset $asset, array $transformParams): string
+    {
+        $images = Craft::$app->getImages();
+        $svg = $asset->getContents();
+
+        // Only Imagick reaches here, as SVGs are skipped on GD, see canProcessSvgs()
+        if (!$this->canRenderSvgGradients()) {
+            $svg = $this->flattenSvgGradients($svg);
+        }
+
+        // Craft's image classes load from files, so the SVG and the PNG drawn from it go in uniquely named temp
+        // files, deleted at the end
+        $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false));
+        FileHelper::writeToFile("$path.svg", $svg);
+
+        try {
+            // Rendered at the provider's size limit if the SVG is larger, otherwise at 1000px, as Craft's transforms do
+            $size = max($transformParams['width'] ?? 0, $transformParams['height'] ?? 0) ?: 1000;
+
+            // Craft's Svg sets the SVG's width and height to $size, still as SVG code, then Imagick draws it with the
+            // server's SVG renderer. It's drawn onto transparent, as Craft's own drawing uses white, which hides white
+            // artwork, and saved as png32, a PNG that keeps the transparency for flattenTransparency() to fill.
+            $imagick = new Imagick();
+            $imagick->setBackgroundColor(new ImagickPixel('transparent'));
+            $imagick->readImageBlob($images->loadImage("$path.svg")->scaleToFit($size, $size)->getSvgString());
+            $imagick->writeImage("png32:$path.png");
+            $image = $images->loadImage("$path.png");
+
+            $this->flattenTransparency($image);
+            $image->saveAs("$path.png");
+
+            return base64_encode(file_get_contents("$path.png"));
+        } finally {
+            FileHelper::unlink("$path.svg");
+            FileHelper::unlink("$path.png");
+        }
+    }
+
+    /**
+     * Whether ImageMagick draws gradients in an SVG read from a string, as Craft reads them. Its built-in SVG renderer
+     * draws them as solid black. ImageMagick built with librsvg draws them, and so does Inkscape when it's installed,
+     * with ImageMagick 6 or 7.1.2-34 and later, as earlier ImageMagick 7 releases can't pass Inkscape an SVG read from a
+     * string. Anything else is assumed to draw them black, so they're flattened rather than sent that way.
+     *
+     * @return bool Whether gradients are drawn
+     */
+    protected function canRenderSvgGradients(): bool
+    {
+        if (!empty(Imagick::queryFormats('RSVG'))) {
+            return true;
+        }
+
+        if (!preg_match('/ImageMagick (\d+\.\d+\.\d+)-(\d+)/', Imagick::getVersion()['versionString'], $match)) {
+            return false;
+        }
+
+        $version = "$match[1].$match[2]";
+        if (!str_starts_with($version, '6.') && version_compare($version, '7.1.2.34', '<')) {
+            return false;
+        }
+
+        // PHP-FPM often clears PATH, and ImageMagick's shell then looks in the standard directories
+        foreach (explode(PATH_SEPARATOR, getenv('PATH') ?: '/usr/local/bin:/usr/bin:/bin') as $dir) {
+            // @ as open_basedir can block the check, which then counts as Inkscape not being installed
+            if (@is_executable("$dir/inkscape")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Replaces each gradient used as a fill or stroke in an SVG with the average of its stop colours, so ImageMagick's
+     * built-in SVG renderer, which draws gradients as solid black, shows about the right colour. The SVG is returned
+     * unchanged if it can't be parsed.
+     *
+     * For example, `fill="url(#a)"`, where gradient `a` runs from `#ffeb3b` to `#ff9800`, becomes `fill="#ffc21e"`. The
+     * gradient elements themselves are left in place, unused.
+     *
+     * @param string $svg The SVG markup
+     * @return string The SVG markup with solid colours in place of gradients
+     */
+    protected function flattenSvgGradients(string $svg): string
+    {
+        $doc = new DOMDocument();
+        // LIBXML_NONET stops the parser fetching anything from the network, such as an external DTD
+        if (!@$doc->loadXML($svg, LIBXML_NONET)) {
+            return $svg;
+        }
+
+        // XPath queries find elements anywhere in the SVG, however deeply nested
+        $xpath = new DOMXPath($doc);
+
+        // local-name() matches the gradients whether or not the SVG declares a namespace prefix
+        $gradients = [];
+        foreach ($xpath->query('//*[local-name()="linearGradient" or local-name()="radialGradient"]') as $gradient) {
+            $gradients[$gradient->getAttribute('id')] = $gradient;
+        }
+
+        // Nothing to flatten, so the SVG is returned exactly as it was, rather than re-serialised
+        if (empty($gradients)) {
+            return $svg;
+        }
+
+        // Each gradient's average colour, by id, or null when it has no colour Imagick can read
+        $colours = [];
+        foreach (array_keys($gradients) as $id) {
+            $colours[$id] = $this->averageGradientColour($gradients, (string)$id);
+        }
+
+        // A function, used by both loops below. Swaps each url(#id) that points at a gradient for its average colour.
+        // Anything else, such as a pattern or a gradient without a readable colour, is left as it is. The pattern
+        // matches url(#a), url('#a') and url("#a"), with or without spaces inside the brackets, and captures the id
+        $replace = fn(string $value): string => preg_replace_callback(
+            '/url\(\s*[\'"]?#([^\'")\s]+)[\'"]?\s*\)/',
+            fn(array $match) => $colours[$match[1]] ?? $match[0],
+            $value
+        );
+
+        // Fills and strokes can be set as attributes, e.g. fill="url(#a)", or in a style attribute, e.g.
+        // style="fill:url(#a)". Each one is read, has its gradient references swapped for colours by $replace, and is
+        // written back, so fill="url(#a)" becomes fill="#ffc21e". Values without a gradient come back unchanged
+        foreach ($xpath->query('//*[@fill or @stroke or @style]') as $element) {
+            foreach (['fill', 'stroke', 'style'] as $attribute) {
+                if ($element->hasAttribute($attribute)) {
+                    $element->setAttribute($attribute, $replace($element->getAttribute($attribute)));
+                }
+            }
+        }
+
+        // Illustrator, among others, can set fills in a <style> element instead
+        foreach ($xpath->query('//*[local-name()="style"]') as $style) {
+            $style->textContent = $replace($style->textContent);
+        }
+
+        // Back to SVG markup, with the gradients swapped for solid colours
+        return $doc->saveXML();
+    }
+
+    /**
+     * The average of a gradient's stop colours as a hex colour. A gradient without stops of its own takes them from
+     * the gradient it links to with `href`, as Illustrator exports often do.
+     *
+     * @param DOMElement[] $gradients The SVG's gradients, by id
+     * @param string $id The gradient's id
+     * @param int $depth How many `href` links have been followed, to stop at a loop
+     * @return string|null The colour, or null if the gradient has no stops with a colour Imagick can read
+     */
+    private function averageGradientColour(array $gradients, string $id, int $depth = 0): ?string
+    {
+        // An id that isn't a gradient in this SVG, or a chain of href links that loops, has no colour
+        $gradient = $gradients[$id] ?? null;
+        if ($gradient === null || $depth > 10) {
+            return null;
+        }
+
+        // Each <stop> sets one of the gradient's colours, as RGB channels from 0 to 255
+        $colours = [];
+        foreach ($gradient->childNodes as $stop) {
+            // Skips whitespace, comments and anything else that isn't a <stop>
+            if (!$stop instanceof DOMElement || $stop->localName !== 'stop') {
+                continue;
+            }
+
+            // A stop's colour can be in its style attribute, e.g. style="stop-color:#ff9800", which wins over a
+            // stop-color attribute: the pattern pulls the value out of the style, and if there isn't one, the
+            // stop-color attribute is read instead
+            $colour = preg_match('/stop-color\s*:\s*([^;]+)/', $stop->getAttribute('style'), $match)
+                ? trim($match[1])
+                : $stop->getAttribute('stop-color');
+
+            try {
+                // ImagickPixel reads any CSS colour, e.g. #ff9800, #f90, rgb(255, 152, 0) or orange, and getColor()
+                // returns its channels, e.g. ['r' => 255, 'g' => 152, 'b' => 0, 'a' => 1]. An unset stop-color is black
+                $colours[] = (new ImagickPixel($colour ?: 'black'))->getColor();
+            } catch (ImagickPixelException) {
+                // A colour Imagick can't read, e.g. currentColor
+            }
+        }
+
+        // No stops of its own, so it borrows them from the gradient it links to, e.g. href="#b". Inkscape and
+        // Illustrator exports often give each shape its own gradient for its position and angle, linking to one
+        // shared gradient that holds the colours, so without following the link these shapes would get no colour and
+        // stay black. SVG 2 uses href, older SVGs xlink:href
+        if (empty($colours)) {
+            $href = $gradient->getAttribute('href') ?: $gradient->getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+
+            // This method calls itself for the linked gradient, with $depth one higher, so a chain of links is
+            // followed until a gradient has stops. A link to another file, rather than to #id, gives no colour
+            return str_starts_with($href, '#') ? $this->averageGradientColour($gradients, substr($href, 1), $depth + 1) : null;
+        }
+
+        // The mean of each channel across the stops, as a hex colour, e.g. #ffeb3b and #ff9800 give #ffc21e. For each
+        // of r, g and b, array_column() takes that channel from every stop, which is averaged and rounded, and the
+        // three results are passed to sprintf() (the ... spreads the array into separate arguments) as 2-digit hex
+        return sprintf('#%02x%02x%02x', ...array_map(
+            fn(string $channel) => (int)round(array_sum(array_column($colours, $channel)) / count($colours)),
+            ['r', 'g', 'b']
+        ));
+    }
+
+    /**
      * Generates a standardized array of transform parameters across AI Vision boundaries.
      * Handles unsupported MIME type fallback conversions (SVG/WEBP to PNG/JPG) and dimensional bounding.
      *
@@ -458,7 +807,8 @@ abstract class ApiService extends Component
         $asset->setTransform(null);
 
         $aiAltTextService = AiAltText::getInstance()->aiAltTextService;
-        // SVG, AVIF and HEIC can carry transparency, so convert those to PNG to preserve it
+        // SVG, AVIF and HEIC are converted to PNG, which is lossless. Any transparency is filled before this transform is
+        // used, see getFlattenedBase64() and getSvgBase64()
         $preferPng = $aiAltTextService->isSvg($asset) || $aiAltTextService->isAvif($asset) || $aiAltTextService->isHeic($asset);
         
         // Set up transform parameters
@@ -472,9 +822,9 @@ abstract class ApiService extends Component
             $transformParams['format'] = $preferPng ? 'png' : 'jpg';
         }
         
-        // Animated GIFs need to be converted to a static format (extracts first frame)
+        // Animated GIFs are sent as a JPG of their first frame, rendered by getFirstFrameBase64(), so the format matches
         if ($this->isAnimatedGif($asset)) {
-            Craft::warning("Asset {$asset->filename} is an animated GIF. Converting to JPG to extract the first frame for AI Vision analysis.", __METHOD__);
+            Craft::info("Asset {$asset->filename} is an animated GIF. Sending its first frame as a JPG.", __METHOD__);
             $transformParams['format'] = 'jpg';
         }
         

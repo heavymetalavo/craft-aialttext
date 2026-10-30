@@ -118,7 +118,7 @@ class GenerateController extends Controller
             $service = AiAltText::getInstance()->aiAltTextService;
 
             if (!$service->createJob($asset, true, $targetSiteId)) {
-                $this->failure("Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off");
+                $this->failure("Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off or Craft's image driver can't read SVGs");
                 return ExitCode::DATAERR;
             }
 
@@ -344,7 +344,8 @@ class GenerateController extends Controller
         
         $totalCount = 0;
         $queuedCount = 0;
-        
+        $copiedCount = 0;
+
         try {
             // First, count total assets to process
             $this->note("Counting assets to process...");
@@ -372,7 +373,7 @@ class GenerateController extends Controller
             }
             
             $this->note("Found {$totalCount} assets to process.");
-            $this->note("Batch size: {$this->batchSize}");
+            $this->note("Reading assets in batches of {$this->batchSize}.");
             
             if (!$this->force && $totalCount > 1000) {
                 if (!$this->confirm("This will process {$totalCount} assets. Continue?")) {
@@ -382,7 +383,7 @@ class GenerateController extends Controller
             }
             
             // Initialize progress bar
-            Console::startProgress(0, $totalCount, 'Processing assets: ');
+            Console::startProgress(0, $totalCount, 'Queueing assets: ');
             $processed = 0;
             
             foreach ($sites as $site) {
@@ -441,24 +442,26 @@ class GenerateController extends Controller
                                 continue;
                             }
                             
-                            // Queue the job
-                            $queued = AiAltText::getInstance()->aiAltTextService->createJob(
+                            // Queue the job once for the sites that share the asset's alt text, or copy it from one of them
+                            $result = AiAltText::getInstance()->aiAltTextService->createBulkJob(
                                 $asset,
-                                false,
-                                $site->id,
-                                false,
-                                true,
+                                $includeWithAltText,
+                                !$this->siteId,
                                 $existingJobs
                             );
 
-                            if ($queued) {
+                            if ($result === 'queued') {
                                 $queuedCount++;
+                            } elseif ($result === 'copied') {
+                                $copiedCount++;
                             }
 
                             if ($this->verbose) {
-                                $this->note($queued
-                                    ? "Queued: {$asset->filename} (ID: {$asset->id})"
-                                    : "Skipped: {$asset->filename} (ID: {$asset->id}) is already queued or not eligible");
+                                $this->note(match ($result) {
+                                    'queued' => "Queued: {$asset->filename} (ID: {$asset->id})",
+                                    'copied' => "Copied: {$asset->filename} (ID: {$asset->id}) alt text from a site that shares it",
+                                    default => "Skipped: {$asset->filename} (ID: {$asset->id}) is already queued, handled by an earlier site that shares its alt text, or not eligible",
+                                });
                             }
                             
                             // Free memory
@@ -492,6 +495,11 @@ class GenerateController extends Controller
             
             Console::endProgress();
             $this->success("\n✓ Successfully queued {$queuedCount} assets for alt text generation.");
+
+            if ($copiedCount > 0) {
+                $this->success("✓ Copied existing alt text to {$copiedCount} assets from sites that share it.");
+            }
+
             $this->tip("Monitor progress with: ./craft queue/info");
             $this->tip("Run the queue with: ./craft queue/run");
             

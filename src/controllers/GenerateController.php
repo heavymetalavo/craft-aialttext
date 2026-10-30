@@ -8,8 +8,7 @@ use craft\web\Controller;
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltTextForAssets;
-use yii\web\ForbiddenHttpException;
-use yii\web\Response;
+use yii\web\{ForbiddenHttpException, Response};
 
 /**
  * Generate Controller
@@ -55,7 +54,7 @@ class GenerateController extends Controller
             if (!$service->createJob($asset, true)) {
                 return $this->asJson([
                     'success' => false,
-                    'message' => Craft::t('ai-alt-text', 'Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off'),
+                    'message' => Craft::t('ai-alt-text', 'Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off or Craft\'s image driver can\'t read SVGs'),
                 ]);
             }
 
@@ -144,6 +143,7 @@ class GenerateController extends Controller
                 Craft::$app->getQueue()->push(new GenerateAiAltTextForAssets([
                     'siteId' => $site->id,
                     'includeExisting' => $includeExisting,
+                    'allSites' => !$siteIdParam,
                 ]));
             }
         } catch (Exception $e) {

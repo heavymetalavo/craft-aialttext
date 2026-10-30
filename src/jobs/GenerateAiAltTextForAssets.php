@@ -27,6 +27,12 @@ class GenerateAiAltTextForAssets extends BaseBatchedJob
     public bool $includeExisting = false;
 
     /**
+     * @var bool Whether this job is one of a run across every site, so sites that share an asset's alt
+     * text with an earlier site skip it.
+     */
+    public bool $allSites = false;
+
+    /**
      * @var array|null The queue's job info, fetched once per batch for the duplicate-job check. Cleared
      * after each batch because the next batch's job is a clone of this one and gets serialized.
      */
@@ -74,13 +80,12 @@ class GenerateAiAltTextForAssets extends BaseBatchedJob
         }
 
         try {
-            // Queue only: the caller has already chosen the sites, so skip the
-            // saveTranslatedResultsToEachSite fan-out.
-            AiAltText::getInstance()->aiAltTextService->createJob(
+            // Queued once for the sites that share the asset's alt text, or copied from one of them
+            AiAltText::getInstance()->aiAltTextService->createBulkJob(
                 $item,
-                currentSiteId: $this->siteId,
-                skipSaveTranslatedResultsToEachSiteSetting: true,
-                existingJobs: $this->existingJobs,
+                $this->includeExisting,
+                $this->allSites,
+                $this->existingJobs,
             );
         } catch (Throwable $e) {
             Craft::error("Error queueing alt text generation for asset {$item->id}: " . $e->getMessage(), __METHOD__);

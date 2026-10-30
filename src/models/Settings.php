@@ -8,18 +8,17 @@ use craft\helpers\App;
 /**
  * Plugin Settings Model
  *
- * Defines the settings for the Ai Alt Text plugin.
- * This model handles the configuration options for OpenAI API integration
- * and alt text generation preferences.
+ * Defines the settings for the Ai Alt Text plugin: the AI provider and its
+ * configuration, and alt text generation preferences.
  *
  * @property string $openAiApiKey The OpenAI API key
  * @property string $openAiModel The OpenAI model to use (e.g., 'gpt-6-luna')
  * @property string $prompt The prompt template for generating alt text
  * @property string $openAiImageInputDetailLevel The detail level for image analysis
- * @property bool $propagate Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
- * @property string $translationPromptAppendage The prompt suffix for translated results
  * @property bool $generateForNewAssets Whether to generate alt text for new assets automatically
- * @property string $aiProvider The API provider to use ('openai', 'anthropic', or 'gemini')
+ * @property bool $processSvgs Whether to generate alt text for SVGs
+ * @property bool $saveTranslatedResultsToEachSite Whether to generate alt text for every site, not just the current site and the sites that share its alt text
+ * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'langdock' or 'openrouter')
  * @property string $anthropicApiKey The Anthropic API key
  * @property string $anthropicModel The Anthropic Model
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
@@ -150,11 +149,6 @@ class Settings extends Model
     public string $openRouterReasoningEffort = 'low';
 
     /**
-     * @var bool Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites.
-     */
-    public bool $propagate = false;
-
-    /**
      * @var bool Whether to save the translated result to each Site's Asset's translatable alt text field
      */
     public bool $saveTranslatedResultsToEachSite = false;
@@ -247,7 +241,6 @@ class Settings extends Model
             [['openRouterImageInputDetailLevel'], 'validateOneOf', 'params' => ['allowed' => ['low', 'high', 'auto', 'original', ''], 'message' => 'Invalid OpenRouter Image Input Detail Level configured.']],
             ['openRouterReasoningEffort', 'string'],
             [['openRouterReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid OpenRouter Reasoning Effort configured.']],
-            ['propagate', 'boolean'],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
