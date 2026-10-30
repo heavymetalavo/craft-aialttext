@@ -47,7 +47,6 @@ class GenerateStats extends Command
             $siteTotal = Asset::find()
                 ->kind('image')
                 ->siteId($site->id)
-                ->status(null)
                 ->count();
 
             // hasAlt() reads the per-site alt value (falling back to the asset's own alt), so
@@ -56,7 +55,6 @@ class GenerateStats extends Command
             $siteWithAlt = Asset::find()
                 ->kind('image')
                 ->siteId($site->id)
-                ->status(null)
                 ->hasAlt(true)
                 ->count();
 

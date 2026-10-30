@@ -24,7 +24,7 @@
 <ol>
     <li>Check the plugin settings are suitable for your project (and your API key is added)</li>
     <li>Ensure each asset volume's field layout includes the native <a href="https://craftcms.com/docs/5.x/reference/element-types/assets.html#alt-text" target="_blank" rel="noopener">Alternative Text field</a>, under <strong>Settings → Assets → (volume) → Field Layout</strong></li>
-    <li>While you're in the field layout, open the Alternative Text field's settings and check its <strong>Translation Method</strong>. That is what decides whether alt text can differ per site: leave it alone for one shared value everywhere, or translate per site to give each site its own. If you want per-site values, also switch on <strong>Save translated results for each site</strong> below, otherwise generating only fills the site you ran it in</li>
+    <li>While you're in the field layout, open the Alternative Text field's settings and check its <strong>Translation Method</strong>. That is what decides whether alt text can differ per site: sites that share alt text under it get one result between them. If you want every site to get alt text, also switch on <strong>Save translated results for each site</strong> below, otherwise generating only fills the site you ran it in and the sites that share its alt text</li>
     <li><p>Ensure your templates are updated to use the <code>alt</code> field, you could consider a fallback <code>asset.alt ?: asset.title</code> if that what was used before</p></li>
     <li>Then generate some AI Alt text by performing one of the following actions:
         <ol>
@@ -34,7 +34,7 @@
             <li>Upload a new asset (if the upload setting is enabled)</li>
         </ol>
     </li>
-    <li>The plugin will queue jobs to generate alt text for each selected asset</li>
+    <li>Alt text for a single asset, selected in the <strong>Assets</strong> manager or on its own page, is generated straight away. Multiple selected assets, the bulk actions utility, new uploads, and the other sites when <strong>Save translated results for each site</strong> is enabled are queued as jobs instead</li>
 </ol>
 
 
@@ -43,31 +43,48 @@
 
 <h2 id="settings" class="mb-m">Settings</h2>
 
+{% set providerOptions = [
+    { label: 'Anthropic', value: 'anthropic' },
+    { label: 'OpenAI', value: 'openai' },
+    { label: 'Langdock', value: 'langdock' },
+    { label: 'OpenRouter', value: 'openrouter' }
+] %}
+{% set providerValues = providerOptions|map(o => o.value) %}
+
+{% set resolvedProvider = parseEnv(settings.aiProvider) %}
+{% set hiddenProviders = resolvedProvider in providerValues
+    ? providerValues|filter(v => v != resolvedProvider)
+    : [] %}
+
+{% set langdockAuthors = ['anthropic', 'openai'] %}
+{% set resolvedLangdockAuthor = parseEnv(settings.langdockModelAuthor) %}
+{% set hiddenLangdockAuthors = resolvedLangdockAuthor in langdockAuthors
+    ? langdockAuthors|filter(v => v != resolvedLangdockAuthor)
+    : [] %}
+
 {{ forms.selectizeField({
     fieldClass: 'mb-m',
     label: "AI Provider"|t("ai-alt-text"),
-    instructions: "Choose which AI service to use for generating alt text"|t("ai-alt-text"),
+    instructions: "Choose which AI service to use for generating alt text. Only the chosen provider's settings are shown below. If you choose an environment variable, save and reload to show its provider's settings."|t("ai-alt-text"),
     id: "aiProvider",
     name: "aiProvider",
-    options: [
-        { label: 'Anthropic', value: 'anthropic' },
-        { label: 'OpenAI', value: 'openai' }
-    ],
+    options: providerOptions,
     includeEnvVars: true,
     allowedEnvValues: null,
     value: settings.aiProvider,
-    errors: settings.getErrors("aiProvider")
+    errors: settings.getErrors("aiProvider"),
+    toggle: true,
+    targetPrefix: '#provider-',
 }) }}
 
 
-<hr class="mt-l mb-l" />
+<div id="provider-anthropic" class="{{ 'anthropic' in hiddenProviders ? 'hidden' }}">
+    <hr class="mt-l mb-l" />
 
-
-<div id="settings-provider-anthropic">
     <h3 class="mb-m">Anthropic Settings</h3>
 
     {{ forms.autosuggestField({
-    fieldClass: 'mb-m',
+        fieldClass: 'mb-m',
         label: "Anthropic API Key"|t("ai-alt-text"),
         instructions: "The API key from your [Anthropic Console account](https://console.anthropic.com/)"|t("ai-alt-text"),
         id: "anthropicApiKey",
@@ -79,19 +96,19 @@
     }) }}
 
     {{ forms.autosuggestField({
-    fieldClass: 'mb-m',
+        fieldClass: 'mb-m',
         label: 'Anthropic Model'|t('ai-alt-text'),
         id: 'anthropicModel',
         name: 'anthropicModel',
-        instructions: "The Anthropic model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-haiku-4-5`."|t("ai-alt-text"),
+        instructions: "The Anthropic model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-haiku-5-5`."|t("ai-alt-text"),
         value: settings.anthropicModel,
-        placeholder: 'claude-haiku-4-5',
+        placeholder: 'claude-haiku-5-5',
         errors: settings.getErrors('anthropicModel'),
         suggestEnvVars: true,
     }) }}
 
     {{ forms.selectizeField({
-    fieldClass: 'mb-m',
+        fieldClass: 'mb-m',
         label: 'Anthropic Image Detail Level'|t('ai-alt-text'),
         id: 'anthropicImageDetailLevel',
         name: 'anthropicImageDetailLevel',
@@ -109,14 +126,13 @@
 </div>
 
 
-<hr class="mt-l mb-l" />
+<div id="provider-openai" class="{{ 'openai' in hiddenProviders ? 'hidden' }}">
+    <hr class="mt-l mb-l" />
 
-
-<div id="settings-provider-openai">
     <h3 class="mb-m">OpenAI Settings</h3>
 
     {{ forms.autosuggestField({
-    fieldClass: 'mb-m',
+        fieldClass: 'mb-m',
         label: "OpenAI API Key"|t("ai-alt-text"),
         instructions: "The API key from your Open AI account"|t("ai-alt-text"),
         id: "openAiApiKey",
@@ -128,19 +144,19 @@
     }) }}
 
     {{ forms.autosuggestField({
-    fieldClass: 'mb-m',
+        fieldClass: 'mb-m',
         label: 'OpenAI Model'|t('ai-alt-text'),
         id: 'openAiModel',
         name: 'openAiModel',
-        instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models) E.g., `gpt-5-nano`."|t("ai-alt-text"),
+        instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models) E.g., `gpt-6-luna`."|t("ai-alt-text"),
         value: settings.openAiModel,
-        placeholder: 'gpt-5-nano',
+        placeholder: 'gpt-6-luna',
         errors: settings.getErrors('openAiModel'),
         suggestEnvVars: true,
     }) }}
 
     {{ forms.selectizeField({
-    fieldClass: 'mb-m',
+        fieldClass: 'mb-m',
         label: 'OpenAI Image Detail Level'|t('ai-alt-text'),
         id: 'openAiImageInputDetailLevel',
         name: 'openAiImageInputDetailLevel',
@@ -158,11 +174,11 @@
     }) }}
 
     {{ forms.selectizeField({
-    fieldClass: 'mb-m',
+        fieldClass: 'mb-m',
         label: 'OpenAI Reasoning Effort'|t('ai-alt-text'),
         id: 'openAiReasoningEffort',
         name: 'openAiReasoningEffort',
-        instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage."|t("ai-alt-text"),
+        instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values work depends on the model: `gpt-5` models (like `gpt-5-nano` and `gpt-5-mini`) accept `minimal` but not `none` or `xhigh`, while newer models (like `gpt-6-luna`) accept `none` and `xhigh` but not `minimal`. `low` works on both."|t("ai-alt-text"),
         options: [
             { label: 'None', value: 'none' },
             { label: 'Minimal', value: 'minimal' },
@@ -179,6 +195,162 @@
 </div>
 
 
+<div id="provider-langdock" class="{{ 'langdock' in hiddenProviders ? 'hidden' }}">
+    <hr class="mt-l mb-l" />
+
+    <h3 class="mb-m">Langdock Settings</h3>
+
+    {{ forms.autosuggestField({
+        fieldClass: 'mb-m',
+        label: "Langdock API Key"|t("ai-alt-text"),
+        instructions: "An API key from your [Langdock workspace](https://docs.langdock.com/en/developer/overview/api-introduction). One key works for both model authors."|t("ai-alt-text"),
+        id: "langdockApiKey",
+        name: "langdockApiKey",
+        placeholder: '$LANGDOCK_API_KEY',
+        suggestEnvVars: true,
+        value: settings.langdockApiKey,
+        errors: settings.getErrors("langdockApiKey"),
+    }) }}
+
+    {{ forms.selectizeField({
+        fieldClass: 'mb-m',
+        label: 'Langdock Model Author'|t('ai-alt-text'),
+        id: 'langdockModelAuthor',
+        name: 'langdockModelAuthor',
+        instructions: "The author of the model below, so requests go to the matching Langdock API: `Anthropic` for models such as Claude, or `OpenAI` for models such as GPT. Only these two model authors are supported. If you choose an environment variable, it must resolve to `anthropic` or `openai`, then save and reload to show the matching settings."|t("ai-alt-text"),
+        options: [
+            { label: 'Anthropic (e.g. Claude)', value: 'anthropic' },
+            { label: 'OpenAI (e.g. GPT)', value: 'openai' }
+        ],
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        value: settings.langdockModelAuthor,
+        errors: settings.getErrors('langdockModelAuthor'),
+        toggle: true,
+        targetPrefix: '#langdock-author-',
+    }) }}
+
+    {{ forms.autosuggestField({
+        fieldClass: 'mb-m',
+        label: 'Langdock Model'|t('ai-alt-text'),
+        id: 'langdockModel',
+        name: 'langdockModel',
+        instructions: "The model to use, as named in Langdock. It must have vision capabilities and come from the model author above. See how to list the models in your workspace for the [Anthropic](https://docs.langdock.com/en/developer/completion-api/anthropic) or [OpenAI](https://docs.langdock.com/en/developer/completion-api/openai-responses) API."|t("ai-alt-text"),
+        value: settings.langdockModel,
+        errors: settings.getErrors('langdockModel'),
+        suggestEnvVars: true,
+    }) }}
+
+    <div id="langdock-author-openai" class="{{ 'openai' in hiddenLangdockAuthors ? 'hidden' }}">
+        {{ forms.selectizeField({
+            fieldClass: 'mb-m',
+            label: 'Langdock Image Detail Level'|t('ai-alt-text'),
+            id: 'langdockImageInputDetailLevel',
+            name: 'langdockImageInputDetailLevel',
+            instructions: "Controls the [detail level](https://developers.openai.com/api/docs/guides/images-vision#choose-an-image-detail-level) used to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest."|t("ai-alt-text"),
+            options: [
+                { label: 'Low - Fast, low-cost (512px x 512px)', value: 'low' },
+                { label: 'High - Standard high-fidelity understanding', value: 'high' },
+                { label: 'Auto - Let the model choose (may use more tokens)', value: 'auto' }
+            ],
+            includeEnvVars: true,
+            allowedEnvValues: null,
+            value: settings.langdockImageInputDetailLevel,
+            errors: settings.getErrors('langdockImageInputDetailLevel')
+        }) }}
+
+        {{ forms.selectizeField({
+            fieldClass: 'mb-m',
+            label: 'Langdock Reasoning Effort'|t('ai-alt-text'),
+            id: 'langdockReasoningEffort',
+            name: 'langdockReasoningEffort',
+            instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values work depends on the model: `gpt-5` models (like `gpt-5-nano` and `gpt-5-mini`) accept `minimal` but not `none` or `xhigh`, while newer models (like `gpt-6-luna`) accept `none` and `xhigh` but not `minimal`. `low` works on both."|t("ai-alt-text"),
+            options: [
+                { label: 'None', value: 'none' },
+                { label: 'Minimal', value: 'minimal' },
+                { label: 'Low', value: 'low' },
+                { label: 'Medium', value: 'medium' },
+                { label: 'High', value: 'high' },
+                { label: 'Extra High', value: 'xhigh' }
+            ],
+            includeEnvVars: true,
+            allowedEnvValues: null,
+            value: settings.langdockReasoningEffort,
+            errors: settings.getErrors('langdockReasoningEffort')
+        }) }}
+    </div>
+</div>
+
+
+<div id="provider-openrouter" class="{{ 'openrouter' in hiddenProviders ? 'hidden' }}">
+    <hr class="mt-l mb-l" />
+
+    <h3 class="mb-m">OpenRouter Settings</h3>
+
+    {{ forms.autosuggestField({
+        fieldClass: 'mb-m',
+        label: "OpenRouter API Key"|t("ai-alt-text"),
+        instructions: "An API key from your [OpenRouter account](https://openrouter.ai/keys). The account needs credit."|t("ai-alt-text"),
+        id: "openRouterApiKey",
+        name: "openRouterApiKey",
+        placeholder: '$OPENROUTER_API_KEY',
+        suggestEnvVars: true,
+        value: settings.openRouterApiKey,
+        errors: settings.getErrors("openRouterApiKey"),
+    }) }}
+
+    {{ forms.autosuggestField({
+        fieldClass: 'mb-m',
+        label: 'OpenRouter Model'|t('ai-alt-text'),
+        id: 'openRouterModel',
+        name: 'openRouterModel',
+        instructions: "The model's name on OpenRouter, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` (our top pick) or `google/gemini-3.5-flash-lite`. It must accept image input: [browse the vision models](https://openrouter.ai/models?input_modalities=image&output_modalities=text)."|t("ai-alt-text"),
+        value: settings.openRouterModel,
+        placeholder: 'anthropic/claude-haiku-5.5',
+        errors: settings.getErrors('openRouterModel'),
+        suggestEnvVars: true,
+    }) }}
+
+    {{ forms.selectizeField({
+        fieldClass: 'mb-m',
+        label: 'OpenRouter Image Detail Level'|t('ai-alt-text'),
+        id: 'openRouterImageInputDetailLevel',
+        name: 'openRouterImageInputDetailLevel',
+        instructions: "Controls the [detail level](https://openrouter.ai/docs/guides/overview/multimodal/image-understanding) used to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest. OpenAI and Gemini models use it, and in testing Qwen, GLM and Grok models ignored it. For Claude models it picks the size limit, as the Anthropic setting does."|t("ai-alt-text"),
+        options: [
+            { label: 'Low - Fast, low-cost (512px x 512px)', value: 'low' },
+            { label: 'High - Standard high-fidelity understanding', value: 'high' },
+            { label: 'Original - Large, dense, spatially sensitive images (gpt-5.4+)', value: 'original' },
+            { label: 'Auto - Let the model choose (may use more tokens)', value: 'auto' }
+        ],
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        value: settings.openRouterImageInputDetailLevel,
+        errors: settings.getErrors('openRouterImageInputDetailLevel')
+    }) }}
+
+    {{ forms.selectizeField({
+        fieldClass: 'mb-m',
+        label: 'OpenRouter Reasoning Effort'|t('ai-alt-text'),
+        id: 'openRouterReasoningEffort',
+        name: 'openRouterReasoningEffort',
+        instructions: "Controls the [reasoning effort](https://openrouter.ai/docs/api_reference/responses/reasoning) value when using OpenAI models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage. Which values work depends on the model: `gpt-5` models (like `gpt-5-nano`) accept `minimal` but not `none`, while newer models (like `gpt-6-luna`) accept `none` but, directly with OpenAI, not `minimal` (OpenRouter accepted it). `low` works on both. Other models are sent no reasoning setting."|t("ai-alt-text"),
+        options: [
+            { label: 'None', value: 'none' },
+            { label: 'Minimal', value: 'minimal' },
+            { label: 'Low', value: 'low' },
+            { label: 'Medium', value: 'medium' },
+            { label: 'High', value: 'high' },
+            { label: 'Extra High', value: 'xhigh' }
+        ],
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        value: settings.openRouterReasoningEffort,
+        errors: settings.getErrors('openRouterReasoningEffort')
+    }) }}
+</div>
+
+
 <hr class="mt-l mb-l" />
 
 
@@ -191,7 +363,7 @@
     id: 'prompt',
     name: 'prompt',
     rows: 8,
-    instructions: "Sent to the AI provider as the system / instruction message. The field supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`. Consider `{site.languageName}` for the site's language display name (e.g. `English (United Kingdom)`) which can help with translations on non-english sites. Checkout [the readme](https://github.com/heavymetalavo/craft-aialttext?tab=readme-ov-file#-default-prompt) for the most up to date suggestion prompt template."|t("ai-alt-text"),
+    instructions: "Sent to the AI provider as the system / instruction message. The field supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`. Consider `{site.languageName}` for the site's language display name (e.g. `English (United Kingdom)`) which can help with translations on non-english sites. Checkout [the docs](https://github.com/heavymetalavo/craft-aialttext/blob/6.x/docs/settings.md#-default-prompt) for the most up to date suggestion prompt template."|t("ai-alt-text"),
     value: settings.prompt,
     placeholder: "Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. \"#\", \"alt text:\", \"An image of\", \"A photo of\"). Do not wrap the output in quotes. Output in the language: {site.languageName} (BCP 47: {site.language})",
     errors: settings.getErrors('prompt'),
@@ -199,20 +371,10 @@
 
 {{ forms.lightswitchField({
     fieldClass: 'mb-m',
-    label: 'Propagate'|t('ai-alt-text'),
-    id: 'propagate',
-    name: 'propagate',
-    instructions: "Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites."|t("ai-alt-text"),
-    on: settings.propagate,
-    errors: settings.getErrors('propagate'),
-}) }}
-
-{{ forms.lightswitchField({
-    fieldClass: 'mb-m',
     label: 'Generate for new image assets (on upload or file replacement)'|t('ai-alt-text'),
     id: 'generateForNewAssets',
     name: 'generateForNewAssets',
-    instructions: "If enabled, the plugin will automatically generate alt text when an image asset is created (on upload) or its file is replaced. On replacement, the alt text for the site the replacement was made in is overwritten, since it describes the old image; other sites keep their existing alt text unless Save translated results for each site is enabled. Note that Craft fills alt text in from an image's embedded IPTC/XMP caption when one is present, and the generated text replaces it — leave this off if your photographers caption their images."|t("ai-alt-text"),
+    instructions: "If enabled, the plugin will automatically generate alt text when an image asset is created (on upload) or its file is replaced. On replacement, the alt text for the site the replacement was made in, and the sites that share it, is overwritten, since it describes the old image; other sites keep their existing alt text unless Save translated results for each site is enabled. Note that Craft fills alt text in from an image's embedded IPTC/XMP caption when one is present, and the generated text replaces it — leave this off if your photographers caption their images."|t("ai-alt-text"),
     on: settings.generateForNewAssets,
     errors: settings.getErrors('generateForNewAssets'),
 }) }}
@@ -222,7 +384,8 @@
     label: 'Process SVGs'|t('ai-alt-text'),
     id: 'processSvgs',
     name: 'processSvgs',
-    instructions: "Attempt to generate alt text for SVG files when they are uploaded or batched processed. This requires Craft's global `transformSvgs` setting to be enabled."|t("ai-alt-text"),
+    instructions: "Attempt to generate alt text for SVG files when they are uploaded or batch processed."|t("ai-alt-text"),
+    warning: not isImagick ? "Craft isn't using the Imagick image driver, which the plugin renders SVGs with, so SVGs are skipped."|t("ai-alt-text"),
     on: settings.processSvgs,
     errors: settings.getErrors('processSvgs'),
 }) }}
@@ -232,11 +395,7 @@
     label: 'Save translated results for each site'|t('ai-alt-text'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',
-    instructions: "If enabled, the plugin will queue an extra job for each site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the site (`en-GB` for British english, `en-US` for American english, `de` for German etc). When disabled, alt text will generate for assets on the site the control panel is currently working with only."|t("ai-alt-text"),
+    instructions: "Follows the asset volume's **Alternative Text Translation Method**: sites that share alt text (all sites on Not translatable, or sites in the same site group or language) get one result between them, from one request, in the language of the site it's generated for. When on, every site gets alt text. When off, only the current site and the sites that share its alt text do."|t("ai-alt-text"),
     on: settings.saveTranslatedResultsToEachSite,
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}
-
-
-
-

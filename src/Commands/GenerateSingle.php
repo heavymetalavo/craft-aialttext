@@ -57,12 +57,21 @@ class GenerateSingle extends Command
         $this->line("Processing: {$asset->filename} (ID: {$asset->id})");
 
         try {
-            $service->createJob($asset, true, $siteId);
-            $this->info('Alt text generation queued successfully');
-            $this->comment('Check the queue status with: php artisan queue:monitor');
+            if (!$service->createJob($asset, true, $siteId)) {
+                $this->error("Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off or Craft's image driver can't read SVGs");
+                return self::FAILURE;
+            }
+
+            $this->info('Alt text generated');
+
+            if ($service->queuesOtherSites()) {
+                $this->line('The other sites have been queued.');
+                $this->comment('Check the queue status with: php artisan queue:monitor');
+            }
+
             return self::SUCCESS;
         } catch (\Exception $e) {
-            $this->error("Error queueing alt text generation: {$e->getMessage()}");
+            $this->error("Error processing alt text generation: {$e->getMessage()}");
             return self::FAILURE;
         }
     }

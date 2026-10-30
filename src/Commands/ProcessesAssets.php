@@ -20,6 +20,14 @@ trait ProcessesAssets
      */
     protected function processAssets(AiAltTextService $service, bool $includeWithAltText): int
     {
+        // Refuse up front rather than queueing jobs that would each fail with the same error
+        $configurationError = $service->getConfigurationError();
+
+        if ($configurationError !== null) {
+            $this->error($configurationError);
+            return self::FAILURE;
+        }
+
         $siteId = $this->option('site-id');
         $batchSize = (int)($this->option('batch-size') ?? 500);
 
@@ -41,6 +49,7 @@ trait ProcessesAssets
 
         $totalCount = 0;
         $queuedCount = 0;
+        $copiedCount = 0;
 
         try {
             $this->line('Counting assets to process...');
@@ -48,8 +57,7 @@ trait ProcessesAssets
             foreach ($sites as $site) {
                 $query = Asset::find()
                     ->kind('image')
-                    ->siteId($site->id)
-                    ->status(null);
+                    ->siteId($site->id);
 
                 if (!$includeWithAltText) {
                     // hasAlt() reads the per-site alt value (falling back to the asset's own
@@ -72,7 +80,7 @@ trait ProcessesAssets
             }
 
             $this->line("Found {$totalCount} assets to process.");
-            $this->line("Batch size: {$batchSize}");
+            $this->line("Reading assets in batches of {$batchSize}.");
 
             if (!$this->option('force') && $totalCount > 1000) {
                 if (!$this->confirm("This will process {$totalCount} assets. Continue?")) {
@@ -82,7 +90,7 @@ trait ProcessesAssets
             }
 
             $bar = $this->output->createProgressBar($totalCount);
-            $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%%');
+            $bar->setFormat(' Queueing assets: %current%/%max% [%bar%] %percent:3s%%');
             $bar->start();
 
             foreach ($sites as $site) {
@@ -91,15 +99,14 @@ trait ProcessesAssets
                     $this->line("Processing site: {$site->name}");
                 }
 
-                $offset = 0;
+                $lastId = 0;
 
                 while (true) {
                     $query = Asset::find()
                         ->kind('image')
                         ->siteId($site->id)
-                        ->status(null)
                         ->orderBy(['elements.id' => SORT_ASC])
-                        ->offset($offset)
+                        ->where('elements.id', '>', $lastId)
                         ->limit($batchSize);
 
                     if (!$includeWithAltText) {
@@ -112,9 +119,12 @@ trait ProcessesAssets
                         break;
                     }
 
+                    // Read the queue once per batch for the duplicate-job check, rather than once per asset
+                    $existingJobs = $service->pendingJobDescriptions();
+
                     if ($this->output->isVerbose()) {
                         $this->newLine();
-                        $this->line("Processing batch of " . count($assetIds) . " assets (offset: {$offset})");
+                        $this->line("Processing batch of " . count($assetIds) . " assets (after ID: {$lastId})");
                     }
 
                     foreach ($assetIds as $assetId) {
@@ -137,11 +147,21 @@ trait ProcessesAssets
                                 continue;
                             }
 
-                            $service->createJob($asset, false, $site->id, false, true);
-                            $queuedCount++;
+                            // Queue the job once for the sites that share the asset's alt text, or copy it from one of them
+                            $result = $service->createBulkJob($asset, $includeWithAltText, !$siteId, $existingJobs);
+
+                            if ($result === 'queued') {
+                                $queuedCount++;
+                            } elseif ($result === 'copied') {
+                                $copiedCount++;
+                            }
 
                             if ($this->output->isVerbose()) {
-                                $this->line("Queued: {$asset->filename} (ID: {$asset->id})");
+                                $this->line(match ($result) {
+                                    'queued' => "Queued: {$asset->filename} (ID: {$asset->id})",
+                                    'copied' => "Copied: {$asset->filename} (ID: {$asset->id}) alt text from a site that shares it",
+                                    default => "Skipped: {$asset->filename} (ID: {$asset->id}) is already queued, handled by an earlier site that shares its alt text, or not eligible",
+                                });
                             }
 
                             unset($asset);
@@ -153,7 +173,8 @@ trait ProcessesAssets
                         $bar->advance();
                     }
 
-                    $offset += $batchSize;
+                    // Keyset paging: the hasAlt(false) set shrinks as queued jobs complete, so an offset would skip assets
+                    $lastId = max($assetIds);
 
                     unset($assetIds);
                     if (function_exists('gc_collect_cycles')) {
@@ -172,6 +193,11 @@ trait ProcessesAssets
             $bar->finish();
             $this->newLine();
             $this->info("Successfully queued {$queuedCount} assets for alt text generation.");
+
+            if ($copiedCount > 0) {
+                $this->info("Copied existing alt text to {$copiedCount} assets from sites that share it.");
+            }
+
             $this->comment('Monitor progress with: php artisan queue:monitor');
             $this->comment('Run the queue with: php artisan queue:work');
 

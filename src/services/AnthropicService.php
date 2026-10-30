@@ -6,8 +6,9 @@ use CraftCms\Cms\Asset\Elements\Asset;
 use CraftCms\Cms\Support\Env;
 use CraftCms\Cms\Support\Json;
 use Exception;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\{GuzzleException, RequestException};
 use heavymetalavo\craftaialttext\models\api\{AnthropicRequest, AnthropicResponse};
+use heavymetalavo\craftaialttext\models\Settings;
 use Illuminate\Container\Attributes\Singleton;
 use heavymetalavo\craftaialttext\AiAltText;
 use Illuminate\Support\Facades\Log;
@@ -20,18 +21,42 @@ use Illuminate\Support\Facades\Log;
 #[Singleton]
 class AnthropicService extends ApiService
 {
-    private string $apiKey;
-    private string $model;
-    private string $detailLevel;
-    private string $baseUrl = 'https://api.anthropic.com/v1/messages';
+    protected string $apiKey;
+    protected string $model;
+    protected string $detailLevel;
+    protected string $baseUrl = 'https://api.anthropic.com/v1/messages';
+    protected string $providerLabel = 'Anthropic';
 
+    /**
+     * Initializes the service with the Anthropic API key, model and image detail level from the plugin settings.
+     */
     public function __construct()
     {
         parent::__construct();
-        $settings = AiAltText::settings();
+        $this->applySettings(AiAltText::settings());
+    }
+
+    /**
+     * Reads the API key, model and image detail level from the plugin settings. Providers that speak the
+     * Anthropic Messages API through another host override this to read their own settings.
+     */
+    protected function applySettings(Settings $settings): void
+    {
         $this->apiKey = Env::parse($settings->anthropicApiKey);
         $this->model = Env::parse($settings->anthropicModel);
         $this->detailLevel = $settings->anthropicImageDetailLevel;
+    }
+
+    /**
+     * The headers sent with every request.
+     */
+    protected function requestHeaders(): array
+    {
+        return [
+            'x-api-key' => $this->apiKey,
+            'anthropic-version' => '2023-06-01',
+            'content-type' => 'application/json',
+        ];
     }
 
     /**
@@ -45,6 +70,9 @@ class AnthropicService extends ApiService
             return '';
         }
 
+        // Set by flattenTransparency() if this image's transparent areas are filled
+        $this->transparencyFill = null;
+
         $targetDimension = match ($this->detailLevel) {
             'low' => 500,
             'medium' => 1000,
@@ -55,17 +83,32 @@ class AnthropicService extends ApiService
         // Anthropic Vision: max long edge based on detail level, max 5MB payload, max ~1600 tokens
         $transformParams = $this->getVisionTransformParams($asset, maxLongEdge: $targetDimension, maxFileSizeMb: 5, maxTokens: 1600);
 
+        // Checked before setTransform(), after which the asset reports the transform's MIME type instead of GIF or SVG
+        $isAnimatedGif = $this->isAnimatedGif($asset);
+        $isSvg = app(AiAltTextService::class)->isSvg($asset);
+        // Transparent images are flattened here, as models don't reliably see transparency, see getFlattenedBase64()
+        $flattenedBase64 = ($isAnimatedGif || $isSvg) ? null : $this->getFlattenedBase64($asset, $transformParams);
+
         if (!empty($transformParams)) {
             $asset->setTransform($transformParams);
         }
 
-        $mimeType = $asset->getMimeType();
+        // The MIME type of the image sent: a JPG for a filled image and a PNG for an SVG, as both are rendered here
+        // (an SVG can't use getMimeType(), which stays image/svg+xml when Craft's transformSvgs is off). Anything
+        // else uses getMimeType(): the transform's output format after setTransform(), or the original's without one
+        $mimeType = match (true) {
+            $flattenedBase64 !== null => 'image/jpeg',
+            $isSvg => 'image/png',
+            default => $asset->getMimeType(),
+        };
 
         if (!$this->isAcceptedMimeType($mimeType)) {
             throw new Exception("Asset transform produced unsupported MIME type: $mimeType. Supported formats are: " . implode(', ', self::ACCEPTED_MIME_TYPES));
         }
 
-        $imageUrl = $asset->getUrl($transformParams, true);
+        // Animated GIFs, SVGs and transparent images are rendered here and sent as base64, see getFirstFrameBase64(),
+        // getSvgBase64() and getFlattenedBase64()
+        $imageUrl = ($isAnimatedGif || $isSvg || $flattenedBase64 !== null) ? null : $asset->getUrl($transformParams, true);
 
         // If we have a URL, resolve root-relative URLs to the site base; leave absolute URLs as-is
         if (!empty($imageUrl)) {
@@ -76,7 +119,12 @@ class AnthropicService extends ApiService
 
         // If no public URL is available, or base64 is forced
         if ($forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            $base64Image = $this->getAssetBase64String($asset, $transformParams);
+            $base64Image = match (true) {
+                $flattenedBase64 !== null => $flattenedBase64,
+                $isAnimatedGif => $this->getFirstFrameBase64($asset, $transformParams),
+                $isSvg => $this->getSvgBase64($asset, $transformParams),
+                default => $this->getAssetBase64String($asset, $transformParams),
+            };
             $imageSource = [
                 'type' => 'base64',
                 'media_type' => $mimeType,
@@ -94,14 +142,14 @@ class AnthropicService extends ApiService
     private function sendRequest(?string $imageUrl, ?array $base64ImageSource, string $mimeType, Asset $asset, ?int $siteId, bool $forceBase64 = false): string
     {
         try {
-            Log::info('Anthropic API request initiated for asset: ' . $asset->filename . ' with image URL: ' . $imageUrl);
+            Log::info('Generating alt text with ' . $this->providerLabel . ' for asset: ' . $asset->filename . ' (' . ($imageUrl ?: 'base64 image') . ')');
 
             $prompt = $this->resolvePrompt($asset, $siteId);
 
             $requestModel = new AnthropicRequest();
             $requestModel->model = $this->model;
             $requestModel->setSystem($prompt);
-            $requestModel->setPrompt(self::GENERATE_TRIGGER);
+            $requestModel->setPrompt($this->generateTrigger());
             if ($base64ImageSource) {
                 $requestModel->setImageSource($base64ImageSource);
             } elseif ($imageUrl) {
@@ -109,42 +157,39 @@ class AnthropicService extends ApiService
             }
 
             if (!$requestModel->validate()) {
-                throw new Exception("Invalid Anthropic request: " . Json::encode($requestModel->errors()->toArray()));
+                throw new Exception("Invalid " . $this->providerLabel . " request: " . Json::encode($requestModel->errors()->toArray()));
             }
 
             $requestArray = $requestModel->toArray();
 
+            $this->logRequest($this->baseUrl, $requestArray);
+
+            $requestStartedAt = microtime(true);
             $response = $this->client->post($this->baseUrl, [
-                'headers' => [
-                    'x-api-key' => $this->apiKey,
-                    'anthropic-version' => '2023-06-01',
-                    'content-type' => 'application/json',
-                ],
+                'headers' => $this->requestHeaders(),
                 'json' => $requestArray,
             ]);
 
             $responseBody = (string)$response->getBody();
+            $this->logResponse($this->baseUrl, $response->getStatusCode(), $responseBody, microtime(true) - $requestStartedAt);
 
-            $responseModel = new AnthropicResponse();
+            $responseModel = (new AnthropicResponse())->setProviderLabel($this->providerLabel);
             if (!$responseModel->parseResponse($responseBody)) {
-                throw new Exception("Anthropic API returned error: " . $responseModel->getErrorMessage());
+                throw new Exception($this->providerLabel . " API returned error: " . $responseModel->getErrorMessage());
             }
 
             return $responseModel->getText();
 
-        } catch (\Exception $e) {
-            // Catch Exception, not just RequestException: Guzzle throws ConnectException (which
-            // extends TransferException, not RequestException) for DNS failures, TLS failures and
-            // connect timeouts, so those previously escaped unhandled with no base64 fallback.
-            // OpenAiService already catches Exception here.
+        } catch (GuzzleException $e) {
+            // ConnectException (DNS, TLS, connect timeouts) is not a RequestException
             $errorResponse = ($e instanceof RequestException && $e->hasResponse())
                 ? (string)$e->getResponse()->getBody()
                 : $e->getMessage();
-            Log::error("Anthropic API Error: " . $errorResponse);
+            Log::error($this->providerLabel . " API Error: " . trim($errorResponse));
 
-            $responseModel = new AnthropicResponse();
+            $responseModel = (new AnthropicResponse())->setProviderLabel($this->providerLabel);
             if ($responseModel->parseResponse($errorResponse) && $responseModel->hasError()) {
-                throw new Exception("Anthropic API request failed parsed response: " . $responseModel->getErrorMessage());
+                throw new Exception($this->providerLabel . " API request failed parsed response: " . $responseModel->getErrorMessage());
             }
 
             // Try a fallback where if we have accessed the image before but the provider cannot access it, we can try again with the base64 encoded contents
@@ -159,7 +204,12 @@ class AnthropicService extends ApiService
                 return $this->generateAltText($asset, $siteId, true);
             }
 
-            throw new Exception("Anthropic API request failed error response: " . $errorResponse);
+            // Langdock reports errors as a flat {"message": "..."} rather than Anthropic's error object
+            if (is_string($decodedErrorResponse['message'] ?? null)) {
+                throw new Exception($this->providerLabel . ' API request failed: ' . $decodedErrorResponse['message']);
+            }
+
+            throw new Exception($this->providerLabel . " API request failed error response: " . $errorResponse);
         }
     }
 }

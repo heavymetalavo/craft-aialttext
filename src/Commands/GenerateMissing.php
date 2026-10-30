@@ -25,7 +25,7 @@ class GenerateMissing extends Command
 
     public function handle(AiAltTextService $service): int
     {
-        $this->info('Generating AI alt text for assets without existing alt text...');
+        $this->info('Queueing AI alt text generation for assets without existing alt text...');
         return $this->processAssets($service, includeWithAltText: false);
     }
 }

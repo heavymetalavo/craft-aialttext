@@ -62,20 +62,20 @@
        since `svg * { fill: currentColor }` already colours it to match the label. #}
     <a href="{{ cpUrl('settings/plugins/ai-alt-text') }}" style="{{ btnStyle }}">
         <span style="display: inline-flex; width: 1em; height: 1em; flex: none;" aria-hidden="true">{{ iconSvg('gear') }}</span>
-        Plugin Settings
+        {{ "Plugin Settings"|t('ai-alt-text') }}
     </a>
 </div>
 {% endif %}
 
 <h2>{{ "Bulk actions"|t('ai-alt-text') }}</h2>
 
-<p>Generate alt text for all eligible image assets, the <strong>Save translated results for each site</strong> setting will be ignored to perform the requested action.</p>
+<p>{{ "Generate alt text for all eligible image assets, the <strong>Save translated results for each site</strong> setting will be ignored to perform the requested action."|t('ai-alt-text')|raw }}</p>
 
-<p class="light"><strong>Image assets only</strong>. Videos, PDFs and audio are excluded. Formats the provider can't yet process are still counted.</p>
+<p class="light">{{ "<strong>Image assets only</strong>. Videos, PDFs and audio are excluded. Formats the provider can't yet process are still counted."|t('ai-alt-text')|raw }}</p>
 
 {# Scrolls horizontally rather than overflowing the pane at narrower widths. tabindex/role make
    the scrollable region reachable by keyboard, per WCAG 2.1.1. #}
-<div style="overflow-x: auto;" tabindex="0" role="region" aria-label="Alt text coverage by site">
+<div style="overflow-x: auto;" tabindex="0" role="region" aria-label="{{ 'Alt text coverage by site'|t('ai-alt-text') }}">
 <table class="data fullwidth">
     <thead>
         <tr>

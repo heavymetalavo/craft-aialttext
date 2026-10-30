@@ -3,13 +3,14 @@
 namespace heavymetalavo\craftaialttext;
 
 use CraftCms\Cms\Asset\Events\AssetReplaced;
+use CraftCms\Cms\Cp\Events\CpAlertsResolving;
 use CraftCms\Cms\Element\Events\{ElementActionsResolving, ElementActionMenuItemsResolving, ElementLifecycleSaved};
 use CraftCms\Cms\Plugin\Plugin;
 use CraftCms\Cms\ProjectConfig\ProjectConfig;
-use CraftCms\Cms\Support\Facades\Plugins;
+use CraftCms\Cms\Support\Facades\{Images, Plugins};
 use heavymetalavo\craftaialttext\Commands\{GenerateAll, GenerateMissing, GenerateSingle, GenerateStats};
 use CraftCms\Cms\View\Events\CpTemplateRootsResolving;
-use heavymetalavo\craftaialttext\listeners\{AddAssetActionMenuItem, QueueAltTextForNewAsset, RegenerateAltTextOnReplace, RegisterAssetElementActions, RegisterCpTemplateRoot, RestoreFailedJobDescription};
+use heavymetalavo\craftaialttext\listeners\{AddAssetActionMenuItem, AddConfigurationAlert, QueueAltTextForNewAsset, RegenerateAltTextOnReplace, RegisterAssetElementActions, RegisterCpTemplateRoot, RestoreFailedJobDescription};
 use heavymetalavo\craftaialttext\models\Settings;
 use heavymetalavo\craftaialttext\utilities\AiAltTextUtility;
 use Illuminate\Queue\Events\JobFailed;
@@ -24,7 +25,7 @@ use function CraftCms\Cms\template;
  */
 class AiAltText extends Plugin
 {
-    public string $schemaVersion = '1.1.0';
+    public string $schemaVersion = '1.2.0';
     public bool $hasCpSettings = true;
 
     /**
@@ -61,6 +62,7 @@ class AiAltText extends Plugin
         ElementLifecycleSaved::class => QueueAltTextForNewAsset::class,
         AssetReplaced::class => RegenerateAltTextOnReplace::class,
         CpTemplateRootsResolving::class => RegisterCpTemplateRoot::class,
+        CpAlertsResolving::class => AddConfigurationAlert::class,
     ];
 
     /**
@@ -129,6 +131,8 @@ class AiAltText extends Plugin
     {
         return template('ai-alt-text/_settings', [
             'settings' => $this->getSettings(),
+            // Twig has no `craft.app` in Craft 6, so the Process SVGs warning gets the driver from here
+            'isImagick' => Images::getIsImagick(),
         ]);
     }
 }

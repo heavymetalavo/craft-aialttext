@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Log;
 /**
  * OpenAI Response Model
  *
- * Parses and represents a response from the OpenAI Responses API.
+ * Represents a response from a Responses API provider (OpenAI, or a host such as Langdock or OpenRouter).
+ * This model handles the structure and validation of API responses, including the generated content and any errors.
  */
 class OpenAiResponse extends Component
 {
@@ -19,6 +20,16 @@ class OpenAiResponse extends Component
     public ?array $content = null;
     public ?array $error = null;
     private ?array $rawData = null;
+    private string $providerLabel = 'OpenAI';
+
+    /**
+     * Names the provider in this model's messages, which read as OpenAI's unless told otherwise.
+     */
+    public function setProviderLabel(string $label): self
+    {
+        $this->providerLabel = $label;
+        return $this;
+    }
 
     /**
      * Parse the API response and populate the model properties.
@@ -43,13 +54,13 @@ class OpenAiResponse extends Component
                 return false;
             }
 
-            // A reasoning model can spend its entire output budget on reasoning tokens and
-            // return no text. Without this the failure surfaced as the generic "Empty alt text
+            // A reasoning model can spend its entire output budget on reasoning tokens and return
+            // no text at all. Without this the failure surfaced as the generic "Empty alt text
             // generated for asset", which gives an admin nothing to act on.
             if (($responseData['status'] ?? null) === 'incomplete') {
                 $reason = $responseData['incomplete_details']['reason'] ?? 'unknown';
                 $this->setError(
-                    sprintf('OpenAI returned an incomplete response (reason: %s).', $reason),
+                    sprintf('%s returned an incomplete response (reason: %s).', $this->providerLabel, $reason),
                     $responseData['incomplete_details'] ?? null
                 );
                 return false;
@@ -63,9 +74,10 @@ class OpenAiResponse extends Component
                         $this->content = $outputItem['content'];
 
                         foreach ($outputItem['content'] as $contentItem) {
-                            // A refusal is a distinct outcome from an empty response.
+                            // A refusal is a distinct outcome from an empty response, and worth
+                            // reporting as such.
                             if (($contentItem['type'] ?? null) === 'refusal') {
-                                $this->setError('OpenAI refused the request: ' . ($contentItem['refusal'] ?? 'no reason given'));
+                                $this->setError($this->providerLabel . ' refused the request: ' . ($contentItem['refusal'] ?? 'no reason given'));
                                 return false;
                             }
 
@@ -85,13 +97,13 @@ class OpenAiResponse extends Component
                 ];
             } else {
                 Log::warning('Could not find output_text in response: ' . Json::encode($responseData));
-                $this->setError('Could not parse response from OpenAI API.');
+                $this->setError('Could not parse response from ' . $this->providerLabel . ' API.');
                 return false;
             }
 
             return $this->validate();
         } catch (Exception $e) {
-            Log::error('Failed to parse OpenAI response: ' . $e->getMessage());
+            Log::error('Failed to parse ' . $this->providerLabel . ' response: ' . $e->getMessage());
             $this->setError('Failed to parse response: ' . $e->getMessage());
             return false;
         }

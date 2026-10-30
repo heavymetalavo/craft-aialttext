@@ -30,7 +30,7 @@ class RegenerateAltTextOnReplace
             // createJob() falls back to the asset's own site in that case, so pass it
             // through rather than bailing out.
             $requestedSite = app(RequestedSite::class)->get();
-            // Force regeneration so the stale alt text is overwritten
+            // generateAltText() always overwrites the site's alt, so the stale alt text is replaced
             $this->service->createJob($asset, false, $requestedSite?->id);
         }
     }

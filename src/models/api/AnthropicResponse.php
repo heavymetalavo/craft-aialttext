@@ -18,6 +18,16 @@ class AnthropicResponse extends Component
     public ?array $content = null;
     public ?array $error = null;
     private ?array $rawData = null;
+    private string $providerLabel = 'Anthropic';
+
+    /**
+     * Names the provider in this model's messages, which read as Anthropic's unless told otherwise.
+     */
+    public function setProviderLabel(string $label): self
+    {
+        $this->providerLabel = $label;
+        return $this;
+    }
 
     /**
      * Parse the API response and populate the model properties.
@@ -49,14 +59,14 @@ class AnthropicResponse extends Component
                     }
                 }
             } else {
-                Log::warning('Could not find content in Anthropic response: ' . Json::encode($responseData));
-                $this->setError('Could not parse response from Anthropic API.');
+                Log::warning('Could not find content in ' . $this->providerLabel . ' response: ' . Json::encode($responseData));
+                $this->setError('Could not parse response from ' . $this->providerLabel . ' API.');
                 return false;
             }
 
             return $this->validate();
         } catch (Exception $e) {
-            Log::error('Failed to parse Anthropic response: ' . $e->getMessage());
+            Log::error('Failed to parse ' . $this->providerLabel . ' response: ' . $e->getMessage());
             $this->setError('Failed to parse response: ' . $e->getMessage());
             return false;
         }

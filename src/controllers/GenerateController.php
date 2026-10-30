@@ -7,6 +7,7 @@ use CraftCms\Cms\Http\RespondsWithFlash;
 use CraftCms\Cms\Support\Facades\Sites;
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
+use heavymetalavo\craftaialttext\jobs\GenerateAiAltTextForAssets;
 use heavymetalavo\craftaialttext\services\AiAltTextService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -73,19 +74,32 @@ class GenerateController
         }
 
         try {
-            app(AiAltTextService::class)->createJob($asset, true);
+            $service = app(AiAltTextService::class);
 
+            if (!$service->createJob($asset, true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => t('Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off or Craft\'s image driver can\'t read SVGs', category: 'ai-alt-text'),
+                ]);
+            }
+
+            // This site is generated inline, but the other sites are queued when translated
+            // results are saved to each site, so say so rather than imply it's all done.
             return response()->json([
                 'success' => true,
-                'message' => t('Alt text generated', category: 'ai-alt-text'),
+                'message' => $service->queuesOtherSites()
+                    ? t('Alt text generated. The other sites have been queued.', category: 'ai-alt-text')
+                    : t('Alt text generated', category: 'ai-alt-text'),
             ]);
         } catch (Exception $e) {
-            Log::error('Error queueing alt text generation: ' . $e->getMessage());
+            Log::error('Error processing alt text generation: ' . $e->getMessage());
 
+            // A 200 with success false, as the action's script shows the message from the response. An error
+            // status would reject the request instead, and show the HTTP client's generic message.
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-            ], 500);
+            ]);
         }
     }
 
@@ -94,96 +108,7 @@ class GenerateController
      */
     public function actionGenerateAssetsWithoutAltText(): RedirectResponse
     {
-        // The routes are POST-only, so a GET is rejected with a 405 before reaching here.
-        abort_unless($this->request->user()?->can('accessCp'), 403);
-        // Require permission to run bulk actions
-        abort_unless($this->request->user()?->can(AiAltText::PERMISSION_BULK_ACTIONS), 403);
-
-
-        $queuedCount = 0;
-        $siteId = $this->request->input('siteId');
-
-        if ($siteId) {
-            $site = Sites::getSiteById((int)$siteId);
-            if (!$site) {
-                session()->flash('cp-notification-error', [
-                    AiAltText::t('Invalid site ID: {siteId}', ['siteId' => $siteId]),
-                    ['icon' => 'alert', 'iconLabel' => t('Error')],
-                ]);
-                return redirect(cp_url('utilities/ai-alt-text-bulk-actions'));
-            }
-            $sites = [$site];
-        } else {
-            $sites = Sites::getAllSites()->all();
-        }
-
-        try {
-            foreach ($sites as $site) {
-                $offset = 0;
-                $limit = 100;
-
-                while (true) {
-                    $assets = Asset::find()
-                        ->kind('image')
-                        ->siteId($site->id)
-                        ->status(null)
-                        ->hasAlt(false)
-                        ->orderBy(['elements.id' => SORT_ASC])
-                        ->offset($offset)
-                        ->limit($limit)
-                        ->all();
-
-                    if (empty($assets)) {
-                        break;
-                    }
-
-
-                    foreach ($assets as $asset) {
-                        if (!empty($asset->alt)) {
-                            continue;
-                        }
-
-                        try {
-                            app(AiAltTextService::class)->createJob($asset, false, $site->id, false, true);
-                            $queuedCount++;
-                        } catch (Exception $e) {
-                            Log::error('Error queuing job for asset ' . $asset->id . ': ' . $e->getMessage());
-                        }
-                    }
-
-                    $offset += $limit;
-
-                    if (function_exists('gc_collect_cycles')) {
-                        gc_collect_cycles();
-                    }
-                }
-            }
-
-            if ($siteId) {
-                session()->flash('cp-notification-notice', [
-                    AiAltText::t('Queued alt text generation for {count} assets in site {site}', [
-                        'count' => $queuedCount,
-                        'site' => $sites[0]->name,
-                    ]),
-                    ['icon' => 'info', 'iconLabel' => t('Notice')],
-                ]);
-            } else {
-                session()->flash('cp-notification-notice', [
-                    AiAltText::t('Queued alt text generation for {count} assets across all sites', [
-                        'count' => $queuedCount,
-                    ]),
-                    ['icon' => 'info', 'iconLabel' => t('Notice')],
-                ]);
-            }
-        } catch (Exception $e) {
-            Log::error('Error queueing alt text generation: ' . $e->getMessage());
-            session()->flash('cp-notification-error', [
-                AiAltText::t('Error: {message}', ['message' => $e->getMessage()]),
-                ['icon' => 'alert', 'iconLabel' => t('Error')],
-            ]);
-        }
-
-        return redirect(cp_url('utilities/ai-alt-text-bulk-actions'));
+        return $this->queueBulkGeneration(false);
     }
 
     /**
@@ -191,90 +116,78 @@ class GenerateController
      */
     public function actionGenerateAllAssets(): RedirectResponse
     {
+        return $this->queueBulkGeneration(true);
+    }
+
+    /**
+     * Queues a batched job per site that fans out into one job per asset, so the request returns
+     * immediately whatever the number of assets.
+     *
+     * @param bool $includeExisting Whether to include assets that already have alt text
+     */
+    private function queueBulkGeneration(bool $includeExisting): RedirectResponse
+    {
         // The routes are POST-only, so a GET is rejected with a 405 before reaching here.
         abort_unless($this->request->user()?->can('accessCp'), 403);
         // Require permission to run bulk actions
         abort_unless($this->request->user()?->can(AiAltText::PERMISSION_BULK_ACTIONS), 403);
 
+        $redirect = redirect(cp_url('utilities/ai-alt-text-bulk-actions'));
 
-        $queuedCount = 0;
-        $siteId = $this->request->input('siteId');
+        // Refuse up front rather than queueing jobs that would each fail with the same error
+        $configurationError = app(AiAltTextService::class)->getConfigurationError();
 
-        if ($siteId) {
-            $site = Sites::getSiteById((int)$siteId);
+        if ($configurationError !== null) {
+            $this->flashError($configurationError);
+            return $redirect;
+        }
+
+        $siteIdParam = $this->request->input('siteId');
+        $siteName = null;
+
+        if ($siteIdParam) {
+            $site = Sites::getSiteById((int)$siteIdParam);
+
             if (!$site) {
-                session()->flash('cp-notification-error', [
-                    AiAltText::t('Invalid site ID: {siteId}', ['siteId' => $siteId]),
-                    ['icon' => 'alert', 'iconLabel' => t('Error')],
-                ]);
-                return redirect(cp_url('utilities/ai-alt-text-bulk-actions'));
+                $this->flashError(AiAltText::t('Invalid site ID: {siteId}', ['siteId' => $siteIdParam]));
+                return $redirect;
             }
+
             $sites = [$site];
+            $siteName = $site->name;
         } else {
             $sites = Sites::getAllSites()->all();
         }
 
         try {
             foreach ($sites as $site) {
-                $offset = 0;
-                $limit = 100;
-
-                while (true) {
-                    $assets = Asset::find()
-                        ->kind('image')
-                        ->siteId($site->id)
-                        ->status(null)
-                        ->orderBy(['elements.id' => SORT_ASC])
-                        ->offset($offset)
-                        ->limit($limit)
-                        ->all();
-
-                    if (empty($assets)) {
-                        break;
-                    }
-
-
-                    foreach ($assets as $asset) {
-                        try {
-                            app(AiAltTextService::class)->createJob($asset, false, $site->id, false, true);
-                            $queuedCount++;
-                        } catch (Exception $e) {
-                            Log::error('Error queuing job for asset ' . $asset->id . ': ' . $e->getMessage());
-                        }
-                    }
-
-                    $offset += $limit;
-
-                    if (function_exists('gc_collect_cycles')) {
-                        gc_collect_cycles();
-                    }
-                }
-            }
-
-            if ($siteId) {
-                session()->flash('cp-notification-notice', [
-                    AiAltText::t('Queued alt text generation for {count} assets in site {site}.', [
-                        'count' => $queuedCount,
-                        'site' => $sites[0]->name,
-                    ]),
-                    ['icon' => 'info', 'iconLabel' => t('Notice')],
-                ]);
-            } else {
-                session()->flash('cp-notification-notice', [
-                    AiAltText::t('Queued alt text generation for {count} assets across all sites.', [
-                        'count' => $queuedCount,
-                    ]),
-                    ['icon' => 'info', 'iconLabel' => t('Notice')],
-                ]);
+                dispatch(new GenerateAiAltTextForAssets(
+                    siteId: $site->id,
+                    includeExisting: $includeExisting,
+                    allSites: !$siteIdParam,
+                ));
             }
         } catch (Exception $e) {
-            Log::error('Error queueing alt text generation for all assets: ' . $e->getMessage());
-            session()->flash('cp-notification-error', [
-                AiAltText::t('Error: {message}', ['message' => $e->getMessage()]),
-                ['icon' => 'alert', 'iconLabel' => t('Error')],
-            ]);
+            Log::error('Error queueing bulk alt text generation: ' . $e->getMessage());
+            $this->flashError(AiAltText::t('Error: {message}', ['message' => $e->getMessage()]));
+            return $redirect;
         }
 
-        return redirect(cp_url('utilities/ai-alt-text-bulk-actions'));
+        session()->flash('cp-notification-notice', [
+            $siteName !== null
+                ? AiAltText::t('Queueing alt text generation for site {site}. Watch the queue for progress.', ['site' => $siteName])
+                : AiAltText::t('Queueing alt text generation across all sites. Watch the queue for progress.'),
+            ['icon' => 'info', 'iconLabel' => t('Notice')],
+        ]);
+
+        return $redirect;
+    }
+
+    /**
+     * Flashes an error notification for the control panel.
+     */
+    private function flashError(string $message): void
+    {
+        session()->flash('cp-notification-error', [$message, ['icon' => 'alert', 'iconLabel' => t('Error')]]);
     }
 }

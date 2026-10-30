@@ -15,11 +15,20 @@ use Throwable;
  */
 class GenerateAiAltText extends Job
 {
+    /**
+     * @var int[] Other sites that share the site's alt text, saved with the same result. A plain property with a
+     * default rather than a promoted one, so a job queued before it existed still unserializes with it set.
+     */
+    public array $sharedSiteIds = [];
+
     public function __construct(
         public int $assetId,
         public int $siteId,
+        array $sharedSiteIds = [],
         public ?string $description = null,
-    ) {}
+    ) {
+        $this->sharedSiteIds = $sharedSiteIds;
+    }
 
     /**
      * Prevent duplicate jobs for the same asset + site combination from running concurrently.
@@ -30,6 +39,8 @@ class GenerateAiAltText extends Job
     }
 
     /**
+     * Errors are not caught so the job is marked as failed and can be retried.
+     *
      * @throws ElementNotFoundException
      * @throws Throwable
      */
@@ -42,13 +53,10 @@ class GenerateAiAltText extends Job
             throw new ElementNotFoundException("Asset not found: $this->assetId");
         }
 
-        $altText = $service->generateAltText($asset, $this->siteId);
+        // Generates the alt text and saves the asset, or throws
+        $altText = $service->generateAltText($asset, $this->siteId, $this->sharedSiteIds);
 
-        if (!empty($altText)) {
-            Log::info("Successfully generated alt text for asset $this->assetId: " . $altText);
-        } else {
-            Log::warning("Failed to generate alt text for asset $this->assetId");
-        }
+        Log::info("Successfully generated alt text for asset $this->assetId: " . $altText);
     }
 
     protected function defaultDescription(): string
