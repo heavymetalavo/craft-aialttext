@@ -351,6 +351,25 @@
 }) }}
 
 {{ forms.lightswitchField({
+    label: 'Generate titles'|t('ai-alt-text'),
+    id: 'generateTitles',
+    name: 'generateTitles',
+    instructions: "Also ask for a short title, in the same request, and use it in place of a title Craft made from the filename, e.g. `Polar bear waving on snow` for `hans-jurgen-mager-qQWV91TTBrE-unsplash.jpg`. Titles someone has written are kept. It's saved to the sites that share the title under the volume's **Title Translation Method**, in the language of the site it's generated for."|t("ai-alt-text"),
+    on: settings.generateTitles,
+    errors: settings.getErrors('generateTitles'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Rename files'|t('ai-alt-text'),
+    id: 'renameFiles',
+    name: 'renameFiles',
+    instructions: "Also ask for a descriptive filename, in the same request, e.g. `polar-bear-waving-on-snow.jpg`, and rename the file to it the first time alt text is generated for the primary site, such as on upload or with Generate missing. Regenerating doesn't rename it again. A filename another file in the folder has gets a number added."|t("ai-alt-text"),
+    warning: "Renaming a file changes its URL, so links to the old URL in content, templates or other sites break. Craft's own references, such as Assets fields, go by the asset's ID and keep working."|t("ai-alt-text"),
+    on: settings.renameFiles,
+    errors: settings.getErrors('renameFiles'),
+}) }}
+
+{{ forms.lightswitchField({
     label: 'Save translated results for each site'|t('ai-alt-text'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',

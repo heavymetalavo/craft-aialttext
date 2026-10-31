@@ -50,6 +50,12 @@ abstract class ApiService extends Component
     protected const TRANSPARENCY_NOTE = 'The image has a transparent background, filled with %s here so you can see what is drawn.';
 
     /**
+     * @var string Added to the trigger when a title or filename is asked for as well, see AiAltTextService::asksForTitleOrFilename().
+     * The reply is read by AiAltTextService::parseGeneratedText().
+     */
+    protected const TITLE_AND_FILENAME_FORMAT = 'Reply with only a JSON object, not in a code block: {"alt": the alt text, "title": a title of up to 8 words, "filename": up to 6 lowercase words separated by hyphens that describe the image, without a file extension}. Write the title and filename in the same language as the alt text.';
+
+    /**
      * @var int Default request timeout in seconds, used unless the project sets its own `timeout`
      * in config/guzzle.php.
      */
@@ -164,13 +170,16 @@ abstract class ApiService extends Component
     }
 
     /**
-     * The text sent with the image: GENERATE_TRIGGER, and TRANSPARENCY_NOTE if the image's transparent areas were filled,
+     * The text sent with the image: GENERATE_TRIGGER, TRANSPARENCY_NOTE if the image's transparent areas were filled, and
+     * TITLE_AND_FILENAME_FORMAT if a title or filename is asked for as well,
      * e.g. `Generate the alt text for this image now. The image has a transparent background, filled with white here so
      * you can see what is drawn.`
      */
     protected function generateTrigger(): string
     {
-        return self::GENERATE_TRIGGER . ($this->transparencyFill !== null ? ' ' . sprintf(self::TRANSPARENCY_NOTE, $this->transparencyFill) : '');
+        return self::GENERATE_TRIGGER
+            . ($this->transparencyFill !== null ? ' ' . sprintf(self::TRANSPARENCY_NOTE, $this->transparencyFill) : '')
+            . (AiAltText::getInstance()->aiAltTextService->asksForTitleOrFilename() ? ' ' . self::TITLE_AND_FILENAME_FORMAT : '');
     }
 
     /**

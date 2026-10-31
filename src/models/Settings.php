@@ -17,6 +17,8 @@ use craft\helpers\App;
  * @property string $openAiImageInputDetailLevel The detail level for image analysis
  * @property bool $generateForNewAssets Whether to generate alt text for new assets automatically
  * @property bool $processSvgs Whether to generate alt text for SVGs
+ * @property bool $generateTitles Whether to replace titles made from the filename with a generated one
+ * @property bool $renameFiles Whether to rename a file to a generated, descriptive filename when its alt text is first generated
  * @property bool $saveTranslatedResultsToEachSite Whether to generate alt text for every site, not just the current site and the sites that share its alt text
  * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'langdock' or 'openrouter')
  * @property string $anthropicApiKey The Anthropic API key
@@ -164,6 +166,18 @@ class Settings extends Model
     public bool $processSvgs = false;
 
     /**
+     * @var bool Whether to ask for a short title with the alt text, and use it in place of a title Craft made from the
+     * filename
+     */
+    public bool $generateTitles = false;
+
+    /**
+     * @var bool Whether to ask for a descriptive filename with the alt text, and rename the file to it the first time
+     * alt text is generated for the primary site. Renaming changes the asset's URL
+     */
+    public bool $renameFiles = false;
+
+    /**
      * @inheritdoc
      */
     public function setAttributes($values, $safeOnly = true): void
@@ -244,6 +258,7 @@ class Settings extends Model
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
+            [['generateTitles', 'renameFiles'], 'boolean'],
         ];
     }
 
