@@ -8,7 +8,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 | Setting | Description |
 |---------|-------------|
-| **AI Provider** | Choose between OpenAI, Anthropic, Langdock or OpenRouter. |
+| **AI Provider** | Choose between OpenAI, Anthropic, Langdock, OpenRouter or a custom endpoint. |
 | **OpenAI/Anthropic/Langdock/OpenRouter API Key** | Your provider's API key. |
 | **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-5-5`). For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. |
 | **Langdock Model Author** | Langdock only. `Anthropic` (models such as Claude) or `OpenAI` (models such as GPT). It must be the author of the model, and decides which of Langdock's compatible APIs requests are sent to. |
@@ -16,6 +16,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **Langdock Reasoning Effort** | Langdock with the `OpenAI` model author only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). |
 | **OpenRouter Image Detail Level** | OpenRouter only. Works like the OpenAI image detail level, `low`, `high`, `original` or `auto`. OpenAI and Gemini models use it, and in testing Qwen, GLM and Grok models ignored it. For Claude models it picks the size limit, as the Anthropic setting does. |
 | **OpenRouter Reasoning Effort** | OpenRouter only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). Only sent to OpenAI reasoning models. |
+| **Custom Endpoint Base URL, API Format, API Key and Model** | Custom endpoint only, see [Custom endpoints](providers.md#custom-endpoints). |
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |
 | **OpenAI Reasoning Effort**| The reasoning effort level for OpenAI reasoning models. |
 | **Prompt** | The instructions sent to the AI provider as the system / instruction message (example [below](#-default-prompt)). Supports `{asset.property}` and `{site.property}` variables, plus `{site.languageName}` for the language's display name (e.g. `English (United Kingdom)`). |

@@ -36,6 +36,19 @@ OpenRouter takes the same request for every model, so there is no model author t
 - A few models need a setting in your OpenRouter account, and the error says which and links to it.
 - Requests send your primary site's URL as the `HTTP-Referer` header, with `heavymetalavo/craft-aialttext` as the title, so your OpenRouter logs list them under that app name. The app is marked hidden, which keeps it out of OpenRouter's public rankings. This works from the console and the queue as well, as long as the primary site's URL is a full URL (an environment variable that holds one is fine). A URL that uses the `@web` alias has no value in the console, so requests made there send none of these headers.
 
+## Custom endpoints
+
+For a gateway or provider the plugin doesn't support, which takes OpenAI's Responses API or Anthropic's Messages API request unchanged, as Langdock does. Custom endpoints aren't supported: the plugin is only tested with the providers above, so test one before relying on it.
+
+1. Set **AI Provider** to **Custom endpoint**.
+2. Set **Custom Endpoint Base URL** to the URL the requests go under, without `/responses` or `/messages` at the end, e.g. `https://gateway.example.com/v1`.
+3. Set **Custom Endpoint API Format**:
+   - **Responses API** posts to `{base URL}/responses`, the request OpenAI, Langdock's GPT models and OpenRouter take, with the key as a Bearer token (`Authorization: Bearer …`).
+   - **Messages API** posts to `{base URL}/messages`, the request Anthropic and Langdock's Claude models take, with the key sent both as `x-api-key` and as a Bearer token, and `anthropic-version: 2023-06-01`.
+4. Set the API key and the model, as the endpoint names it.
+
+Images are always sent as base64, as a gateway may not be able to fetch URLs. With the Responses API, the image detail level is `low` and no reasoning setting is sent; with the Messages API, images are scaled as Anthropic's are at the `low` detail level.
+
 ## OpenAI
 
 1. Visit [https://platform.openai.com/](https://platform.openai.com/) and [sign up](https://platform.openai.com/signup) in the top-right.

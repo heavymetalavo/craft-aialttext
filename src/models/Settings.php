@@ -18,7 +18,7 @@ use craft\helpers\App;
  * @property bool $generateForNewAssets Whether to generate alt text for new assets automatically
  * @property bool $processSvgs Whether to generate alt text for SVGs
  * @property bool $saveTranslatedResultsToEachSite Whether to generate alt text for every site, not just the current site and the sites that share its alt text
- * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'langdock' or 'openrouter')
+ * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'langdock', 'openrouter' or 'custom')
  * @property string $anthropicApiKey The Anthropic API key
  * @property string $anthropicModel The Anthropic Model
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
@@ -32,6 +32,10 @@ use craft\helpers\App;
  * @property string $openRouterModel The OpenRouter model to use, as named by OpenRouter
  * @property string $openRouterImageInputDetailLevel The image detail level for OpenRouter's Responses API
  * @property string $openRouterReasoningEffort The reasoning effort level for OpenRouter's Responses API
+ * @property string $customBaseUrl The custom endpoint's base URL, e.g. `https://gateway.example.com/v1`
+ * @property string $customApiFormat The request format the custom endpoint takes ('responses' or 'messages')
+ * @property string $customApiKey The custom endpoint's API key
+ * @property string $customModel The model to use, as the custom endpoint names it
  */
 class Settings extends Model
 {
@@ -149,6 +153,30 @@ class Settings extends Model
     public string $openRouterReasoningEffort = 'low';
 
     /**
+     * @var string The base URL of a gateway that takes the Responses API or Messages API request unchanged, without the
+     * `/responses` or `/messages` at the end, e.g. `https://gateway.example.com/v1`
+     */
+    public string $customBaseUrl = '';
+
+    /**
+     * @var string The request format the custom endpoint takes
+     *
+     * Options: responses (OpenAI's Responses API, as OpenAI, Langdock's GPT models and OpenRouter take it), messages
+     * (Anthropic's Messages API, as Anthropic and Langdock's Claude models take it)
+     */
+    public string $customApiFormat = 'responses';
+
+    /**
+     * @var string The custom endpoint's API key
+     */
+    public string $customApiKey = '';
+
+    /**
+     * @var string The model to use, as the custom endpoint names it, must have vision capabilities
+     */
+    public string $customModel = '';
+
+    /**
      * @var bool Whether to save the translated result to each Site's Asset's translatable alt text field
      */
     public bool $saveTranslatedResultsToEachSite = false;
@@ -190,7 +218,7 @@ class Settings extends Model
                 ['aiProvider'],
                 function($attribute) {
                     $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['openai', 'anthropic', 'langdock', 'openrouter'], true)) {
+                    if (!in_array($val, ['openai', 'anthropic', 'langdock', 'openrouter', 'custom'], true)) {
                         $this->addError($attribute, 'Invalid AI Provider configured.');
                     }
                 }
@@ -241,6 +269,8 @@ class Settings extends Model
             [['openRouterImageInputDetailLevel'], 'validateOneOf', 'params' => ['allowed' => ['low', 'high', 'auto', 'original', ''], 'message' => 'Invalid OpenRouter Image Input Detail Level configured.']],
             ['openRouterReasoningEffort', 'string'],
             [['openRouterReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid OpenRouter Reasoning Effort configured.']],
+            [['customBaseUrl', 'customApiKey', 'customModel'], 'string'],
+            [['customApiFormat'], 'validateOneOf', 'params' => ['allowed' => ['responses', 'messages'], 'message' => 'Invalid Custom endpoint API format configured.']],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
