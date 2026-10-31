@@ -832,46 +832,39 @@ abstract class ApiService extends Component
         $width = $asset->getWidth();
         $height = $asset->getHeight();
         
-        // Cap the longest edge if it exceeds the provider's limit, Craft's 'fit' mode will preserve the aspect ratio
-        if ($maxLongEdge !== null && ($width > $maxLongEdge || $height > $maxLongEdge)) {
-            if ($width >= $height) {
-                // Wide/square image: cap the width
-                $transformParams['width'] = $maxLongEdge;
-            } else {
-                // Tall image: cap the height
-                $transformParams['height'] = $maxLongEdge;
-            }
+        // Each limit gives the longest edge it allows, and the smallest wins: the provider's long edge, OpenAI's patch
+        // budget and Anthropic's token budget. Craft's 'fit' mode preserves the aspect ratio
+        $longEdge = max($width, $height);
+        $limit = $longEdge;
+
+        // The provider's long edge, e.g. 500px for Anthropic's low detail level
+        if ($maxLongEdge !== null) {
+            $limit = min($limit, $maxLongEdge);
         }
-        
+
         // OpenAI patch budget: if the image would produce more tiles than allowed, scale down proportionally
         if ($maxPatches !== null) {
             $patchCount = ceil($width / 32) * ceil($height / 32);
             if ($patchCount > $maxPatches) {
-                // Calculate scale factor to fit within patch budget
-                $scaleFactor = sqrt($maxPatches / $patchCount);
-                $scaledLongEdge = (int) floor(max($width, $height) * $scaleFactor);
-                
-                if ($width >= $height) {
-                    $transformParams['width'] = $scaledLongEdge;
-                } else {
-                    $transformParams['height'] = $scaledLongEdge;
-                }
+                $limit = min($limit, (int) floor($longEdge * sqrt($maxPatches / $patchCount)));
             }
         }
-        
+
         // Anthropic token budget: if the pixel area would exceed the token limit, scale down proportionally
         if ($maxTokens !== null) {
             $tokenCount = ($width * $height) / 750;
             if ($tokenCount > $maxTokens) {
-                // Calculate scale factor to fit within token budget
-                $scaleFactor = sqrt(($maxTokens * 750) / ($width * $height));
-                $scaledLongEdge = (int) floor(max($width, $height) * $scaleFactor);
-                
-                if ($width >= $height) {
-                    $transformParams['width'] = $scaledLongEdge;
-                } else {
-                    $transformParams['height'] = $scaledLongEdge;
-                }
+                $limit = min($limit, (int) floor($longEdge * sqrt(($maxTokens * 750) / ($width * $height))));
+            }
+        }
+
+        if ($limit < $longEdge) {
+            if ($width >= $height) {
+                // Wide/square image: cap the width
+                $transformParams['width'] = $limit;
+            } else {
+                // Tall image: cap the height
+                $transformParams['height'] = $limit;
             }
         }
         
