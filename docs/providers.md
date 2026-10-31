@@ -63,6 +63,7 @@ To find out which models are capable of vision, check [the models page](https://
 The plugin doesn't keep a list of vision models, since OpenRouter's catalogue changes every week. For what some popular ones cost, see [Estimated cost per alt text](costs.md).
 
 **Check that a model accepts images**
+- Start typing in the **OpenRouter Model** field: it suggests every model OpenRouter lists as taking images, with its price per million input tokens. The list is fetched from OpenRouter's public models API and cached for a day.
 - Open the [models page filtered to image input and text output](https://openrouter.ai/models?input_modalities=image&output_modalities=text). Every model listed can be used, and a model's own page shows the input modalities it accepts. Models on the page's *Image* tab generate images and return no text, so they can't write alt text.
 - Or ask the API, which needs no key: `curl -s 'https://openrouter.ai/api/v1/models?input_modalities=image' | jq -r '.data[].id'` prints the ids to use as the **Model**.
 - A model that can't read images is refused with "No endpoints found that support image input".
