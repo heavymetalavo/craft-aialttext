@@ -7,7 +7,7 @@ use craft\base\{Component, Field};
 use craft\elements\Asset;
 use craft\enums\MenuItemType;
 use craft\events\DefineMenuItemsEvent;
-use craft\helpers\{App, ArrayHelper};
+use craft\helpers\{App, ArrayHelper, Assets as AssetsHelper, StringHelper};
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
@@ -372,39 +372,50 @@ class AiAltTextService extends Component
             throw new Exception($error);
         }
 
-        $altText = $this->getProviderService()->generateAltText($asset, $siteId);
+        // Checked before saving, as only an asset's first alt text renames its file, see renameFile()
+        $hadAltText = !empty($asset->alt);
+
+        $generated = $this->parseGeneratedText($this->getProviderService()->generateAltText($asset, $siteId));
+        $altText = $generated['alt'];
 
         if (empty($altText)) {
             throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
         }
 
-        // The site and the sites sharing its alt text are saved in one transaction, so if any save
-        // fails - a validation error, a beforeSave veto from another plugin, a DB problem - they all
-        // keep their previous alt text, rather than some sites having the new value and some not.
+        // The site's asset and the sites that share its alt text get the alt text, and the sites that share its title
+        // get the title, so each site's asset is loaded and saved once
+        $siteAssets = [$asset->siteId => $asset];
+        foreach ($sharedSiteIds as $sharedSiteId) {
+            // Skip sites the asset has left since the job was queued
+            if ($sharedAsset = Asset::find()->id($asset->id)->siteId($sharedSiteId)->one()) {
+                $siteAssets[$sharedSiteId] = $sharedAsset;
+            }
+        }
+        foreach ($siteAssets as $siteAsset) {
+            $siteAsset->alt = $altText;
+        }
+
+        if ($generated['title'] !== null && AiAltText::getInstance()->getSettings()->generateTitles) {
+            foreach (Asset::find()->id($asset->id)->site('*')->all() as $titleAsset) {
+                if ($titleAsset->getTitleTranslationKey() === $asset->getTitleTranslationKey()) {
+                    $siteAssets[$titleAsset->siteId] ??= $titleAsset;
+                    $this->replaceFilenameTitle($siteAssets[$titleAsset->siteId], $generated['title']);
+                }
+            }
+        }
+
+        // The sites are saved in one transaction, so if any save fails - a validation error, a beforeSave veto from
+        // another plugin, a DB problem - they all keep what they had, rather than some sites having the new value and
+        // some not.
         $transaction = Craft::$app->getDb()->beginTransaction();
 
         try {
-            $asset->alt = $altText;
-
             Craft::info("Saving AI alt text for asset {$asset->id}", __METHOD__);
 
-            // Not propagated, so only the sites that share its alt text get it, saved below.
-            if (!Craft::$app->elements->saveElement($asset, true, false)) {
-                throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
-            }
-
-            foreach ($sharedSiteIds as $sharedSiteId) {
-                $sharedAsset = Asset::find()->id($asset->id)->siteId($sharedSiteId)->one();
-
-                // Skip sites the asset has left since the job was queued
-                if (!$sharedAsset) {
-                    continue;
-                }
-
-                $sharedAsset->alt = $altText;
-
-                if (!Craft::$app->elements->saveElement($sharedAsset, true, false)) {
-                    throw new Exception("Failed to save alt text for asset: {$asset->filename} (site $sharedSiteId)");
+            foreach ($siteAssets as $siteAsset) {
+                // Not propagated, so only the sites that share its alt text or title get them
+                if (!Craft::$app->elements->saveElement($siteAsset, true, false)) {
+                    throw new Exception("Failed to save alt text for asset: {$asset->filename} (site {$siteAsset->siteId})");
                 }
             }
 
@@ -414,8 +425,143 @@ class AiAltTextService extends Component
             throw $e;
         }
 
+        if ($generated['filename'] !== null && !$hadAltText && $this->generatesForPrimarySite($asset->siteId, $sharedSiteIds)) {
+            $this->renameFile($asset, $generated['filename']);
+        }
+
         Craft::info('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
         return $altText;
+    }
+
+    /**
+     * Whether the request asks for a title or a filename with the alt text, as JSON, see parseGeneratedText(): the
+     * Generate titles or Rename files setting is on.
+     */
+    public function asksForTitleOrFilename(): bool
+    {
+        $settings = AiAltText::getInstance()->getSettings();
+
+        return $settings->generateTitles || $settings->renameFiles;
+    }
+
+    /**
+     * Reads the model's reply: the alt text, and the title and filename when asksForTitleOrFilename() asked for them as
+     * JSON, e.g. `{"alt": "A polar bear waving on snow", "title": "Polar bear waving", "filename": "polar-bear-waving"}`.
+     * A reply that isn't that JSON, such as a model ignoring the format, is used as the alt text, with no title or filename.
+     *
+     * @return array{alt: string, title: string|null, filename: string|null}
+     */
+    public function parseGeneratedText(string $text): array
+    {
+        $result = ['alt' => $text, 'title' => null, 'filename' => null];
+
+        if ($text === '' || !$this->asksForTitleOrFilename()) {
+            return $result;
+        }
+
+        // From the first { to the last }, so a code block or words around the JSON don't matter
+        $start = strpos($text, '{');
+        $end = strrpos($text, '}');
+        $data = $start !== false && $end > $start ? json_decode(substr($text, $start, $end - $start + 1), true) : null;
+
+        if (!is_array($data) || !is_string($data['alt'] ?? null) || trim($data['alt']) === '') {
+            Craft::warning('The AI provider was asked for JSON with the alt text, title and filename, but replied with something else, so the whole reply is used as the alt text: ' . $text, __METHOD__);
+            return $result;
+        }
+
+        return [
+            'alt' => trim($data['alt']),
+            'title' => is_string($data['title'] ?? null) && trim($data['title']) !== '' ? trim($data['title']) : null,
+            'filename' => is_string($data['filename'] ?? null) && trim($data['filename']) !== '' ? trim($data['filename']) : null,
+        ];
+    }
+
+    /**
+     * Sets a generated title on an asset whose title is still the one Craft made from its filename, e.g. `Hans jurgen
+     * mager q QWV91 TT Br E unsplash` for `hans-jurgen-mager-qQWV91TTBrE-unsplash.jpg`. A title someone has written, or
+     * one generated before, is kept.
+     */
+    private function replaceFilenameTitle(Asset $siteAsset, string $title): void
+    {
+        if ($siteAsset->title === AssetsHelper::filename2Title(pathinfo($siteAsset->getFilename(), PATHINFO_FILENAME))) {
+            $siteAsset->title = $title;
+        }
+    }
+
+    /**
+     * Whether alt text is being generated for the primary site, directly or as a site sharing its alt text, so the
+     * filename is in the primary site's language and is only suggested once, see renameFile().
+     *
+     * @param int[] $sharedSiteIds
+     */
+    private function generatesForPrimarySite(int $siteId, array $sharedSiteIds): bool
+    {
+        return in_array(Craft::$app->getSites()->getPrimarySite()->id, [$siteId, ...$sharedSiteIds], true);
+    }
+
+    /**
+     * Renames an asset's file to a generated, descriptive filename, keeping its extension, when the Rename files setting
+     * is on. Only an asset's first alt text for the primary site renames it, so new uploads and Generate missing rename,
+     * but regenerating doesn't change the URL again. A name another file in the folder has gets a number added. A
+     * failed rename is logged, and the alt text is kept.
+     *
+     * Renaming changes the asset's URL, so links to the old URL in content or templates break. Craft's own references
+     * go by the asset's ID, so they keep working.
+     *
+     * @param Asset $asset The asset, after its alt text is saved
+     * @param string $words The generated filename, e.g. `polar-bear-waving-on-snow`
+     */
+    private function renameFile(Asset $asset, string $words): void
+    {
+        if (!AiAltText::getInstance()->getSettings()->renameFiles) {
+            return;
+        }
+
+        $base = trim(substr(StringHelper::toKebabCase(pathinfo($words, PATHINFO_FILENAME)), 0, 80), '-');
+        if ($base === '') {
+            return;
+        }
+
+        $filename = AssetsHelper::prepareAssetName($base . '.' . $asset->getExtension());
+        if ($filename === $asset->getFilename()) {
+            return;
+        }
+
+        $assets = Craft::$app->getAssets();
+        $filename = $assets->getNameReplacementInFolder($filename, $asset->folderId);
+        $oldFilename = $asset->getFilename();
+
+        try {
+            if ($assets->moveAsset($asset, $asset->getFolder(), $filename)) {
+                Craft::info("Renamed asset {$asset->id} from $oldFilename to $filename", __METHOD__);
+                $this->renameFilenameTitles($asset, $oldFilename);
+                return;
+            }
+
+            Craft::warning("Couldn't rename asset {$asset->id} from $oldFilename to $filename: " . implode(' ', $asset->getErrorSummary(true)), __METHOD__);
+        } catch (Throwable $e) {
+            Craft::warning("Couldn't rename asset {$asset->id} from $oldFilename to $filename: " . $e->getMessage(), __METHOD__);
+        }
+    }
+
+    /**
+     * After a rename, gives the sites whose title is still the one Craft made from the old filename the one it would
+     * make from the new filename, e.g. `Polar bear waving on snow`, so it still counts as a filename title, which their
+     * own alt text generation replaces, see replaceFilenameTitle().
+     */
+    private function renameFilenameTitles(Asset $asset, string $oldFilename): void
+    {
+        $oldTitle = AssetsHelper::filename2Title(pathinfo($oldFilename, PATHINFO_FILENAME));
+        $newTitle = AssetsHelper::filename2Title(pathinfo($asset->getFilename(), PATHINFO_FILENAME));
+
+        foreach (Asset::find()->id($asset->id)->site('*')->all() as $siteAsset) {
+            if ($siteAsset->title === $oldTitle) {
+                $siteAsset->title = $newTitle;
+                if (!Craft::$app->elements->saveElement($siteAsset, true, false)) {
+                    Craft::warning("Couldn't update the filename title of asset {$asset->id} on site {$siteAsset->siteId} after renaming it", __METHOD__);
+                }
+            }
+        }
     }
 
     /**

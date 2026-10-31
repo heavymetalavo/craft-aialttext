@@ -1,5 +1,10 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+- Added the **Generate titles** setting, which asks for a short title in the same request as the alt text and uses it in place of a title Craft made from the filename. Titles someone has written are kept.
+- Added the **Rename files** setting, which asks for a descriptive filename in the same request and renames the file the first time alt text is generated for the primary site. Renaming changes the asset's URL, so it's off by default, see [Settings](docs/settings.md).
+
 ## 5.4.0 - 2026-10-30
 
 > {tip} The **Propagate** setting has been removed. When on, before Craft 5.11, it saved the same alt text to every site. When off, the plugin worked around Craft copying an asset's first alt text to every site regardless of the volume's **Alternative Text Translation Method**, which Craft 5.11 fixed ([craftcms/cms#19067](https://github.com/craftcms/cms/pull/19067)). Generated alt text now follows that translation method instead.
