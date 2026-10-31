@@ -15,6 +15,12 @@ use Exception;
  */
 class OpenAiResponse extends Model
 {
+    /**
+     * @var int|null Set when the provider answered HTTP 429: how many seconds its `Retry-After` header said to wait, or 0
+     * if it didn't say. Null otherwise.
+     */
+    public ?int $rateLimitedFor = null;
+
     public string $outputText = '';
     public ?array $output = null;
     public ?array $content = null;
