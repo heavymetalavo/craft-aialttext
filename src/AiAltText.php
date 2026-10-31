@@ -215,6 +215,7 @@ class AiAltText extends Plugin
             'ai-alt-text/_settings',
             [
                 'settings' => $this->getSettings(),
+                'openRouterModelSuggestions' => $this->openRouterService->visionModelSuggestions(),
             ]
         );
     }
