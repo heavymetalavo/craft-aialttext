@@ -9,6 +9,7 @@ use craft\helpers\{App, Json};
 use Exception;
 use GuzzleHttp\Exception\{GuzzleException, RequestException};
 use heavymetalavo\craftaialttext\AiAltText;
+use heavymetalavo\craftaialttext\errors\RateLimitException;
 use heavymetalavo\craftaialttext\models\api\{OpenAiRequest, OpenAiResponse};
 use heavymetalavo\craftaialttext\models\Settings;
 use yii\base\InvalidConfigException;
@@ -159,6 +160,10 @@ abstract class ResponsesApiService extends ApiService
             }
 
             $errorResponse = new OpenAiResponse();
+
+            if ($e instanceof RequestException && $e->hasResponse() && $e->getResponse()->getStatusCode() === 429) {
+                $errorResponse->rateLimitedFor = RateLimitException::retryAfter($e->getResponse()) ?? 0;
+            }
 
             // Check if this is a Guzzle exception with a response
             if ($e instanceof RequestException && $e->hasResponse()) {
@@ -323,6 +328,10 @@ abstract class ResponsesApiService extends ApiService
             if ($errorDetails && isset($errorDetails['type']) && $errorDetails['type'] === 'invalid_request_error' && !$forceBase64 && !$isBase64) {
                 Craft::warning('Can access the asset URL, but the provider could not, forcing base64 fallback', __METHOD__);
                 return $this->generateAltText($asset, $siteId, true);
+            }
+
+            if ($response->rateLimitedFor !== null) {
+                throw new RateLimitException($response->getErrorMessage(), $response->rateLimitedFor ?: null);
             }
 
             throw new Exception($response->getErrorMessage());

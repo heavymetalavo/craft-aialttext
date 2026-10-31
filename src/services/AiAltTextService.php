@@ -328,6 +328,47 @@ class AiAltTextService extends Component
     }
 
     /**
+     * How many seconds jobs for the configured provider and model should wait before sending another request, because
+     * one of them hit its rate limit, see pauseForRateLimit(). 0 if they needn't.
+     */
+    public function rateLimitWait(): int
+    {
+        $until = Craft::$app->getCache()->get($this->rateLimitCacheKey());
+
+        return $until === false ? 0 : max(0, (int)$until - time());
+    }
+
+    /**
+     * Makes jobs for the configured provider and model wait before sending another request, so a bulk run doesn't keep
+     * hitting a rate limit and slows to the rate the account allows. Shared through Craft's cache, so it reaches every
+     * queue worker.
+     *
+     * @param int $seconds How long to wait
+     */
+    public function pauseForRateLimit(int $seconds): void
+    {
+        Craft::$app->getCache()->set($this->rateLimitCacheKey(), time() + $seconds, $seconds);
+    }
+
+    /**
+     * The cache key of a rate limit pause: one per provider and model, as limits apply per model on OpenRouter.
+     */
+    private function rateLimitCacheKey(): string
+    {
+        $settings = AiAltText::getInstance()->getSettings();
+        $provider = (string)App::parseEnv($settings->aiProvider);
+        $model = match ($provider) {
+            'anthropic' => $settings->anthropicModel,
+            'langdock' => $settings->langdockModel,
+            'openai' => $settings->openAiModel,
+            'openrouter' => $settings->openRouterModel,
+            default => '',
+        };
+
+        return 'ai-alt-text:rate-limit-pause:' . md5($provider . ':' . App::parseEnv($model));
+    }
+
+    /**
      * Returns the service for the configured provider. Only call once getConfigurationError() is null.
      * An unrecognised provider throws an UnhandledMatchError rather than falling back to OpenAI.
      */
