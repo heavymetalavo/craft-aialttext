@@ -20,7 +20,6 @@ Planned work, not yet scheduled or promised. Shipped changes are in [CHANGELOG.m
 
 ## Under consideration
 
-- **Non-public asset URLs.** Providers can't fetch asset URLs on hosts like `*.ddev.site`, so every generation logs one failed download before the base64 fallback succeeds. Options are skipping the URL attempt for non-public hosts or adding a force-base64 setting.
 - **Descriptive titles and filenames.** Use the same request to suggest a short, descriptive title and filename (e.g. "Polar bear waving on snow" and `polar-bear-waving-on-snow.jpg` for `hans-jurgen-mager-qQWV91TTBrE-unsplash.jpg`, whose title Craft takes from the filename), and optionally save them. A new title is safe to save, but renaming the file changes the asset's URL, so it would need to be opt-in, avoid clashing with existing filenames, and warn that hard-coded URLs in content or templates would break; Craft's own references go by asset ID, so they keep working.
 - **Smaller converted images.** AVIF, HEIC and HEIF images are converted to PNG before they're sent, which is lossless but large for photos. WebP is accepted by every provider and is usually much smaller, so requests would be lighter. It needs ImageMagick with WebP support, so PNG would stay as the fallback.
 - **Vision model suggestions for OpenRouter.** The model field could suggest image-capable models from OpenRouter's public models API (cached), rather than only linking to its models page.

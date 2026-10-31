@@ -61,6 +61,12 @@ abstract class ApiService extends Component
     private const GIF_FRAME_SCAN_BYTES = 2097152;
 
     /**
+     * @var array<string, bool> Whether each host isPublicUrl() has checked is public, so it's looked up once per request
+     * or queue run
+     */
+    private static array $publicHosts = [];
+
+    /**
      * @var Client
      */
     protected Client $client;
@@ -300,6 +306,36 @@ abstract class ApiService extends Component
 
         // Normal relative URLs are resolved against the asset's site base URL.
         return UrlHelper::siteUrl($url, null, null, $asset->siteId);
+    }
+
+    /**
+     * Whether a URL's host can be reached from the internet, so a provider can fetch the image from it: it isn't
+     * `localhost`, and it resolves to at least one address outside the private, loopback and reserved ranges. Local
+     * development hosts such as `*.ddev.site`, `*.test` or `*.localhost` resolve to `127.0.0.1` or a private address, so
+     * the image is sent as base64 straight away, rather than after the provider has failed to download it.
+     *
+     * A host that doesn't resolve here counts as not public. A host that is public but needs a login, such as a staging
+     * site behind basic auth, still fails at the provider first and is then retried as base64.
+     *
+     * @param string $url The absolute image URL
+     */
+    protected function isPublicUrl(string $url): bool
+    {
+        $host = trim((string)parse_url($url, PHP_URL_HOST), '[]');
+
+        if (!isset(self::$publicHosts[$host])) {
+            $addresses = filter_var($host, FILTER_VALIDATE_IP) ? [$host] : (gethostbynamel($host) ?: []);
+            self::$publicHosts[$host] = $host !== 'localhost' && !str_ends_with($host, '.localhost') && array_filter(
+                $addresses,
+                fn(string $address) => filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false
+            ) !== [];
+
+            if (!self::$publicHosts[$host]) {
+                Craft::info("Sending images from $host as base64: it isn't reachable from the internet, so the AI provider couldn't download them.", __METHOD__);
+            }
+        }
+
+        return self::$publicHosts[$host];
     }
 
     /**
