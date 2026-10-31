@@ -303,8 +303,8 @@ class AiAltTextService extends Component
             return Craft::t('ai-alt-text', 'No AI provider is configured. Choose one in the AI Alt Text plugin settings.');
         }
 
-        if (!in_array($provider, ['openai', 'anthropic', 'langdock', 'openrouter'], true)) {
-            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Langdock or OpenRouter in the AI Alt Text plugin settings.', ['provider' => $provider]);
+        if (!in_array($provider, ['openai', 'anthropic', 'langdock', 'openrouter', 'custom'], true)) {
+            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Langdock, OpenRouter or a custom endpoint in the AI Alt Text plugin settings.', ['provider' => $provider]);
         }
 
         [$label, $apiKey] = match ($provider) {
@@ -312,12 +312,21 @@ class AiAltTextService extends Component
             'langdock' => ['Langdock', $settings->langdockApiKey],
             'openai' => ['OpenAI', $settings->openAiApiKey],
             'openrouter' => ['OpenRouter', $settings->openRouterApiKey],
+            'custom' => ['Custom endpoint', $settings->customApiKey],
         };
 
         $apiKey = App::parseEnv($apiKey);
 
         if ($apiKey === '' || $apiKey === null) {
             return Craft::t('ai-alt-text', 'No API key is configured for the {provider} provider. Add one in the AI Alt Text plugin settings.', ['provider' => $label]);
+        }
+
+        if ($provider === 'custom' && !preg_match('#^https?://#i', (string)App::parseEnv($settings->customBaseUrl))) {
+            return Craft::t('ai-alt-text', 'The custom endpoint needs a base URL starting with https:// or http://. Add one in the AI Alt Text plugin settings.');
+        }
+
+        if ($provider === 'custom' && !in_array(App::parseEnv($settings->customApiFormat), ['responses', 'messages'], true)) {
+            return Craft::t('ai-alt-text', 'The custom endpoint API format must be the Responses API or the Messages API. Choose one in the AI Alt Text plugin settings.');
         }
 
         if ($provider === 'langdock' && !in_array(App::parseEnv($settings->langdockModelAuthor), ['anthropic', 'openai'], true)) {
@@ -343,6 +352,9 @@ class AiAltTextService extends Component
                 : $plugin->langdockAnthropicService,
             'openai' => $plugin->openAiService,
             'openrouter' => $plugin->openRouterService,
+            'custom' => App::parseEnv($settings->customApiFormat) === 'messages'
+                ? $plugin->customMessagesService
+                : $plugin->customResponsesService,
         };
     }
 

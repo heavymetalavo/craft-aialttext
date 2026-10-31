@@ -11,7 +11,7 @@ use craft\services\{Assets, Utilities};
 use craft\web\{View, UrlManager};
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
 use heavymetalavo\craftaialttext\models\Settings;
-use heavymetalavo\craftaialttext\services\{AiAltTextService, OpenAiService, AnthropicService, LangdockAnthropicService, LangdockOpenAiService, OpenRouterService};
+use heavymetalavo\craftaialttext\services\{AiAltTextService, OpenAiService, AnthropicService, LangdockAnthropicService, LangdockOpenAiService, OpenRouterService, CustomResponsesService, CustomMessagesService};
 use heavymetalavo\craftaialttext\utilities\AiAltTextUtility;
 use yii\base\Event;
 
@@ -26,6 +26,8 @@ use yii\base\Event;
  * @property LangdockAnthropicService $langdockAnthropicService
  * @property LangdockOpenAiService $langdockOpenAiService
  * @property OpenRouterService $openRouterService
+ * @property CustomResponsesService $customResponsesService
+ * @property CustomMessagesService $customMessagesService
  * @property Settings $settings The plugin settings
  */
 class AiAltText extends Plugin
@@ -53,6 +55,8 @@ class AiAltText extends Plugin
                 'langdockAnthropicService' => LangdockAnthropicService::class,
                 'langdockOpenAiService' => LangdockOpenAiService::class,
                 'openRouterService' => OpenRouterService::class,
+                'customResponsesService' => CustomResponsesService::class,
+                'customMessagesService' => CustomMessagesService::class,
             ],
         ];
     }
@@ -71,6 +75,8 @@ class AiAltText extends Plugin
             'langdockAnthropicService' => LangdockAnthropicService::class,
             'langdockOpenAiService' => LangdockOpenAiService::class,
             'openRouterService' => OpenRouterService::class,
+            'customResponsesService' => CustomResponsesService::class,
+            'customMessagesService' => CustomMessagesService::class,
         ]);
 
         // Register template path
