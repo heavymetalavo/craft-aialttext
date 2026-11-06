@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Changed the plugin icon to a new design, an eye with the braille letter ⠞ "t", for text, in its iris, in the same style as the AI Hreflang Detector plugin's icon.
 - Fixed a duplicate job being queued for the site being worked in when "Save translated results for each site" was enabled, so that site's alt text was generated (and charged for) twice.
 - Fixed existing alt text being lost if a save failed. When **Propagate** is off, generation blanks the alt value in a preliminary save before writing the new one; both saves now run in one transaction so a failure leaves the previous value intact.
 - Fixed alt text generation falling back to OpenAI for any unrecognised **AI Provider** value, including no value at all. Generation now fails immediately with a message naming what's missing, and does the same when the chosen provider has no API key.
