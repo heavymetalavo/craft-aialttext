@@ -2,20 +2,17 @@
 
 namespace heavymetalavo\craftaialttext\models\api;
 
-use Craft;
-use craft\base\Model;
-use craft\helpers\Json;
+use CraftCms\Cms\Component\Component;
+use CraftCms\Cms\Support\Json;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 /**
  * OpenAI Response Model
  *
- * Represents a response from the OpenAI API.
- * This model handles the structure and validation of API responses, including the generated content and any errors.
- *
- * Represents a response from the OpenAI API.
+ * Parses and represents a response from the OpenAI Responses API.
  */
-class OpenAiResponse extends Model
+class OpenAiResponse extends Component
 {
     public string $outputText = '';
     public ?array $output = null;
@@ -24,10 +21,7 @@ class OpenAiResponse extends Model
     private ?array $rawData = null;
 
     /**
-     * Parse the API response and populate the model properties
-     *
-     * @param string $responseBody The raw response body from the API
-     * @return bool True if parsing was successful, false otherwise
+     * Parse the API response and populate the model properties.
      */
     public function parseResponse(string $responseBody): bool
     {
@@ -49,6 +43,18 @@ class OpenAiResponse extends Model
                 return false;
             }
 
+            // A reasoning model can spend its entire output budget on reasoning tokens and
+            // return no text. Without this the failure surfaced as the generic "Empty alt text
+            // generated for asset", which gives an admin nothing to act on.
+            if (($responseData['status'] ?? null) === 'incomplete') {
+                $reason = $responseData['incomplete_details']['reason'] ?? 'unknown';
+                $this->setError(
+                    sprintf('OpenAI returned an incomplete response (reason: %s).', $reason),
+                    $responseData['incomplete_details'] ?? null
+                );
+                return false;
+            }
+
             if (isset($responseData['output']) && is_array($responseData['output'])) {
                 $this->output = $responseData['output'];
 
@@ -57,40 +63,40 @@ class OpenAiResponse extends Model
                         $this->content = $outputItem['content'];
 
                         foreach ($outputItem['content'] as $contentItem) {
+                            // A refusal is a distinct outcome from an empty response.
+                            if (($contentItem['type'] ?? null) === 'refusal') {
+                                $this->setError('OpenAI refused the request: ' . ($contentItem['refusal'] ?? 'no reason given'));
+                                return false;
+                            }
+
                             if (isset($contentItem['type']) && $contentItem['type'] === 'output_text' && isset($contentItem['text'])) {
-                                $this->outputText = $contentItem['text'];
+                                $this->outputText = trim($contentItem['text']);
                                 break 2;
                             }
                         }
                     }
                 }
             } elseif (isset($responseData['output_text'])) {
-                $this->outputText = $responseData['output_text'];
+                $this->outputText = trim($responseData['output_text']);
             } elseif (isset($responseData['choices'][0]['message']['content'])) {
-                $this->outputText = $responseData['choices'][0]['message']['content'];
+                $this->outputText = trim($responseData['choices'][0]['message']['content']);
                 $this->content = [
                     ['type' => 'output_text', 'text' => $this->outputText],
                 ];
             } else {
-                Craft::warning('Could not find output_text in response: ' . Json::encode($responseData), __METHOD__);
+                Log::warning('Could not find output_text in response: ' . Json::encode($responseData));
                 $this->setError('Could not parse response from OpenAI API.');
                 return false;
             }
 
             return $this->validate();
         } catch (Exception $e) {
-            Craft::error('Failed to parse OpenAI response: ' . $e->getMessage(), __METHOD__);
+            Log::error('Failed to parse OpenAI response: ' . $e->getMessage());
             $this->setError('Failed to parse response: ' . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Set an error message on the response
-     *
-     * @param string $message The error message
-     * @param array|null $details Additional error details
-     */
     public function setError(string $message, ?array $details = null): void
     {
         $this->error = [
@@ -99,56 +105,31 @@ class OpenAiResponse extends Model
         ];
     }
 
-    /**
-     * Get the raw response data
-     *
-     * @return array|null The raw response data
-     */
     public function getRawData(): ?array
     {
         return $this->rawData;
     }
 
     /**
-     * Defines the validation rules for the response model.
-     *
-     * @return array The validation rules
+     * @inheritdoc
      */
-    public function defineRules(): array
+    public function getRules(): array
     {
-        return [
-            ['outputText', 'string'],
-            ['output', 'safe'],
-            ['content', 'safe'],
-            ['error', 'safe'],
-        ];
+        return array_merge(parent::getRules(), [
+            'outputText' => ['nullable', 'string'],
+        ]);
     }
 
-    /**
-     * Checks if the response contains an error.
-     *
-     * @return bool True if there is an error, false otherwise
-     */
     public function hasError(): bool
     {
         return $this->error !== null;
     }
 
-    /**
-     * Gets the error message from the response.
-     *
-     * @return string The error message, or an empty string if there is no error
-     */
     public function getErrorMessage(): string
     {
         return $this->error['message'] ?? '';
     }
 
-    /**
-     * Gets the generated text from the response.
-     *
-     * @return string The generated text
-     */
     public function getText(): string
     {
         return $this->outputText;

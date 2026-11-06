@@ -1,0 +1,7 @@
+# Block AI features (Agent, Tab, chat, @-mentions) from reading secrets.
+# Best-effort only, and does NOT cover terminal commands the agent runs —
+# .cursor/hooks.json and .cursor/cli.json provide the harder layer.
+.env*
+!.env.example
+*.pem
+*.key

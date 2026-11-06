@@ -2,17 +2,17 @@
 
 namespace heavymetalavo\craftaialttext\models\api;
 
-use Craft;
-use craft\base\Model;
-use craft\helpers\Json;
+use CraftCms\Cms\Component\Component;
+use CraftCms\Cms\Support\Json;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Anthropic Response Model
  *
- * Represents a response from the Anthropic API.
+ * Parses and represents a response from the Anthropic Messages API.
  */
-class AnthropicResponse extends Model
+class AnthropicResponse extends Component
 {
     public string $outputText = '';
     public ?array $content = null;
@@ -20,7 +20,7 @@ class AnthropicResponse extends Model
     private ?array $rawData = null;
 
     /**
-     * Parse the API response and populate the model properties
+     * Parse the API response and populate the model properties.
      */
     public function parseResponse(string $responseBody): bool
     {
@@ -33,8 +33,8 @@ class AnthropicResponse extends Model
             $this->error = null;
 
             if (isset($responseData['type']) && $responseData['type'] === 'error') {
-                $errorMessage = isset($responseData['error']['message']) 
-                    ? $responseData['error']['message'] 
+                $errorMessage = isset($responseData['error']['message'])
+                    ? $responseData['error']['message']
                     : Json::encode($responseData['error']);
                 $this->setError($errorMessage, $responseData['error'] ?? null);
                 return false;
@@ -49,22 +49,19 @@ class AnthropicResponse extends Model
                     }
                 }
             } else {
-                Craft::warning('Could not find content in Anthropic response: ' . Json::encode($responseData), __METHOD__);
+                Log::warning('Could not find content in Anthropic response: ' . Json::encode($responseData));
                 $this->setError('Could not parse response from Anthropic API.');
                 return false;
             }
 
             return $this->validate();
         } catch (Exception $e) {
-            Craft::error('Failed to parse Anthropic response: ' . $e->getMessage(), __METHOD__);
+            Log::error('Failed to parse Anthropic response: ' . $e->getMessage());
             $this->setError('Failed to parse response: ' . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Set an error message on the response
-     */
     public function setError(string $message, ?array $details = null): void
     {
         $this->error = [
@@ -73,9 +70,6 @@ class AnthropicResponse extends Model
         ];
     }
 
-    /**
-     * Get the raw response data
-     */
     public function getRawData(): ?array
     {
         return $this->rawData;
@@ -84,34 +78,23 @@ class AnthropicResponse extends Model
     /**
      * @inheritdoc
      */
-    public function defineRules(): array
+    public function getRules(): array
     {
-        return [
-            ['outputText', 'string'],
-            ['content', 'safe'],
-            ['error', 'safe'],
-        ];
+        return array_merge(parent::getRules(), [
+            'outputText' => ['nullable', 'string'],
+        ]);
     }
 
-    /**
-     * Checks if the response contains an error.
-     */
     public function hasError(): bool
     {
         return $this->error !== null;
     }
 
-    /**
-     * Gets the error message from the response.
-     */
     public function getErrorMessage(): string
     {
         return $this->error['message'] ?? '';
     }
 
-    /**
-     * Gets the generated text from the response.
-     */
     public function getText(): string
     {
         return $this->outputText;

@@ -2,17 +2,34 @@
 {# @var settings \heavymetalavo\craftaialttext\models\Settings #}
 {% import '_includes/forms.twig' as forms %}
 
-<h2>Instructions</h2>
+{# Buttons are styled inline: Craft's `.btn` no longer carries the control panel's button
+   appearance in Craft 6, so it renders as plain text. currentColor keeps these legible in both
+   the light and dark control panel. #}
+{% set btnStyle = 'display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid currentColor; border-radius: 6px; background: transparent; color: inherit; font: inherit; line-height: 1.4; cursor: pointer; text-decoration: none;' %}
+
+<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;">
+    <a href="{{ cpUrl('utilities/ai-alt-text-bulk-actions') }}" style="{{ btnStyle }}">
+        <span style="display: inline-flex; width: 1em; height: 1em; flex: none;" aria-hidden="true">{{ iconSvg('eye') }}</span>
+        Bulk actions
+    </a>
+    <a href="https://github.com/heavymetalavo/craft-aialttext" target="_blank" rel="noopener" style="{{ btnStyle }}">
+        <span style="display: inline-flex; width: 1em; height: 1em; flex: none;" aria-hidden="true">{{ iconSvg('book') }}</span>
+        Plugin docs
+    </a>
+</div>
+
+<h2 class="mb-m">Instructions</h2>
 
 <p>Lots of info in <a target="_blank" href="https://github.com/heavymetalavo/craft-aialttext">the plugin docs</a>, but a short summary;
 <ol>
     <li>Check the plugin settings are suitable for your project (and your API key is added)</li>
-    <li>Ensure your volumes have <a href="https://docs.craftcms.com/api/v5/craft-fieldlayoutelements-assets-altfield.html#altfield" target="_blank">the native alt field</a> assigned to the field layout</li>
+    <li>Ensure each asset volume's field layout includes the native <a href="https://craftcms.com/docs/5.x/reference/element-types/assets.html#alt-text" target="_blank" rel="noopener">Alternative Text field</a>, under <strong>Settings → Assets → (volume) → Field Layout</strong></li>
+    <li>While you're in the field layout, open the Alternative Text field's settings and check its <strong>Translation Method</strong>. That is what decides whether alt text can differ per site: leave it alone for one shared value everywhere, or translate per site to give each site its own. If you want per-site values, also switch on <strong>Save translated results for each site</strong> below, otherwise generating only fills the site you ran it in</li>
     <li><p>Ensure your templates are updated to use the <code>alt</code> field, you could consider a fallback <code>asset.alt ?: asset.title</code> if that what was used before</p></li>
     <li>Then generate some AI Alt text by performing one of the following actions:
         <ol>
             <li>Triggering a bulk action in the <a href="{{ cpUrl('utilities/ai-alt-text-bulk-actions') }}">bulk actions utility</a></li>
-            <li>For individual or a group of specific assets find them in the <strong>Assets</strong> manager section</a> clicking the checkbox on a row, clicking the cog icon to reveal the Element actions menu and select <strong>Generate AI Alt Text</strong></li>
+            <li>For individual or a group of specific assets find them in the <strong>Assets</strong> manager section, clicking the checkbox on a row, clicking the cog icon to reveal the Element actions menu and select <strong>Generate AI Alt Text</strong></li>
             <li>When viewing a single asset's page, open the action menu and select <strong>Generate AI Alt Text</strong></li>
             <li>Upload a new asset (if the upload setting is enabled)</li>
         </ol>
@@ -21,14 +38,15 @@
 </ol>
 
 
-<hr />
+<hr class="mt-l mb-l" />
 
 
-<h2 id="settings">Settings</h2>
+<h2 id="settings" class="mb-m">Settings</h2>
 
 {{ forms.selectizeField({
-    label: "AI Provider"|t("aialttext"),
-    instructions: "Choose which AI service to use for generating alt text"|t("aialttext"),
+    fieldClass: 'mb-m',
+    label: "AI Provider"|t("ai-alt-text"),
+    instructions: "Choose which AI service to use for generating alt text"|t("ai-alt-text"),
     id: "aiProvider",
     name: "aiProvider",
     options: [
@@ -42,15 +60,16 @@
 }) }}
 
 
-<hr />
+<hr class="mt-l mb-l" />
 
 
 <div id="settings-provider-anthropic">
-    <h3>Anthropic Settings</h3>
+    <h3 class="mb-m">Anthropic Settings</h3>
 
     {{ forms.autosuggestField({
-        label: "Anthropic API Key"|t("aialttext"),
-        instructions: "The API key from your [Anthropic Console account](https://console.anthropic.com/)"|t("aialttext"),
+    fieldClass: 'mb-m',
+        label: "Anthropic API Key"|t("ai-alt-text"),
+        instructions: "The API key from your [Anthropic Console account](https://console.anthropic.com/)"|t("ai-alt-text"),
         id: "anthropicApiKey",
         name: "anthropicApiKey",
         placeholder: '$ANTHROPIC_API_KEY',
@@ -60,10 +79,11 @@
     }) }}
 
     {{ forms.autosuggestField({
-        label: 'Anthropic Model'|t('aialttext'),
+    fieldClass: 'mb-m',
+        label: 'Anthropic Model'|t('ai-alt-text'),
         id: 'anthropicModel',
         name: 'anthropicModel',
-        instructions: "The Anthropic model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-haiku-4-5`."|t("aialttext"),
+        instructions: "The Anthropic model to use. [See available models list](https://docs.anthropic.com/en/docs/about-claude/models). E.g., `claude-haiku-4-5`."|t("ai-alt-text"),
         value: settings.anthropicModel,
         placeholder: 'claude-haiku-4-5',
         errors: settings.getErrors('anthropicModel'),
@@ -71,10 +91,11 @@
     }) }}
 
     {{ forms.selectizeField({
-        label: 'Anthropic Image Detail Level'|t('aialttext'),
+    fieldClass: 'mb-m',
+        label: 'Anthropic Image Detail Level'|t('ai-alt-text'),
         id: 'anthropicImageDetailLevel',
         name: 'anthropicImageDetailLevel',
-        instructions: "Pre-scale the image to reduce [token cost and latency](https://platform.claude.com/docs/en/build-with-claude/vision#evaluate-image-size)."|t("aialttext"),
+        instructions: "Pre-scale the image to reduce [token cost and latency](https://platform.claude.com/docs/en/build-with-claude/vision#evaluate-image-size)."|t("ai-alt-text"),
         options: [
             { label: 'Low (500px x 500px)', value: 'low' },
             { label: 'Medium (1000px x 1000px)', value: 'medium' },
@@ -88,15 +109,16 @@
 </div>
 
 
-<hr />
+<hr class="mt-l mb-l" />
 
 
 <div id="settings-provider-openai">
-    <h3>OpenAI Settings</h3>
+    <h3 class="mb-m">OpenAI Settings</h3>
 
     {{ forms.autosuggestField({
-        label: "OpenAI API Key"|t("aialttext"),
-        instructions: "The API key from your Open AI account"|t("aialttext"),
+    fieldClass: 'mb-m',
+        label: "OpenAI API Key"|t("ai-alt-text"),
+        instructions: "The API key from your Open AI account"|t("ai-alt-text"),
         id: "openAiApiKey",
         name: "openAiApiKey",
         placeholder: '$OPENAI_API_KEY',
@@ -106,10 +128,11 @@
     }) }}
 
     {{ forms.autosuggestField({
-        label: 'Open AI Model'|t('app'),
+    fieldClass: 'mb-m',
+        label: 'OpenAI Model'|t('ai-alt-text'),
         id: 'openAiModel',
         name: 'openAiModel',
-        instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models) E.g., `gpt-5-nano`."|t("aialttext"),
+        instructions: "The OpenAI model used to generate the response. To find out which models are capable of vision OpenAI suggest to look [on the models page](https://platform.openai.com/docs/models) E.g., `gpt-5-nano`."|t("ai-alt-text"),
         value: settings.openAiModel,
         placeholder: 'gpt-5-nano',
         errors: settings.getErrors('openAiModel'),
@@ -117,10 +140,11 @@
     }) }}
 
     {{ forms.selectizeField({
-        label: 'OpenAI Image Detail Level'|t('aialttext'),
+    fieldClass: 'mb-m',
+        label: 'OpenAI Image Detail Level'|t('ai-alt-text'),
         id: 'openAiImageInputDetailLevel',
         name: 'openAiImageInputDetailLevel',
-        instructions: "Controls the [detail level](https://developers.openai.com/api/docs/guides/images-vision#choose-an-image-detail-level) OpenAI uses to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest."|t("aialttext"),
+        instructions: "Controls the [detail level](https://developers.openai.com/api/docs/guides/images-vision#choose-an-image-detail-level) OpenAI uses to process the image. Large images are also pre-scaled to stay within API limits. `low` is fastest and cheapest."|t("ai-alt-text"),
         options: [
             { label: 'Low - Fast, low-cost (512px x 512px)', value: 'low' },
             { label: 'High - Standard high-fidelity understanding', value: 'high' },
@@ -134,10 +158,11 @@
     }) }}
 
     {{ forms.selectizeField({
-        label: 'OpenAI Reasoning Effort'|t('aialttext'),
+    fieldClass: 'mb-m',
+        label: 'OpenAI Reasoning Effort'|t('ai-alt-text'),
         id: 'openAiReasoningEffort',
         name: 'openAiReasoningEffort',
-        instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage."|t("aialttext"),
+        instructions: "Controls the [reasoning effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort) value when using models that support reasoning like `o*` (e.g., `o1`) and `gpt-5*`. Lower effort favors speed and lower token usage."|t("ai-alt-text"),
         options: [
             { label: 'None', value: 'none' },
             { label: 'Minimal', value: 'minimal' },
@@ -154,51 +179,60 @@
 </div>
 
 
-<hr />
+<hr class="mt-l mb-l" />
 
 
+{# `rows` is set because the shipped default prompt runs to ~510 characters and the default
+   height cut it off mid-sentence. Four fits the default exactly at a typical desktop width;
+   narrower viewports wrap to five and scroll the last line. #}
 {{ forms.textareaField({
-    label: 'Prompt'|t('app'),
+    fieldClass: 'mb-m',
+    label: 'Prompt'|t('ai-alt-text'),
     id: 'prompt',
     name: 'prompt',
-    instructions: "The text prompt which will be sent to the AI provider with the image to generate the response, supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`, checkout [the readme](https://github.com/heavymetalavo/craft-aialttext?tab=readme-ov-file#-default-prompt) for the most up to date suggestion prompt template.`"|t("aialttext"),
+    rows: 8,
+    instructions: "Sent to the AI provider as the system / instruction message. The field supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`. Consider `{site.languageName}` for the site's language display name (e.g. `English (United Kingdom)`) which can help with translations on non-english sites. Checkout [the readme](https://github.com/heavymetalavo/craft-aialttext?tab=readme-ov-file#-default-prompt) for the most up to date suggestion prompt template."|t("ai-alt-text"),
     value: settings.prompt,
-    placeholder: "Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. \"#\", \"alt text:\", \"An image of\", \"A photo of\"). Do not wrap the output in quotes. Output in the language: {site.language}",
+    placeholder: "Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. \"#\", \"alt text:\", \"An image of\", \"A photo of\"). Do not wrap the output in quotes. Output in the language: {site.languageName} (BCP 47: {site.language})",
     errors: settings.getErrors('prompt'),
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Propagate'|t('aialttext'),
+    fieldClass: 'mb-m',
+    label: 'Propagate'|t('ai-alt-text'),
     id: 'propagate',
     name: 'propagate',
-    instructions: "Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites."|t("aialttext"),
+    instructions: "Whether the asset should be saved across all of its supported sites, if enabled it could save the same initial alt text value across all sites."|t("ai-alt-text"),
     on: settings.propagate,
     errors: settings.getErrors('propagate'),
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Generate for new image assets (on upload)'|t('aialttext'),
+    fieldClass: 'mb-m',
+    label: 'Generate for new image assets (on upload or file replacement)'|t('ai-alt-text'),
     id: 'generateForNewAssets',
     name: 'generateForNewAssets',
-    instructions: "If enabled, the plugin will automatically generate alt text when an image assets is created (on upload)"|t("aialttext"),
+    instructions: "If enabled, the plugin will automatically generate alt text when an image asset is created (on upload) or its file is replaced. On replacement, the alt text for the site the replacement was made in is overwritten, since it describes the old image; other sites keep their existing alt text unless Save translated results for each site is enabled. Note that Craft fills alt text in from an image's embedded IPTC/XMP caption when one is present, and the generated text replaces it — leave this off if your photographers caption their images."|t("ai-alt-text"),
     on: settings.generateForNewAssets,
     errors: settings.getErrors('generateForNewAssets'),
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Process SVGs'|t('aialttext'),
+    fieldClass: 'mb-m',
+    label: 'Process SVGs'|t('ai-alt-text'),
     id: 'processSvgs',
     name: 'processSvgs',
-    instructions: "Attempt to generate alt text for SVG files when they are uploaded or batched processed. This requires Craft's global `transformSvgs` setting to be enabled."|t("aialttext"),
+    instructions: "Attempt to generate alt text for SVG files when they are uploaded or batched processed. This requires Craft's global `transformSvgs` setting to be enabled."|t("ai-alt-text"),
     on: settings.processSvgs,
     errors: settings.getErrors('processSvgs'),
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Save translated results for each site'|t('aialttext'),
+    fieldClass: 'mb-m',
+    label: 'Save translated results for each site'|t('ai-alt-text'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',
-    instructions: "If enabled, the plugin will queue an extra job for each site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the site (`en-GB` for British english, `en-US` for American english, `de` for German etc). When disabled, alt text will generate for assets on the site the control panel is currently working with only."|t("aialttext"),
+    instructions: "If enabled, the plugin will queue an extra job for each site using related content e.g. where `{site.language}` is used in the prompt it will be replaced with the assigned language of the site (`en-GB` for British english, `en-US` for American english, `de` for German etc). When disabled, alt text will generate for assets on the site the control panel is currently working with only."|t("ai-alt-text"),
     on: settings.saveTranslatedResultsToEachSite,
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}
