@@ -41,6 +41,11 @@ class Settings extends Model
     public const DEFAULT_ANTHROPIC_IMAGE_DETAIL_LEVEL = 'low';
 
     /**
+     * @var string The default prompt, which the settings page's Reset to default button puts back
+     */
+    public const DEFAULT_PROMPT = 'Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. "#", "alt text:", "An image of", "A photo of"). Do not wrap the output in quotes. Output in the language: {site.languageName} (BCP 47: {site.language})';
+
+    /**
      * @var string The API provider to use
      */
     public string $aiProvider = '';
@@ -73,7 +78,7 @@ class Settings extends Model
     /**
      * @var string The prompt template for generating alt text
      */
-    public string $prompt = 'Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. "#", "alt text:", "An image of", "A photo of"). Do not wrap the output in quotes. Output in the language: {site.languageName} (BCP 47: {site.language})';
+    public string $prompt = self::DEFAULT_PROMPT;
 
     /**
      * @var string The detail level for image analysis
