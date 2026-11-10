@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added a **Reset to default** button under the **Prompt** setting, which puts the default prompt back in the field to edit or save.
 - Changed the plugin icon to a new design, an eye with the braille letter ⠞ "t", for text, in its iris, in the same style as the AI Hreflang Detector plugin's icon.
 
 ## 5.4.0 - 2026-10-30
