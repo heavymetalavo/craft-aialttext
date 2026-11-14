@@ -6,7 +6,7 @@ use Craft;
 use craft\base\{Element, Plugin};
 use craft\elements\Asset;
 use craft\events\{ModelEvent, RegisterElementActionsEvent, DefineMenuItemsEvent, RegisterComponentTypesEvent, RegisterCpAlertsEvent, RegisterUrlRulesEvent, ReplaceAssetEvent};
-use craft\helpers\{Cp, Html, UrlHelper};
+use craft\helpers\{App, Cp, Html, UrlHelper};
 use craft\services\{Assets, Utilities};
 use craft\web\{View, UrlManager};
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
@@ -215,7 +215,10 @@ class AiAltText extends Plugin
             'ai-alt-text/_settings',
             [
                 'settings' => $this->getSettings(),
-                'openRouterModelSuggestions' => $this->openRouterService->visionModelSuggestions(),
+                // Only fetched when OpenRouter is the saved provider, so other sites' settings pages don't call it
+                'openRouterModelSuggestions' => App::parseEnv($this->getSettings()->aiProvider) === 'openrouter'
+                    ? $this->openRouterService->visionModelSuggestions()
+                    : [],
             ]
         );
     }
