@@ -161,15 +161,18 @@ abstract class ResponsesApiService extends ApiService
 
             $errorResponse = new OpenAiResponse();
 
-            if ($e instanceof RequestException && $e->hasResponse() && $e->getResponse()->getStatusCode() === 429) {
-                $errorResponse->rateLimitedFor = RateLimitException::retryAfter($e->getResponse()) ?? 0;
-            }
-
             // Check if this is a Guzzle exception with a response
             if ($e instanceof RequestException && $e->hasResponse()) {
                 // Get the response body and parse it
                 $responseBody = (string) $e->getResponse()->getBody();
                 $errorData = json_decode($responseBody, true);
+
+                // OpenAI also answers 429 when the account is out of credit (`insufficient_quota`), which waiting
+                // won't fix, so that fails straight away rather than being retried as a rate limit
+                $outOfCredit = in_array('insufficient_quota', [$errorData['error']['code'] ?? null, $errorData['error']['type'] ?? null], true);
+                if ($e->getResponse()->getStatusCode() === 429 && !$outOfCredit) {
+                    $errorResponse->rateLimitedFor = RateLimitException::retryAfter($e->getResponse()) ?? 0;
+                }
 
                 // Extract just the error message from the response. Langdock reports some errors
                 // as a flat {"message": "..."} rather than an error object.
