@@ -450,6 +450,7 @@ class AiAltTextService extends Component
      * A reply that isn't that JSON, such as a model ignoring the format, is used as the alt text, with no title or filename.
      *
      * @return array{alt: string, title: string|null, filename: string|null}
+     * @throws Exception If the reply starts as JSON, or a code block, but can't be read, as it isn't alt text
      */
     public function parseGeneratedText(string $text): array
     {
@@ -465,6 +466,11 @@ class AiAltTextService extends Component
         $data = $start !== false && $end > $start ? json_decode(substr($text, $start, $end - $start + 1), true) : null;
 
         if (!is_array($data) || !is_string($data['alt'] ?? null) || trim($data['alt']) === '') {
+            // A reply that starts as JSON but can't be read, such as one with an unescaped quote, isn't alt text
+            if (preg_match('/^\s*(```|{)/', $text)) {
+                throw new Exception('The AI provider replied with JSON that could not be read, so no alt text was saved: ' . $text);
+            }
+
             Craft::warning('The AI provider was asked for JSON with the alt text, title and filename, but replied with something else, so the whole reply is used as the alt text: ' . $text, __METHOD__);
             return $result;
         }
