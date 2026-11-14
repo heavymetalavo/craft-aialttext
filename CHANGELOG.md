@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Changed the plugin icon to a new design, an eye with the braille letter ⠞ "t", for text, in its iris, in the same style as the AI Hreflang Detector plugin's icon.
+- Fixed generating alt text for SVGs failing with "no decode delegate for this image format `SVG'" on servers whose ImageMagick has no SVG coder, such as Alpine 3.19 and later without the `imagemagick-svg` package. SVGs are now skipped there, with a warning on the settings page, as they are with the GD image driver.
 
 ## 5.4.0 - 2026-10-30
 
