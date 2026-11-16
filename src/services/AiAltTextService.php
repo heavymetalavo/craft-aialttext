@@ -6,11 +6,12 @@ use CraftCms\Cms\Asset\Elements\Asset;
 use CraftCms\Cms\Asset\Enums\FileKind;
 use CraftCms\Cms\Element\Enums\MenuItemType;
 use CraftCms\Cms\Field\Enums\TranslationMethod;
-use CraftCms\Cms\Element\Events\ElementActionMenuItemsResolving;
+use CraftCms\Cms\Element\Events\{ElementActionMenuDescriptorsResolving, ElementActionMenuItemsResolving};
 use CraftCms\Cms\Queue\Enums\JobStatus;
 use CraftCms\Cms\Queue\JobProgress;
 use CraftCms\Cms\Support\Env;
-use CraftCms\Cms\Support\Facades\{Elements, HtmlStack, Images, InputNamespace, Sites};
+use CraftCms\Cms\Support\Url;
+use CraftCms\Cms\Support\Facades\{Elements, Images, Sites};
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
@@ -461,54 +462,45 @@ class AiAltTextService
             return;
         }
 
-        // Derived from the asset and site rather than mt_rand(): a random ID has no collision
-            // guarantee, and two assets on one page sharing an ID would wire a button to the
-            // wrong asset.
-            $customActionId = sprintf('action-generate-ai-alt-%s-%s', $asset->id, $asset->siteId);
-
         $event->items[] = [
             'type' => MenuItemType::Button,
-            'id' => $customActionId,
+            // Derived from the asset and site rather than mt_rand(), so two assets on one page can't share an ID
+            'id' => sprintf('action-generate-ai-alt-%s-%s', $asset->id, $asset->siteId),
             'icon' => 'language',
             'label' => t('Generate AI Alt Text', category: 'ai-alt-text'),
+            // Posted to the controller by the control panel's action menu: Craft 6 beta.1 no longer loads jQuery or
+            // the legacy Craft JS, so the item can't wire up a script of its own
+            'action' => 'ai-alt-text/generate/single-asset',
+            'params' => [
+                'assetId' => $asset->id,
+                'siteId' => $asset->siteId,
+            ],
         ];
-
-        HtmlStack::jsWithVars(fn ($id, $assetId, $siteId) => <<<JS
-$('#' + $id).on('activate', () => {
-  Craft.cp.displayNotice(Craft.t('ai-alt-text', 'Generating AI alt text…'));
-
-  Craft.sendActionRequest('POST', 'ai-alt-text/generate/single-asset', {
-    data: {
-      assetId: $assetId,
-      siteId: $siteId,
     }
-  })
-  .then((response) => {
-    if (response.data.success) {
-      Craft.cp.displayNotice(response.data.message);
 
-      if (Craft.cp.elementIndex) {
-        Craft.cp.elementIndex.updateElements();
-        return;
-      }
+    /**
+     * Adds a "Generate AI Alt Text" item to an asset's action menu in the Inertia editor, which reads descriptors
+     * that name a behavior rather than the menu items handleAssetActionMenuItems() adds.
+     */
+    public function handleAssetActionMenuDescriptors(ElementActionMenuDescriptorsResolving $event): void
+    {
+        $asset = $event->element;
 
-      if (window.location.href.includes("assets/edit")) {
-        window.location.reload();
-      }
-      return;
-    }
-    throw new Error(response.data.message);
-  })
-  .catch((error) => {
-    console.log('catch', JSON.stringify(error));
-    Craft.cp.displayError(Craft.t('ai-alt-text', 'Failed to process alt text generation: ') +
-      (error?.message || 'Unknown error'));
-  });
-});
-JS, [
-            InputNamespace::namespaceId($customActionId),
-            $asset->id,
-            $asset->siteId,
-        ]);
+        if (!$asset instanceof Asset || $asset->kind !== 'image') {
+            return;
+        }
+
+        $event->items[] = [
+            'label' => t('Generate AI Alt Text', category: 'ai-alt-text'),
+            'icon' => 'language',
+            'behavior' => [
+                'type' => 'submit',
+                'actionUrl' => Url::actionUrl('ai-alt-text/generate/single-asset'),
+                'params' => [
+                    'assetId' => $asset->id,
+                    'siteId' => $asset->siteId,
+                ],
+            ],
+        ];
     }
 }

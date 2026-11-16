@@ -401,17 +401,23 @@ abstract class ApiService
     }
 
     /**
+     * The URL of the asset with the transform applied, or of the original file without one. Craft 6 beta.1 no longer
+     * keeps a transform on the asset, and passing one to getUrl() is deprecated, so it's applied here with transform().
+     */
+    protected function getTransformedUrl(Asset $asset, array $transformParams): ?string
+    {
+        return $transformParams ? $asset->transform($transformParams)->url : $asset->getUrl();
+    }
+
+    /**
      * Downloads the asset's (possibly transformed) URL via Guzzle and returns its base64 encoded string.
      * Falls back to the original asset file contents if the URL cannot be fetched.
-     *
-     * Note: passes null (not []) to getUrl() when $transformParams is empty so that any transform
-     * previously applied via setTransform() is respected.
      *
      * @throws Exception If the URL is unavailable and the source format is not natively supported
      */
     protected function getAssetBase64String(Asset $asset, array $transformParams = []): string
     {
-        $imageUrl = $asset->getUrl(!empty($transformParams) ? $transformParams : null, true);
+        $imageUrl = $this->getTransformedUrl($asset, $transformParams);
 
         if (!empty($imageUrl)) {
             $imageUrl = $this->resolveAssetUrl($asset, $imageUrl);
@@ -426,11 +432,7 @@ abstract class ApiService
         }
 
         // The transform URL was unavailable or wouldn't download, so work out what the source
-        // actually is. This has to happen before anything reads getMimeType(), because while a
-        // transform is applied the asset reports the *transformed* type, which is always one the
-        // provider accepts — the earlier SVG-only version of this used the file extension to
-        // sidestep exactly that.
-        $asset->setTransform(null);
+        // actually is: getMimeType() without a transform reports the original file's type.
         $originalMimeType = $asset->getMimeType();
         $needsConversion = !$this->isAcceptedMimeType($originalMimeType);
 
@@ -813,11 +815,6 @@ abstract class ApiService
      */
     protected function getVisionTransformParams(Asset $asset, ?int $maxLongEdge = null, int $maxFileSizeMb = 20, ?int $maxPatches = null, ?int $maxTokens = null): array
     {
-        // Clear any transform applied by a previous attempt (the base64 fallback re-runs
-        // generateAltText with the same asset) so format and dimension detection below always
-        // read the original source asset rather than an already-transformed state.
-        $asset->setTransform(null);
-
         $aiAltTextService = app(AiAltTextService::class);
         // SVG, AVIF and HEIC are converted to PNG, which is lossless. Any transparency is filled before this transform is
         // used, see getFlattenedBase64() and getSvgBase64()

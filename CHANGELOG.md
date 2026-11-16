@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-> {warning} This release requires Craft 6.0.0-alpha.20 or later. Update Craft first.
+> {warning} This release requires Craft 6.0.0-beta.1 or later. Update Craft first.
 
 > {warning} [OpenAI is retiring](https://developers.openai.com/api/docs/deprecations#2026-06-11-gpt-5-and-o3-model-deprecations) the model behind `gpt-5-nano` (`gpt-5-nano-2025-08-07`) on December 11, 2026, after which requests using it will fail. If your **OpenAI Model** setting is `gpt-5-nano`, switch to `gpt-6-luna`, OpenAI's recommended replacement, before then. Luna doesn't accept the `minimal` reasoning effort, so also change **OpenAI Reasoning Effort** to `low`.
 
@@ -14,7 +14,7 @@
 - Added [Langdock](https://langdock.com/) as an AI provider, using either its Anthropic-compatible or OpenAI-compatible API. Configure the API key, model author and model in the plugin settings, plus the image detail level and reasoning effort for the OpenAI-compatible API. A **Langdock Model Family** setting saved by the plugin's 5.2.0 release on Craft 5 is migrated to **Langdock Model Author**.
 - Added a control panel warning for admins when no AI provider or API key is configured.
 - Added a check that skips an asset already waiting in the queue for the same site, so it isn't queued, and generated, twice.
-- Changed the plugin to require Craft 6.0.0-alpha.20 or later. Craft 6 alpha.16 removed the event the plugin registered its utility template with, and alpha.20 changed how plugins provide their settings, so the settings page is now built with Craft 6's control panel forms.
+- Changed the plugin to require Craft 6.0.0-beta.1 or later. Craft 6 alpha.16 removed the event the plugin registered its utility template with, alpha.20 changed how plugins provide their settings, so the settings page is now built with Craft 6's control panel UI, and beta.1 renamed that UI's classes and stopped loading jQuery in the control panel, so the asset menu's **Generate AI Alt Text** item now posts its request through Craft's own action menu.
 - Changed generated alt text to be saved to the sites that share it under the volume's **Alternative Text Translation Method**, so it's generated once for them, in the language of the site it's generated for. For example, two French sites on a volume set to Translate for each language now make one API request instead of two, and get the same alt text. On a volume set to Translate for each site group, every site in a site group gets the same alt text, whatever its language. On a Not translatable volume, every site gets the same alt text, as Craft gives them all one value.
 - Changed generating missing alt text to copy it between sites that share it, when one has alt text and another doesn't, e.g. after the volume's **Alternative Text Translation Method** was changed. For example, if two French sites share alt text and only one of them has some, it's copied to the other. Generating new alt text instead would save the new value to both.
 - Changed SVGs to get alt text whenever the **Process SVGs** setting is on and Craft uses its Imagick image driver. They were also skipped when Craft's `transformSvgs` setting was off, which no longer matters now that the plugin renders SVGs itself (for better support of gradient fallbacks, transparency and private volumes). With other image drivers they're skipped, with a warning on the settings page.

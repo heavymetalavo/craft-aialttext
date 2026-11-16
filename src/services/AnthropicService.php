@@ -83,23 +83,19 @@ class AnthropicService extends ApiService
         // Anthropic Vision: max long edge based on detail level, max 5MB payload, max ~1600 tokens
         $transformParams = $this->getVisionTransformParams($asset, maxLongEdge: $targetDimension, maxFileSizeMb: 5, maxTokens: 1600);
 
-        // Checked before setTransform(), after which the asset reports the transform's MIME type instead of GIF or SVG
+        // Checked on the original file, as the transform below converts GIFs and SVGs
         $isAnimatedGif = $this->isAnimatedGif($asset);
         $isSvg = app(AiAltTextService::class)->isSvg($asset);
         // Transparent images are flattened here, as models don't reliably see transparency, see getFlattenedBase64()
         $flattenedBase64 = ($isAnimatedGif || $isSvg) ? null : $this->getFlattenedBase64($asset, $transformParams);
 
-        if (!empty($transformParams)) {
-            $asset->setTransform($transformParams);
-        }
-
         // The MIME type of the image sent: a JPG for a filled image and a PNG for an SVG, as both are rendered here
         // (an SVG can't use getMimeType(), which stays image/svg+xml when Craft's transformSvgs is off). Anything
-        // else uses getMimeType(): the transform's output format after setTransform(), or the original's without one
+        // else uses getMimeType(): the transform's output format, or the original's without one
         $mimeType = match (true) {
             $flattenedBase64 !== null => 'image/jpeg',
             $isSvg => 'image/png',
-            default => $asset->getMimeType(),
+            default => $asset->getMimeType($transformParams ?: null),
         };
 
         if (!$this->isAcceptedMimeType($mimeType)) {
@@ -108,7 +104,7 @@ class AnthropicService extends ApiService
 
         // Animated GIFs, SVGs and transparent images are rendered here and sent as base64, see getFirstFrameBase64(),
         // getSvgBase64() and getFlattenedBase64()
-        $imageUrl = ($isAnimatedGif || $isSvg || $flattenedBase64 !== null) ? null : $asset->getUrl($transformParams, true);
+        $imageUrl = ($isAnimatedGif || $isSvg || $flattenedBase64 !== null) ? null : $this->getTransformedUrl($asset, $transformParams);
 
         // If we have a URL, resolve root-relative URLs to the site base; leave absolute URLs as-is
         if (!empty($imageUrl)) {

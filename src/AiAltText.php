@@ -5,16 +5,16 @@ namespace heavymetalavo\craftaialttext;
 use CraftCms\Cms\Asset\Events\AssetReplaced;
 use CraftCms\Cms\Cp\Events\CpAlertsResolving;
 use CraftCms\Cms\Cp\SelectOptions;
-use CraftCms\Cms\Element\Events\{ElementActionsResolving, ElementActionMenuItemsResolving, ElementLifecycleSaved};
-use CraftCms\Cms\Form\Controls\{Combobox, Lightswitch, Text, Textarea};
-use CraftCms\Cms\Form\{Form, FormContext};
-use CraftCms\Cms\Form\Nodes\{Field, Group, Heading, MarkdownContent, Separator};
+use CraftCms\Cms\Element\Events\{ElementActionsResolving, ElementActionMenuDescriptorsResolving, ElementActionMenuItemsResolving, ElementLifecycleSaved};
+use CraftCms\Cms\Ui\Controls\{Combobox, Lightswitch, Text, Textarea};
+use CraftCms\Cms\Ui\Nodes\{Field, Group, Heading, MarkdownContent, Separator};
+use CraftCms\Cms\Ui\{Ui, UiContext};
 use CraftCms\Cms\Plugin\Plugin;
 use CraftCms\Cms\ProjectConfig\ProjectConfig;
 use CraftCms\Cms\Support\Env;
 use CraftCms\Cms\Support\Facades\{Images, Plugins};
 use heavymetalavo\craftaialttext\Commands\{GenerateAll, GenerateMissing, GenerateSingle, GenerateStats};
-use heavymetalavo\craftaialttext\listeners\{AddAssetActionMenuItem, AddConfigurationAlert, QueueAltTextForNewAsset, RegenerateAltTextOnReplace, RegisterAssetElementActions, RestoreFailedJobDescription};
+use heavymetalavo\craftaialttext\listeners\{AddAssetActionMenuDescriptor, AddAssetActionMenuItem, AddConfigurationAlert, QueueAltTextForNewAsset, RegenerateAltTextOnReplace, RegisterAssetElementActions, RestoreFailedJobDescription};
 use heavymetalavo\craftaialttext\models\Settings;
 use heavymetalavo\craftaialttext\utilities\AiAltTextUtility;
 use Illuminate\Queue\Events\JobFailed;
@@ -74,6 +74,7 @@ class AiAltText extends Plugin
     protected array $events = [
         ElementActionsResolving::class => RegisterAssetElementActions::class,
         ElementActionMenuItemsResolving::class => AddAssetActionMenuItem::class,
+        ElementActionMenuDescriptorsResolving::class => AddAssetActionMenuDescriptor::class,
         JobFailed::class => RestoreFailedJobDescription::class,
         ElementLifecycleSaved::class => QueueAltTextForNewAsset::class,
         AssetReplaced::class => RegenerateAltTextOnReplace::class,
@@ -151,7 +152,7 @@ class AiAltText extends Plugin
      *
      * @inheritdoc
      */
-    public function settingsForm(FormContext $context = new FormContext()): ?Form
+    public function settingsUi(UiContext $context = new UiContext()): ?Ui
     {
         $values = $context->values['settings'] ?? [];
         // An environment variable that isn't set parses to null
@@ -166,7 +167,7 @@ class AiAltText extends Plugin
         $envText = fn(string $path) => Text::make($path)->textExpanderTriggers($envTriggers);
         $envSelect = fn(string $path, array $options) => Combobox::make($path)->options([...$options, ...$envOptions])->showAllOnEmpty();
 
-        return Form::make([
+        return Ui::make([
             Heading::make('instructions-heading', self::t('Instructions')),
             MarkdownContent::make('instructions', implode("\n", [
                 self::t('[Bulk actions]({utilityUrl}) · [Plugin docs](https://github.com/heavymetalavo/craft-aialttext)', ['utilityUrl' => cp_url('utilities/ai-alt-text-bulk-actions')]),

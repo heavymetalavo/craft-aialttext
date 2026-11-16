@@ -9,10 +9,10 @@ use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltTextForAssets;
 use heavymetalavo\craftaialttext\services\AiAltTextService;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
 
 use function CraftCms\Cms\cp_url;
 use function CraftCms\Cms\t;
@@ -32,26 +32,21 @@ class GenerateController
     ) {}
 
     /**
-     * Generate AI alt text for a single asset (AJAX).
+     * Generate AI alt text for a single asset, from its action menu. asSuccess() and asFailure() answer a JSON request
+     * with the message, and the asset editor's request with a flash message and a redirect back to the asset.
      */
-    public function actionSingleAsset(): JsonResponse
+    public function actionSingleAsset(): Response
     {
         $assetId = $this->request->input('assetId');
         $siteId = $this->request->input('siteId');
 
         if (!$assetId || !$siteId) {
-            return response()->json([
-                'success' => false,
-                'message' => t('Missing assetId or siteId', category: 'ai-alt-text'),
-            ], 400);
+            return $this->asFailure(t('Missing assetId or siteId', category: 'ai-alt-text'));
         }
 
         $asset = Asset::find()->id($assetId)->siteId($siteId)->one();
         if (!$asset) {
-            return response()->json([
-                'success' => false,
-                'message' => t('Asset not found', category: 'ai-alt-text'),
-            ], 404);
+            return $this->asFailure(t('Asset not found', category: 'ai-alt-text'));
         }
 
         // Check the user can save this asset (covers assets uploaded by other users too).
@@ -67,39 +62,25 @@ class GenerateController
                 'assetId' => $assetId,
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => t('You do not have permission to save this asset', category: 'ai-alt-text'),
-            ], 403);
+            return $this->asFailure(t('You do not have permission to save this asset', category: 'ai-alt-text'));
         }
 
         try {
             $service = app(AiAltTextService::class);
 
             if (!$service->createJob($asset, true)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => t('Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off or Craft\'s image driver can\'t read SVGs', category: 'ai-alt-text'),
-                ]);
+                return $this->asFailure(t('Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off or Craft\'s image driver can\'t read SVGs', category: 'ai-alt-text'));
             }
 
             // This site is generated inline, but the other sites are queued when translated
             // results are saved to each site, so say so rather than imply it's all done.
-            return response()->json([
-                'success' => true,
-                'message' => $service->queuesOtherSites()
-                    ? t('Alt text generated. The other sites have been queued.', category: 'ai-alt-text')
-                    : t('Alt text generated', category: 'ai-alt-text'),
-            ]);
+            return $this->asSuccess($service->queuesOtherSites()
+                ? t('Alt text generated. The other sites have been queued.', category: 'ai-alt-text')
+                : t('Alt text generated', category: 'ai-alt-text'));
         } catch (Exception $e) {
             Log::error('Error processing alt text generation: ' . $e->getMessage());
 
-            // A 200 with success false, as the action's script shows the message from the response. An error
-            // status would reject the request instead, and show the HTTP client's generic message.
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ]);
+            return $this->asFailure($e->getMessage());
         }
     }
 

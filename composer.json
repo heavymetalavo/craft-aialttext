@@ -22,8 +22,8 @@
     }
   ],
   "require": {
-    "php": ">=8.2",
-    "craftcms/cms": "^6.0.0-alpha.20"
+    "php": "^8.5",
+    "craftcms/cms": "^6.0.0-beta.1"
   },
   "autoload": {
     "psr-4": {
@@ -45,7 +45,7 @@
   "config": {
     "sort-packages": true,
     "platform": {
-      "php": "8.2"
+      "php": "8.5"
     },
     "allow-plugins": {
       "craftcms/plugin-installer": true
