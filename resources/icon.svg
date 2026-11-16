@@ -1,0 +1,33 @@
+<svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip)">
+<rect width="800" height="800" fill="#151515"/>
+<circle cx="400" cy="400" r="368" fill="#202020"/>
+<g stroke="#8CC84B" stroke-width="30" stroke-linejoin="round">
+<path d="M70 400Q400 20 730 400Q400 780 70 400Z"/>
+<circle cx="400" cy="400" r="135"/>
+</g>
+<!-- Black at the centre, fading to clear at the iris, under the braille -->
+<circle cx="400" cy="400" r="120" fill="url(#shade)"/>
+<!-- Braille ⠞ "t", for text: dots 2, 3, 4 and 5 raised, 1 and 6 faint -->
+<g fill="#FFFFFF">
+<circle cx="372" cy="400" r="19"/>
+<circle cx="372" cy="455" r="19"/>
+<circle cx="428" cy="345" r="19"/>
+<circle cx="428" cy="400" r="19"/>
+</g>
+<g fill="#FFFFFF" fill-opacity="0.18">
+<circle cx="372" cy="345" r="19"/>
+<circle cx="428" cy="455" r="19"/>
+</g>
+</g>
+<defs>
+<radialGradient id="shade" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(400 400) scale(160)">
+<stop stop-color="#000000"/>
+<stop offset="0.6" stop-color="#000000" stop-opacity="0.8"/>
+<stop offset="1" stop-color="#000000" stop-opacity="0"/>
+</radialGradient>
+<clipPath id="clip">
+<rect width="800" height="800" rx="200" fill="white"/>
+</clipPath>
+</defs>
+</svg>

@@ -2,21 +2,38 @@
 
 namespace heavymetalavo\craftaialttext\models\api;
 
-use craft\base\Model;
+use CraftCms\Cms\Component\Component;
 
 /**
  * Anthropic Request Model
  *
  * Represents a request to the Anthropic Messages API.
  */
-class AnthropicRequest extends Model
+class AnthropicRequest extends Component
 {
     public string $model = '';
+    /**
+     * @var int Ceiling on the *reply* only - it does not bound the image or other input tokens,
+     * which is where most of a vision request's cost sits. Alt text needs a fraction of this;
+     * the headroom is for models that also spend the budget on thinking tokens.
+     */
     public int $maxTokens = 1024;
 
+    private string $system = '';
     private string $prompt = '';
     private ?string $imageUrl = null;
     private ?array $imageSource = null;
+
+    /**
+     * Sets the system instructions for the request (task, output format, language, etc.), sent as
+     * the top-level `system` parameter, which the model weights more strongly than text in the
+     * user content — improving adherence to directives such as the output language.
+     */
+    public function setSystem(string $system): self
+    {
+        $this->system = $system;
+        return $this;
+    }
 
     public function setPrompt(string $prompt): self
     {
@@ -42,17 +59,16 @@ class AnthropicRequest extends Model
     /**
      * @inheritdoc
      */
-    public function defineRules(): array
+    public function getRules(): array
     {
-        return [
-            [['model', 'maxTokens'], 'required'],
-            ['model', 'string'],
-            ['maxTokens', 'integer'],
-        ];
+        return array_merge(parent::getRules(), [
+            'model' => ['required', 'string'],
+            'maxTokens' => ['required', 'integer'],
+        ]);
     }
 
     /**
-     * @inheritdoc
+     * Build the JSON payload for the Anthropic Messages API.
      */
     public function toArray(array $fields = [], array $expand = [], $recursive = true): array
     {
@@ -80,7 +96,7 @@ class AnthropicRequest extends Model
             ];
         }
 
-        return [
+        $payload = [
             'model' => $this->model,
             'max_tokens' => $this->maxTokens,
             'messages' => [
@@ -90,5 +106,11 @@ class AnthropicRequest extends Model
                 ],
             ],
         ];
+
+        if (!empty($this->system)) {
+            $payload['system'] = $this->system;
+        }
+
+        return $payload;
     }
 }

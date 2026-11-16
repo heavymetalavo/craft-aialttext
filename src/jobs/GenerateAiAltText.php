@@ -2,61 +2,65 @@
 
 namespace heavymetalavo\craftaialttext\jobs;
 
-use Craft;
-use craft\elements\Asset;
-use craft\errors\ElementNotFoundException;
-use craft\queue\BaseJob;
-use heavymetalavo\craftaialttext\AiAltText;
+use CraftCms\Cms\Asset\Elements\Asset;
+use CraftCms\Cms\Element\Queries\Exceptions\ElementNotFoundException;
+use CraftCms\Cms\Queue\Job;
+use heavymetalavo\craftaialttext\services\AiAltTextService;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Support\Facades\Log;
 use Throwable;
-use yii\base\Exception;
 
 /**
  * Generate Alt Text queue job
  */
-class GenerateAiAltText extends BaseJob
+class GenerateAiAltText extends Job
 {
-    public ?int $assetId = null;
-    public ?int $siteId = null;
-    public bool $forceRegeneration = false;
-
     /**
-     * @throws ElementNotFoundException
-     * @throws Exception
-     * @throws Throwable
+     * @var int[] Other sites that share the site's alt text, saved with the same result. A plain property with a
+     * default rather than a promoted one, so a job queued before it existed still unserializes with it set.
      */
-    function execute($queue): void
-    {
-        try {
-            // query for the asset
-            $asset = Asset::find()->id($this->assetId)->siteId($this->siteId)->one();
+    public array $sharedSiteIds = [];
 
-            // check if the asset exists
-            if (!$asset) {
-                throw new ElementNotFoundException("Asset not found: $this->assetId");
-            }
-
-            $plugin = AiAltText::getInstance();
-
-            // Generate alt text - now returns a string and saves the asset if successful
-            $altText = $plugin->aiAltTextService->generateAltText($asset, $this->siteId, $this->forceRegeneration);
-
-            // Log the result
-            if (!empty($altText)) {
-                Craft::info("Successfully generated alt text for asset $this->assetId: " . $altText, __METHOD__);
-            } else {
-                Craft::warning("Failed to generate alt text for asset $this->assetId", __METHOD__);
-                // Set the description to indicate failure
-                $this->description = "Failed to generate alt text";
-            }
-        } catch (Exception $e) {
-            Craft::error("Error in GenerateAiAltText job: " . $e->getMessage(), __METHOD__);
-            // Set the description to indicate error
-            $this->description = "Error: " . $e->getMessage();
-        }
+    public function __construct(
+        public int $assetId,
+        public int $siteId,
+        array $sharedSiteIds = [],
+        public ?string $description = null,
+    ) {
+        $this->sharedSiteIds = $sharedSiteIds;
     }
 
-    protected function defaultDescription(): ?string
+    /**
+     * Prevent duplicate jobs for the same asset + site combination from running concurrently.
+     */
+    public function middleware(): array
     {
-        return "Generate alt text";
+        return [new WithoutOverlapping("{$this->assetId}-{$this->siteId}")];
+    }
+
+    /**
+     * Errors are not caught so the job is marked as failed and can be retried.
+     *
+     * @throws ElementNotFoundException
+     * @throws Throwable
+     */
+    public function handle(): void
+    {
+        $service = app(AiAltTextService::class);
+        $asset = Asset::find()->id($this->assetId)->siteId($this->siteId)->one();
+
+        if (!$asset) {
+            throw new ElementNotFoundException("Asset not found: $this->assetId");
+        }
+
+        // Generates the alt text and saves the asset, or throws
+        $altText = $service->generateAltText($asset, $this->siteId, $this->sharedSiteIds);
+
+        Log::info("Successfully generated alt text for asset $this->assetId: " . $altText);
+    }
+
+    protected function defaultDescription(): string
+    {
+        return $this->description ?? 'Generate alt text';
     }
 }

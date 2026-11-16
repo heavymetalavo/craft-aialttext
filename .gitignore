@@ -5,3 +5,14 @@
 .env
 /node_modules
 /vendor
+AGENTS.md
+Agents.md
+CLAUDE.md
+.claude/
+.cursor/
+.cursorignore
+temp.txt
+issues.md
+.codex/
+finding.md
+findings.md

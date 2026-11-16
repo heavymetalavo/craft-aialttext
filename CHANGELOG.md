@@ -1,5 +1,119 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+> {warning} This release requires Craft 6.0.0-beta.1 or later. Update Craft first.
+
+> {warning} [OpenAI is retiring](https://developers.openai.com/api/docs/deprecations#2026-06-11-gpt-5-and-o3-model-deprecations) the model behind `gpt-5-nano` (`gpt-5-nano-2025-08-07`) on December 11, 2026, after which requests using it will fail. If your **OpenAI Model** setting is `gpt-5-nano`, switch to `gpt-6-luna`, OpenAI's recommended replacement, before then. Luna doesn't accept the `minimal` reasoning effort, so also change **OpenAI Reasoning Effort** to `low`.
+
+> {tip} The **Propagate** setting has been removed. Generated alt text now follows the volume's **Alternative Text Translation Method**: it's saved to the sites that share it, and to no others.
+
+> {tip} The default **OpenAI Reasoning Effort** is now `low` (previously `minimal`). Existing installs keep the values they've saved.
+
+- Added [OpenRouter](https://openrouter.ai/) as an AI provider, sending requests through its Responses API. OpenAI and Anthropic models are supported, and many other models that accept images as input work too.
+- Added [Langdock](https://langdock.com/) as an AI provider, using either its Anthropic-compatible or OpenAI-compatible API. Configure the API key, model author and model in the plugin settings, plus the image detail level and reasoning effort for the OpenAI-compatible API. A **Langdock Model Family** setting saved by the plugin's 5.2.0 release on Craft 5 is migrated to **Langdock Model Author**.
+- Added a control panel warning for admins when no AI provider or API key is configured.
+- Added a check that skips an asset already waiting in the queue for the same site, so it isn't queued, and generated, twice.
+- Changed the plugin to require Craft 6.0.0-beta.1 or later. Craft 6 alpha.16 removed the event the plugin registered its utility template with, alpha.20 changed how plugins provide their settings, so the settings page is now built with Craft 6's control panel UI, and beta.1 renamed that UI's classes and stopped loading jQuery in the control panel, so the asset menu's **Generate AI Alt Text** item now posts its request through Craft's own action menu.
+- Changed generated alt text to be saved to the sites that share it under the volume's **Alternative Text Translation Method**, so it's generated once for them, in the language of the site it's generated for. For example, two French sites on a volume set to Translate for each language now make one API request instead of two, and get the same alt text. On a volume set to Translate for each site group, every site in a site group gets the same alt text, whatever its language. On a Not translatable volume, every site gets the same alt text, as Craft gives them all one value.
+- Changed generating missing alt text to copy it between sites that share it, when one has alt text and another doesn't, e.g. after the volume's **Alternative Text Translation Method** was changed. For example, if two French sites share alt text and only one of them has some, it's copied to the other. Generating new alt text instead would save the new value to both.
+- Changed SVGs to get alt text whenever the **Process SVGs** setting is on and Craft uses its Imagick image driver. They were also skipped when Craft's `transformSvgs` setting was off, which no longer matters now that the plugin renders SVGs itself (for better support of gradient fallbacks, transparency and private volumes). With other image drivers they're skipped, with a warning on the settings page.
+- Changed animated GIFs to be sent to the AI provider as their first frame, rendered by the plugin and sent as base64, rather than as a URL to Craft's JPG transform.
+- Changed OpenAI Provider requests to send `store: false`, so OpenAI no longer keeps each request and its image for 30 days, which is its default for the Responses API.
+- Changed the OpenAI, Langdock (OpenAI-compatible API) and OpenRouter services to share a base class, which holds the Responses API request, response and error handling. Sets foundations to support new providers which run on [the Open Responses open-source specification](https://www.openresponses.org/) (e.g. Hugging Face).
+- Changed the plugin icon to a new design, an eye with the braille letter ⠞ "t", for text, in its iris, in the same style as the AI Hreflang Detector plugin's icon.
+- Changed the error reported when OpenAI returns no usable text: a response cut short by the output token limit, or an outright refusal, now reports what actually happened.
+- Changed the error for a mistyped or unsupported prompt variable to name the variable and point to the **Prompt** setting. This covers a typo like `{asset.filenmae}` and a variable that resolves to an object rather than text, like `{asset.volume}`. Previously the raw PHP error was shown.
+- Changed the default **OpenAI Reasoning Effort** to `low` (previously `minimal`), and the suggested OpenAI model in the **OpenAI Model** placeholder and documentation from `gpt-5-nano` to `gpt-6-luna`. The **OpenAI Model** setting itself still has no default.
+- Changed the **OpenAI Reasoning Effort** setting's instructions to note that the accepted values depend on the model.
+- Changed the "Generate AI Alt Text" asset action to queue jobs when more than one asset is selected, instead of making one blocking provider request per asset within the web request. A single asset is still generated straight away.
+- Changed the "Generate AI Alt Text" asset actions and `ai-alt-text:single` to clearly say whether alt text was generated, queued for other sites, or skipped, instead of always saying "queued", and `ai-alt-text:missing` to say it is queueing jobs rather than generating alt text.
+- Changed the bulk actions utility to queue a batched job per site that fans out into one job per asset, instead of walking every asset inside the web request. The bulk actions no longer time out part-way through with no indication of how much was queued, and progress is visible in the queue.
+- Changed the plugin settings page to only show the selected AI provider's fields, swapping them as the **AI Provider** dropdown changes. When the provider is set from an environment variable, the fields for the provider it resolves to are shown after the page is saved and reloaded, or all providers' fields if it doesn't resolve to a known provider.
+- Changed the bulk actions utility to be translatable - none of its text was run through a translation filter.
+- Changed the GIF animation check to use less memory. The whole file was previously read into memory. Only the start of the file is scanned now, and a GIF that is still undecided after that is treated as animated so it is always sent as a first-frame JPG.
+- Changed the AI request timeout to be configurable via `config('ai-alt-text.timeout')` instead of being hardcoded.
+- Changed the **Prompt** field to be taller, and fixed a stray closing tag in the settings page instructions.
+- Changed the **Open AI Model** setting label to **OpenAI Model**, matching the other three OpenAI fields.
+- Removed the **Propagate** setting. Generated alt text is saved to the sites that share it, as above, instead of being propagated to every site.
+- Removed the unused `forceRegeneration` parameter from `createJob()`, `generateAltText()` and the generation job. Nothing had read it since the `preSaveAsset` setting was replaced by `propagate`.
+- Fixed the bulk actions and the `missing` / `all` commands skipping disabled assets that the utility and `stats` counted, so the utility could report more assets than it queued.
+- Fixed alt text for SVGs with gradients describing them in the wrong colours, as ImageMagick's built-in SVG renderer draws gradients as solid black. SVGs are now rendered by the plugin and sent to the AI provider as base64, and where ImageMagick can't draw gradients, each one is replaced by the average of its colours first. This also lets alt text be generated for SVGs on volumes without public URLs. For accurate SVG rendering, the server needs ImageMagick built with librsvg, such as `imagemagick-svg` on Alpine, or Inkscape, which works with ImageMagick 6 or 7.1.2-34 and later, see [Images](docs/images.md).
+- Fixed alt text for images with transparency describing them as a solid colour, or on the wrong background, e.g. "a solid black square" for a black line on transparent, or a white logo as a plain white image. Some models see the colour stored under transparent pixels and others see white, and SVGs were rendered onto white. Transparent areas of PNG, WebP, GIF, AVIF, HEIC and HEIF images and SVGs are now filled with white, or mid grey where what's drawn is mostly light. These images are sent to the AI provider as base64, and the message sent with the image tells the model that the background is transparent, see [Images](docs/images.md).
+- Fixed a duplicate job being queued for the site being worked in when "Save translated results for each site" was enabled, so that site's alt text was generated (and charged for) twice.
+- Fixed existing alt text being lost if a save failed. The site and the sites that share its alt text are now saved in one transaction, so a failure leaves the previous value intact.
+- Fixed alt text generation falling back to OpenAI for any unrecognised **AI Provider** value, including no value at all. Generation now fails immediately with a message naming what's missing, and does the same when the chosen provider has no API key. The bulk actions and the `missing` and `all` commands refuse to queue anything in that case.
+- Fixed the batched bulk queries paginating without a deterministic order, which could process an asset twice in one batch and miss it in another.
+- Fixed connection-level failures when using Anthropic (DNS failures, TLS failures, connect timeouts) escaping as raw errors with no plugin context and no base64 fallback.
+- Fixed the reasoning parameter being sent to models that don't accept one - the check matched any model whose name began with `o`, and matched `gpt-5` chat variants.
+- Fixed an empty **OpenAI Image Detail Level** setting being sent to the API as an empty value rather than falling back to `low`. An empty **OpenAI Reasoning Effort** is now left out so the model's default is used.
+- Fixed alt text generated via OpenAI being saved with any surrounding whitespace the model returned, matching what the Anthropic provider already did.
+- Fixed the "Generate AI Alt Text" element action picking an arbitrary site when the asset index was showing more than one.
+- Fixed the "Generate AI Alt Text" asset action showing a generic server error when generating a single asset failed. The error message is shown instead.
+- Fixed oversized images not having their quality reduced when they also needed resizing, so they could still exceed the provider's payload limit.
+- Fixed every label and instruction on the plugin settings page using an unregistered translation category (`aialttext` rather than `ai-alt-text`), which meant none of them could ever be translated. Two fields were also using Craft's own `app` category.
+- Fixed the single-asset action reporting that generation had been queued when it actually runs immediately.
+- Fixed the per-asset action menu item using a random element ID, which could collide with another asset on the same page and wire the button to the wrong asset.
+- Fixed the response message being passed through the JavaScript translator, which treated a runtime value as a translation key.
+
+## 6.0.0-alpha.1 - 2026-07-26
+
+> {note} **This is the Craft 6 release line.** The plugin's major version tracks the major Craft version it supports, so each Craft version has its own release line - 4.x for Craft 4, 5.x for Craft 5, 6.x for Craft 6. Install the line that matches your Craft version. The jump from 1.10.0 to these numbered lines was a version-numbering change rather than a rewrite.
+
+> {note} Released as an alpha because Craft 6 is itself still in alpha, and its plugin API is still moving - this release needed changes to keep up with API changes made between Craft 6 alpha.4 and alpha.14. Developed and tested against **alpha.14**; earlier alphas may not register the plugin's event listeners, which would silently disable the element action, the asset action menu item and regeneration on file replacement. `6.0.0` will follow once Craft 6 is stable.
+
+> {warning} Craft 6 replaces the Yii console commands with Laravel Artisan commands. `./craft ai-alt-text/generate/<action>` becomes `php artisan ai-alt-text:<action>` - for example `php artisan ai-alt-text:missing`. See the readme for the full list.
+
+> {tip} This release introduces permission checks. Automatic generation on upload or file replacement is unchanged, but users who generate alt text manually now need permission to save the asset in the relevant volume, plus the **AI Alt Text Bulk Actions** utility permission for the utility's "Generate all" / "Generate missing" actions. Grant it under **Settings → Users → (group or user) → Permissions → Utilities**.
+
+- Added a permission requirement to the "Generate all" / "Generate missing" utility actions: the **AI Alt Text Bulk Actions** utility permission (the one Craft registers automatically for the utility, under **Settings → Users → (group or user) → Permissions → Utilities**). Grant it to the relevant user groups after updating, otherwise those actions will be unavailable. The element action is deliberately not permission-gated beyond being able to save each selected asset, and on-upload generation is controlled by the plugin setting alone.
+- Added a general CP access (`accessCp`) requirement to the "Generate all" / "Generate missing" utility actions, alongside the AI Alt Text Bulk Actions permission.
+- Added alt text generation when an image asset's file is replaced (when the "Generate for new image assets" setting is enabled). The alt text for the site the replacement was made in is overwritten, since it describes the old image; other sites keep their existing alt text unless "Save translated results for each site" is enabled.
+- Added a **Coverage** column to the bulk actions utility's table, showing each site's alt text coverage as a percentage preceded by a small progress ring, matching the figures the `stats` console command reports.
+- Added a filled-circle glyph alongside each coverage figure in the `stats` console command, colour-coded like the utility's progress ring using the colours a terminal can show. The colour is dropped when colour output is disabled or the output isn't a terminal, leaving the plain glyph.
+- Updated the element action and single-asset action to use Craft's own save authorization (`canSave()`), so generating alt text for an asset uploaded by another user requires the "Save assets uploaded by other users" volume permission - matching what the user could edit manually.
+- Updated the "Generate AI Alt Text" element action to skip any assets the user doesn't have permission to save.
+- Updated the "Generate AI Alt Text" element action to report how many assets were queued and how many were skipped for lack of permission, instead of showing an unqualified success message.
+- Updated the bulk action buttons to submit via secure (CSRF-protected) POST forms instead of plain links, and the bulk actions to reject any non-POST request.
+- Updated alt text generation to fail with a clear message if the requested site no longer exists (e.g. a queued job running after a site deletion), instead of silently generating with the asset's own site's language.
+- Updated the bulk actions utility and the `stats` console command to label their figures as **image assets**, and to state that only image assets are counted - other kinds (videos, PDFs, audio) never receive alt text and are excluded. Images in formats the AI provider doesn't currently support are still counted, so they surface as missing rather than being hidden.
+- Updated the `stats` console command to count assets of any status, matching the utility, so its totals no longer disagree with the utility's when disabled assets exist.
+- Updated the `stats` console command to print a proper table with column headings and right-aligned figures, instead of repeating a label before every value on each row. The all-sites row leads the table, as it does in the utility.
+- Removed the second site-ID argument from the `ai-alt-text:single` console command; pass the site via `--site-id` instead, consistent with the other commands, so `single 123 2` becomes `single 123 --site-id=2`.
+- Updated the bulk actions utility's table to scroll horizontally instead of overflowing the page at narrower viewport widths, and made the scrollable region keyboard-reachable.
+- Renamed the utility from **AI Alt Text** to **AI Alt Text Bulk Actions** to better describe what it does.
+- Reduced log noise by trimming lengthy base64 image data from the OpenAI debug logs.
+- Prevented a possible infinite loop in the bulk generation console command when a batch size of zero or less was supplied.
+- Fixed the console commands reading the wrong alt text value: `stats` and `missing` filtered on the site-agnostic `assets.alt` column instead of the per-site value, so `stats` reported identical figures for every site (disagreeing with the utility), and `missing` silently skipped assets that were missing alt text for a site whenever the asset's own alt value was set.
+- Fixed a rare error in the element action when a selected asset could not be reloaded for the current site.
+- Fixed a bug where the queue job's error handling didn't catch the plugin's own generation errors, due to catching the wrong `Exception` base class - they would surface as unhandled queue failures instead of the intended logged/described error.
+- Fixed a bug where, after a base64 fallback, later assets processed by the same queue worker would unnecessarily skip straight to base64 encoding.
+- Fixed a bug where a non-JSON error response from the Anthropic API could hide the original error behind a confusing secondary one.
+- Fixed a bug where an OpenAI request failure without a response (e.g. a connection-level error) could obscure the original error.
+- Fixed the `stats` console command pointing at a non-existent command in its closing tip; it now suggests `php artisan ai-alt-text:missing`.
+- Fixed the `single` and `stats` console commands advertising `--batch-size`, `--verbose` and `--force` in their `--help` output, which they ignore; those options are now only offered by the `missing` and `all` commands, which actually use them.
+- Fixed the `--force` option's description, which claimed it forced regeneration of existing alt text. It skips confirmation prompts - whether existing alt text is regenerated depends on the command (`all` vs `missing`).
+
+## 1.10.0 - 2026-07-07
+
+> {tip} If you have a custom **prompt** value and work with non-English language sites, you might want to update it manually to adopt the `{site.languageName}` variable which can return more reliable results in the desired language. Installs still using any former default prompt values are migrated automatically.
+
+- Changed the default prompt to name the target language explicitly - `{site.languageName} (BCP 47: {site.language})`, e.g. `Norwegian (BCP 47: no)`. The previous default ended in a bare code (`Output in the language: no` for Norwegian), which a model could misread as the English word "no" and answer in the wrong language.
+- Added a `{site.languageName}` prompt variable that resolves to the language's display name only.
+- The prompt is now sent as the system/instruction message for both providers - Anthropic via `system`, and OpenAI via the Responses API top-level `instructions` parameter. The user turn now carries only the image and the shared generation trigger.
+- Fixed a bug where saving a setting from a migration could replace all other stored plugin settings (API keys, provider, model, etc.) in project config. Both the new prompt migration and the existing AI provider migration now merge the single changed setting into the stored settings instead, and skip safely (with a warning) on environments where `allowAdminChanges` is disabled instead of failing the update.
+- Bumped the plugin schema version so pending migrations are actually detected and run by Craft's updater.
+- Fixed a bug where root-relative asset/transform URLs (e.g. from a site with a path-only base URL like `/en`, or during console/queue requests) were sent unresolved to the AI provider and the base64 fallback, causing both to fail. They are now resolved against the primary site's host.
+
+## 1.9.1 - 2026-06-09
+- Removed the plugin-level preflight check before sending a request with an image URL to an AI provider. A CDN (e.g. TwicPics) could reject the preflight request from the plugin despite the file being publicly available and accepted by an AI provider.
+- Updated base64 fallback behavior so original asset file contents are only sent when their MIME type is accepted by the AI provider.
+-  Fixed a bug where root-relative local asset URLs could include a multi-site path segment, resulting in URLs like `domain.com/en/local/image.jpg` instead of `domain.com/local/image.jpg`.
+
+## 1.9.0 - 2026-06-01
+- Added support for AVIF, HEIC & HEIF file types, which are converted to PNG before being sent to the AI provider. Conversion occurs depending on the image driver's ability to process those file types. Unsupported assets are skipped gracefully.
+- Fixed a bug where the base64 fallback request would use parameters from an already-transformed asset, causing format conversion to be skipped and the original (unsupported) MIME type to be sent on the retry.
+
 ## 1.8.1 - 2026-05-06
 - Fixed a bug where processing SVGs is now consistently enforced regardless of how alt text generation is triggered (upload event, bulk action, element action menu, or console command).
 - Fixed a bug where SVG assets that are not publicly accessible to an AI provider and are sent in a fallback request as base64 could send the original SVG file contents instead of a rasterised version.

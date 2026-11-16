@@ -2,276 +2,53 @@
 
 namespace heavymetalavo\craftaialttext\services;
 
-use Craft;
-use craft\base\Component;
-use craft\elements\Asset;
-use craft\errors\{AssetException, ImageTransformException};
-use craft\helpers\{App, Json};
-use Exception;
-use GuzzleHttp\Exception\{GuzzleException, RequestException};
+use CraftCms\Cms\Support\Env;
 use heavymetalavo\craftaialttext\AiAltText;
-use heavymetalavo\craftaialttext\models\api\{OpenAiRequest, OpenAiResponse};
-use yii\base\InvalidConfigException;
+use heavymetalavo\craftaialttext\models\Settings;
+use Illuminate\Container\Attributes\Singleton;
 
 /**
  * OpenAI API Service
  *
- * Handles all interactions with the OpenAI API, including sending requests and processing responses.
- * This service manages the API configuration and provides methods for generating alt text using OpenAI's vision models.
- *
- * @property string $apiKey The OpenAI API key
- * @property string $model The OpenAI model to use
- * @property string $baseUrl The base URL for OpenAI API requests
+ * Alt text through OpenAI's own Responses API, with the OpenAI settings. Everything else (building the request,
+ * sending it, reading the response) is in ResponsesApiService.
  */
-class OpenAiService extends ApiService
+#[Singleton]
+class OpenAiService extends ResponsesApiService
 {
-    private string $apiKey;
-    private string $model;
-    private string $baseUrl = 'https://api.openai.com/v1';
-    private bool $hasFallbackRan = false;
+    protected string $baseUrl = 'https://api.openai.com/v1';
+    protected string $providerLabel = 'OpenAI';
 
     /**
-     * Constructor
-     *
-     * Initializes the service with the OpenAI API key and model from the plugin settings.
+     * @var bool OpenAI stores each Responses API request and response for at least 30 days unless told not to, so
+     * ask it not to. The other hosts don't store them, so they are sent nothing.
      */
-    public function __construct()
+    protected bool $sendStoreFalse = true;
+
+    /**
+     * @inheritdoc
+     */
+    protected function applySettings(Settings $settings): void
     {
-        parent::__construct();
-        $plugin = AiAltText::getInstance();
-        $this->apiKey = App::parseEnv($plugin->getSettings()->openAiApiKey);
-        $this->model = App::parseEnv($plugin->getSettings()->openAiModel);
+        $this->apiKey = Env::parse($settings->openAiApiKey);
+        $this->model = Env::parse($settings->openAiModel);
     }
 
     /**
-     * Sends a request to the OpenAI API
-     *
-     * This method handles the communication with the OpenAI API, including:
-     * - API call execution
-     * - Response parsing
-     * - Error handling
-     *
-     * @param array $requestData The request data to send
-     * @return OpenAiResponse The API response
-     * @throws Exception|GuzzleException If the API call fails
+     * @inheritdoc
      */
-    private function sendRequest(array $requestData): OpenAiResponse
+    protected function imageDetailLevel(): string
     {
-        $requestStartedAt = null;
-
-        try {
-            // Log the request for debugging
-            Craft::debug('OpenAI API request: ' . Json::encode($requestData), __METHOD__);
-
-            $requestStartedAt = microtime(true);
-            $response = $this->client->post($this->baseUrl . '/responses', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => $requestData,
-            ]);
-
-            $responseBody = (string)$response->getBody();
-            Craft::debug(sprintf(
-                'OpenAI API request took %.3fs',
-                microtime(true) - $requestStartedAt
-            ), __METHOD__);
-            // Log the raw response for debugging
-            Craft::debug('OpenAI API raw response: ' . $responseBody, __METHOD__);
-
-            // Create response model and parse the response
-            $responseModel = new OpenAiResponse();
-            if (!$responseModel->parseResponse($responseBody)) {
-                // If parsing failed, make sure we have an error message
-                if (!$responseModel->hasError()) {
-                    $responseModel->setError('Failed to parse OpenAI API response');
-                }
-                $errorMsg = 'Response parsing failed: ' . $responseModel->getErrorMessage();
-                Craft::warning($errorMsg, __METHOD__);
-            }
-
-            // Make sure the response model is valid
-            if (!$responseModel->validate()) {
-                $errorMsg = 'Response validation failed: ' . Json::encode($responseModel->getErrors());
-                Craft::warning($errorMsg, __METHOD__);
-                // Set error if not already set
-                if (!$responseModel->hasError()) {
-                    $responseModel->setError($errorMsg);
-                }
-            }
-
-            return $responseModel;
-
-        } catch (Exception $e) {
-            if ($requestStartedAt !== null) {
-                Craft::debug(sprintf(
-                    'OpenAI API request failed after %.3fs',
-                    microtime(true) - $requestStartedAt
-                ), __METHOD__);
-            }
-
-            $errorResponse = new OpenAiResponse();
-
-            // Check if this is a Guzzle exception with a response
-            if ($e instanceof RequestException) {
-                // Get the response body and parse it
-                $responseBody = (string) $e->getResponse()->getBody();
-                $errorData = json_decode($responseBody, true);
-
-                // Extract just the error message from the response
-                if (isset($errorData['error']['message'])) {
-                    $errorMsg = 'OpenAI API error: ' . $errorData['error']['message'];
-                    Craft::error('OpenAI API error: ' . $responseBody, __METHOD__);
-
-                    $errorResponse->setError($errorMsg, $errorData['error']);
-                    return $errorResponse;
-                }
-            }
-
-            // Fall back to generic error handling
-            $errorMsg = 'OpenAI API request failed: ' . $e->getMessage();
-            Craft::error($errorMsg, __METHOD__);
-
-            $errorResponse->setError($e->getMessage());
-            return $errorResponse;
-        }
+        // ?: not ?? - Env::parse() returns '' for an empty setting, never null, so ?? never fired
+        // and an empty detail value was sent straight to the API.
+        return Env::parse(AiAltText::settings()->openAiImageInputDetailLevel) ?: 'low';
     }
 
-
-
     /**
-     * Generates alt text for an asset using OpenAI's vision model
-     *
-     * This method:
-     * - Creates the necessary request structure with text prompt and image
-     * - Sends the request to OpenAI
-     * - Processes the response
-     * - Handles any errors that occur during the process
-     *
-     * @param Asset $asset The asset to generate alt text for
-     * @param int|null $siteId
-     * @return string The generated alt text, or an empty string if generation fails
-     * @throws GuzzleException
-     * @throws ImageTransformException
-     * @throws AssetException
-     * @throws InvalidConfigException
-     * @throws Exception
+     * @inheritdoc
      */
-    public function generateAltText(Asset $asset, ?int $siteId = null): string
+    protected function reasoningEffort(): string
     {
-        $plugin = AiAltText::getInstance();
-        // Validate image support using the parent base service method
-        if (!$this->validateImageSupport($asset)) {
-            return '';
-        }
-
-        // OpenAI Vision: max 2048px long edge (API handles short edge scaling internally), max 512MB payload, max 1536 patches
-        // Patch budget based on detail:high tiling — each 512px tile costs 170 tokens + 85 base
-        $transformParams = $this->getVisionTransformParams($asset, maxLongEdge: 2048, maxFileSizeMb: 512, maxPatches: 1536);
-
-        if (!empty($transformParams)) {
-            $asset->setTransform($transformParams);
-        }
-
-        // After setTransform(), getMimeType() reflects the output format of the transform
-        $mimeType = $asset->getMimeType();
-        
-        if (!$this->isAcceptedMimeType($mimeType)) {
-            throw new Exception("Asset transform produced unsupported MIME type: $mimeType. Supported formats are: " . implode(', ', self::ACCEPTED_MIME_TYPES));
-        }
-        
-        // Make sure that we do not get a "generate transform" url, but a real url with true
-        $imageUrl = $asset->getUrl($transformParams, true);
-
-        // If we have a URL, check if it's accessible remotely (resolve root-relative URLs to the site base; leave absolute URLs as-is)
-        if (!empty($imageUrl)) {
-            $imageUrl = $this->resolveAssetUrl($asset, $imageUrl);
-            
-            if (!$this->forceBase64 && !$this->isUrlAccessible($imageUrl)) {
-                Craft::warning('Asset URL is not accessible locally: ' . $imageUrl, __METHOD__);
-                $this->forceBase64 = true;
-            }
-        }
-
-        // If no public URL is available, or URL is not accessible locally, or base64 is forced
-        if ($this->forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            $base64Image = $this->getAssetBase64String($asset, $transformParams);
-            $imageUrl = "data:$mimeType;base64,$base64Image"; // Replace URL with data string
-        }
-
-        // Only set detail parameter for images larger than 512x512 pixels
-        // OpenAI API doesn't accept detail parameter for smaller images
-        $width = $asset->getWidth();
-        $height = $asset->getHeight();
-        $detail = null;
-        if ($width > 512 || $height > 512) {
-            $detail = App::parseEnv($plugin->getSettings()->openAiImageInputDetailLevel) ?? 'low';
-        }
-        
-        $prompt = App::parseEnv($plugin->getSettings()->prompt);
-
-        // parse $prompt for {asset.param} and replace with $asset->param
-        // make sure that if the string may contain "{asset.title}{asset.caption}" we only replace each occurrence, and do not capture "{asset.title}{asset.caption}"
-        $prompt = preg_replace_callback('/{asset\.(.*?)}/', function ($matches) use ($asset) {
-            return $asset->{$matches[1]};
-        }, $prompt);
-
-        // Get the $site
-        $site = Craft::$app->getSites()->getSiteById($siteId);
-
-        // parse $prompt for {site.param} and replace with $site->param
-        $prompt = preg_replace_callback('/{site\.(.*?)}/', function ($matches) use ($site) {
-            return $site->{$matches[1]};
-        }, $prompt);
-
-        // Log asset info for debugging
-        Craft::info('Generating alt text for asset: ' . $asset->filename . ' (' . $imageUrl . ')', __METHOD__);
-
-        // Create and populate the request model
-        $request = new OpenAiRequest();
-        $request->model = $this->model;
-        $request->setPrompt($prompt)
-            ->setImageUrl($imageUrl)
-            ->setReasoningEffort((string) App::parseEnv($plugin->getSettings()->openAiReasoningEffort));
-            
-        // Only set detail if the image is large enough
-        if ($detail !== null) {
-            $request->setDetail($detail);
-        }
-
-        // Validate the request
-        if (!$request->validate()) {
-            throw new Exception('Invalid request: ' . Json::encode($request->getErrors()));
-        }
-
-        // Convert to array explicitly to avoid potential object-to-array conversion issues
-        $requestArray = $request->toArray();
-
-        // Send the request
-        $response = $this->sendRequest($requestArray);
-
-        // Check for errors from the API
-        if ($response->hasError()) {
-            $errorDetails = $response->error['details'] ?? null;
-            $isBase64 = strpos($imageUrl, 'data:') === 0;
-
-            if ($errorDetails && isset($errorDetails['type']) && $errorDetails['type'] === 'invalid_request_error' && !$this->hasFallbackRan && !$isBase64) {
-                $this->hasFallbackRan = true;
-                $this->forceBase64 = true;
-                Craft::warning('Can access the asset URL, but the provider could not, forcing base64 fallback', __METHOD__);
-                return $this->generateAltText($asset, $siteId);
-            }
-
-            throw new Exception($response->getErrorMessage());
-        }
-
-        // If output is empty, log and return empty string
-        if (empty($response->outputText)) {
-            Craft::warning('No alt text was generated for asset: ' . $asset->filename, __METHOD__);
-            return '';
-        }
-
-        return $response->getText();
+        return (string) Env::parse(AiAltText::settings()->openAiReasoningEffort);
     }
 }
