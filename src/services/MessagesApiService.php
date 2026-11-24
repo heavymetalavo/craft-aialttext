@@ -132,7 +132,7 @@ abstract class MessagesApiService extends ApiService
 
         $imageSource = null;
 
-        // If no public URL is available, the URL's host isn't reachable from the internet, or base64 is forced
+        // If no public URL is available, or base64 is forced
         if ($forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls || !$this->isPublicUrl($imageUrl)) {
             $base64Image = match (true) {
                 $flattenedBase64 !== null => $flattenedBase64,
