@@ -345,7 +345,9 @@
     id: 'processSvgs',
     name: 'processSvgs',
     instructions: "Attempt to generate alt text for SVG files when they are uploaded or batch processed."|t("ai-alt-text"),
-    warning: not craft.app.images.isImagick ? "Craft is using the GD image driver, which can't read SVGs, so SVGs are skipped. They need Craft's Imagick image driver."|t("ai-alt-text"),
+    warning: not craft.app.images.isImagick
+        ? "Craft is using the GD image driver, which can't read SVGs, so SVGs are skipped. They need Craft's Imagick image driver."|t("ai-alt-text")
+        : (not craft.app.plugins.getPlugin('ai-alt-text').aiAltTextService.canReadSvgs() ? "ImageMagick on this server can't read SVGs, so SVGs are skipped. It needs its SVG coder, e.g. the `imagemagick-svg` package on Alpine."|t("ai-alt-text")),
     on: settings.processSvgs,
     errors: settings.getErrors('processSvgs'),
 }) }}
