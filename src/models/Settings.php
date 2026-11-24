@@ -8,17 +8,17 @@ use craft\helpers\App;
 /**
  * Plugin Settings Model
  *
- * Defines the settings for the Ai Alt Text plugin.
- * This model handles the configuration options for OpenAI API integration
- * and alt text generation preferences.
+ * Defines the settings for the Ai Alt Text plugin: the AI provider and its
+ * configuration, and alt text generation preferences.
  *
  * @property string $openAiApiKey The OpenAI API key
  * @property string $openAiModel The OpenAI model to use (e.g., 'gpt-6-luna')
  * @property string $prompt The prompt template for generating alt text
  * @property string $openAiImageInputDetailLevel The detail level for image analysis
- * @property string $translationPromptAppendage The prompt suffix for translated results
  * @property bool $generateForNewAssets Whether to generate alt text for new assets automatically
- * @property string $aiProvider The API provider to use ('openai', 'anthropic', or 'gemini')
+ * @property bool $processSvgs Whether to generate alt text for SVGs
+ * @property bool $saveTranslatedResultsToEachSite Whether to generate alt text for every site, not just the current site and the sites that share its alt text
+ * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'langdock' or 'openrouter')
  * @property string $anthropicApiKey The Anthropic API key
  * @property string $anthropicModel The Anthropic Model
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')

@@ -3,13 +3,11 @@
 namespace heavymetalavo\craftaialttext\services;
 
 use Craft;
-use craft\base\Component;
-use craft\base\Field;
+use craft\base\{Component, Field};
 use craft\elements\Asset;
 use craft\enums\MenuItemType;
 use craft\events\DefineMenuItemsEvent;
-use craft\helpers\App;
-use craft\helpers\ArrayHelper;
+use craft\helpers\{App, ArrayHelper};
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
@@ -25,12 +23,15 @@ class AiAltTextService extends Component
 {
 
     /**
-     * Creates a job for the given element
+     * Generates or queues alt text for an asset, once for each group of sites that share it (see
+     * sitesSharingAltText()): the current site's group straight away or as a queued job, and, when
+     * Save translated results for each site is on, a queued job for each other group.
      *
      * @param Asset $asset The asset to create a job for
      * @param bool $saveCurrentSiteOffQueue Whether to process the current site off queue
      * @param int|null $currentSiteId The current site ID
      * @param bool $skipExistingJobCheck Whether to skip the check for existing jobs (useful for bulk operations)
+     * @param bool $skipSaveTranslatedResultsToEachSiteSetting Whether to only do the current site's group, whatever the setting
      * @param array|null $existingJobs Queue job info to check against, so bulk callers can fetch it once instead of per asset
      * @return bool Whether anything was generated or queued, false if the asset was skipped
      * @throws Exception
@@ -70,9 +71,9 @@ class AiAltTextService extends Component
             return false;
         }
 
-        // Skip SVG assets if SVG processing is disabled
-        if ($this->isSvg($asset) && !AiAltText::getInstance()->getSettings()->processSvgs) {
-            Craft::debug("Skipping alt text generation for SVG asset {$asset->id} because SVG processing is disabled.", __METHOD__);
+        // Skip SVG assets if SVG processing is off, or Craft's image driver can't read them
+        if ($this->isSvg($asset) && !$this->canProcessSvgs()) {
+            Craft::debug("Skipping alt text generation for SVG asset {$asset->id} because SVG processing is off or Craft's image driver can't read SVGs.", __METHOD__);
             return false;
         }
 
@@ -133,13 +134,12 @@ class AiAltTextService extends Component
     }
 
     /**
-     * Handles an asset a bulk run has reached on one site, once for the sites that share its alt text
-     * (see siteIdsBySharedAltText()), so they cost at most one request between them:
+     * Handles an asset in a bulk run for its group of sites that share alt text (see siteIdsBySharedAltText()),
+     * so the group costs one request at most:
      *
-     * - In a run for assets without alt text, if one of those sites has some, it's copied to the ones
-     *   without, instead of generating text that would overwrite it.
-     * - Otherwise a job is queued for the first of those sites in the run, which saves to all of them,
-     *   and the others skip the asset. In a run for one site, that's the site.
+     * - In a run for missing alt text, alt text a site in the group already has is copied to the ones without.
+     * - Otherwise one job is queued, generating for one site and saving to the group. In an all-sites run
+     *   that's the group's first site, and the group's other sites are skipped.
      *
      * @param Asset $asset The asset, on the site the run reached it on
      * @param bool $includeExisting Whether the run includes assets that already have alt text
@@ -205,12 +205,19 @@ class AiAltTextService extends Component
 
     /**
      * The asset's site IDs, by the alt text they share: the same key under the volume's Alternative
-     * Text Translation Method (see sharedAltTextKey()). Keyed by that, with the sites in site order.
+     * Text Translation Method (see sharedAltTextKey()). Keyed by that, with the sites in site order, e.g.
+     * `['en-GB' => [5], 'de-DE' => [4], 'fr-FR' => [6, 8]]` on a volume set to Translate for each language,
+     * where sites 6 and 8 are both French.
      *
      * @return int[][]
      */
     private function siteIdsBySharedAltText(Asset $asset): array
     {
+        // Not translatable gives every site the same key, so there's no need to load the asset on each site
+        if ($asset->getVolume()->altTranslationMethod === Field::TRANSLATION_METHOD_NONE) {
+            return [$this->sharedAltTextKey($asset) => array_map(fn($site) => $site->id, Craft::$app->getSites()->getAllSites())];
+        }
+
         $siteAssets = ArrayHelper::index(Asset::find()->id($asset->id)->site('*')->all(), 'siteId');
         $siteIds = [];
 
@@ -230,20 +237,12 @@ class AiAltTextService extends Component
 
     /**
      * The key shared by the sites that share an asset's alt text, for the asset on one of them: Craft's
-     * alt translation key, so for example every site in a site group shares one alt text, in the
-     * language of the site it's generated for.
+     * alt translation key, so for example every site in a site group, or every site on a Not translatable
+     * volume, shares one alt text, in the language of the site it's generated for.
      */
     private function sharedAltTextKey(Asset $siteAsset): string
     {
-        $key = $siteAsset->getAltTranslationKey();
-
-        // Not translatable gives every site the same key, which would save one language to them all, so on
-        // those volumes sites only share alt text with sites in the same language
-        if ($siteAsset->getVolume()->altTranslationMethod === Field::TRANSLATION_METHOD_NONE) {
-            $key .= '|' . $siteAsset->getSite()->language;
-        }
-
-        return $key;
+        return $siteAsset->getAltTranslationKey();
     }
 
     /**
@@ -389,7 +388,7 @@ class AiAltTextService extends Component
 
             Craft::info("Saving AI alt text for asset {$asset->id}", __METHOD__);
 
-            // Not propagated, so sites in other languages never get it. The sites sharing it are saved below.
+            // Not propagated, so only the sites that share its alt text get it, saved below.
             if (!Craft::$app->elements->saveElement($asset, true, false)) {
                 throw new Exception('Failed to save alt text for asset: ' . $asset->filename);
             }
@@ -417,6 +416,15 @@ class AiAltTextService extends Component
 
         Craft::info('Successfully saved alt text for asset: ' . $asset->filename, __METHOD__);
         return $altText;
+    }
+
+    /**
+     * Whether SVGs get alt text: the Process SVGs setting is on and Craft uses the Imagick image driver, as GD
+     * can't read SVGs.
+     */
+    public function canProcessSvgs(): bool
+    {
+        return AiAltText::getInstance()->getSettings()->processSvgs && Craft::$app->getImages()->getIsImagick();
     }
 
     /**

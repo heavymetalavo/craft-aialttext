@@ -272,9 +272,9 @@
         label: 'OpenRouter Model'|t('ai-alt-text'),
         id: 'openRouterModel',
         name: 'openRouterModel',
-        instructions: "The model's name on OpenRouter, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. It must accept image input: [browse the vision models](https://openrouter.ai/models?input_modalities=image&output_modalities=text)."|t("ai-alt-text"),
+        instructions: "The model's name on OpenRouter, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` (our top pick) or `google/gemini-3.5-flash-lite`. It must accept image input: [browse the vision models](https://openrouter.ai/models?input_modalities=image&output_modalities=text)."|t("ai-alt-text"),
         value: settings.openRouterModel,
-        placeholder: 'openai/gpt-6-luna',
+        placeholder: 'anthropic/claude-haiku-5.5',
         errors: settings.getErrors('openRouterModel'),
         suggestEnvVars: true,
     }) }}
@@ -344,7 +344,8 @@
     label: 'Process SVGs'|t('ai-alt-text'),
     id: 'processSvgs',
     name: 'processSvgs',
-    instructions: "Attempt to generate alt text for SVG files when they are uploaded or batched processed."|t("ai-alt-text"),
+    instructions: "Attempt to generate alt text for SVG files when they are uploaded or batch processed."|t("ai-alt-text"),
+    warning: not craft.app.images.isImagick ? "Craft is using the GD image driver, which can't read SVGs, so SVGs are skipped. They need Craft's Imagick image driver."|t("ai-alt-text"),
     on: settings.processSvgs,
     errors: settings.getErrors('processSvgs'),
 }) }}
@@ -367,7 +368,7 @@
     label: 'Save translated results for each site'|t('ai-alt-text'),
     id: 'saveTranslatedResultsToEachSite',
     name: 'saveTranslatedResultsToEachSite',
-    instructions: "Also generate alt text for the asset's other sites, each in its site's language. Sites that share alt text under the volume's **Alternative Text Translation Method** get one result between them, from one request: sites in the same language on Translate for each language or Not translatable, or all the sites in a site group on Translate for each site group. When off, only the site you're working in, and the sites that share its alt text, get alt text."|t("ai-alt-text"),
+    instructions: "Follows the asset volume's **Alternative Text Translation Method**: sites that share alt text (all sites on Not translatable, or sites in the same site group or language) get one result between them, from one request, in the language of the site it's generated for. When on, every site gets alt text. When off, only the current site and the sites that share its alt text do."|t("ai-alt-text"),
     on: settings.saveTranslatedResultsToEachSite,
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}

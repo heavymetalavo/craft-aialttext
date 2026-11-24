@@ -12,7 +12,7 @@ This plugin requires:
 - An Anthropic, OpenAI, Langdock or OpenRouter API key, see [AI providers](providers.md)
 
 Recommended:
-- For accurate alt text for SVGs, an SVG renderer for ImageMagick: Inkscape on Debian or Ubuntu (`apt install inkscape`), or `imagemagick-svg` on Alpine. See [Images](images.md#provider-specific-limits)
+- ImageMagick with an SVG renderer, so SVGs are described accurately; without one, gradients lose their shading. GD can't read SVGs, so they're skipped. See [Images](images.md#svg-renderers) for what each server may need.
 
 ## 📥 Installation
 
@@ -62,9 +62,7 @@ To add this field:
     4. Upload a new asset (if the upload setting is enabled)
 5. A single asset, selected in the **Assets** manager or on its own page, is generated straight away. Multiple selected assets, the bulk actions, new uploads, and the other sites when **Save translated results for each site** is enabled are queued as jobs instead
 
-![The Bulk Actions table in the AI Alt Text settings page](../src/bulk-actions.png)
-
-![Where to generate alt text: on an asset's page, from its action menu; for selected assets in Assets, from the actions menu (the cog); from an asset's menu in an Assets field; or automatically, with the "Generate for new image assets (on upload or file replacement)" setting turned on](images/where-to-generate.png)
+![Where to generate alt text: on an asset's page, from its action menu; for selected assets in Assets, from the actions menu (the cog); from an asset's menu in an Assets field; from the bulk actions utility in Utilities, for all sites or one site at a time; from the command line, with ai-alt-text/generate/stats, missing or single; or automatically, with the "Generate for new image assets (on upload or file replacement)" setting turned on](images/where-to-generate.png)
 
 Example twig:
 

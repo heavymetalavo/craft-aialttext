@@ -3,8 +3,7 @@
 namespace heavymetalavo\craftaialttext;
 
 use Craft;
-use craft\base\Element;
-use craft\base\Plugin;
+use craft\base\{Element, Plugin};
 use craft\elements\Asset;
 use craft\events\{ModelEvent, RegisterElementActionsEvent, DefineMenuItemsEvent, RegisterComponentTypesEvent, RegisterCpAlertsEvent, RegisterUrlRulesEvent, ReplaceAssetEvent};
 use craft\helpers\{Cp, Html, UrlHelper};
