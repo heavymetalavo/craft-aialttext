@@ -38,15 +38,15 @@ OpenRouter takes the same request for every model, so there is no model author t
 
 ## Hugging Face
 
-Hugging Face's [Inference Providers](https://huggingface.co/docs/inference-providers/index) router works like OpenRouter: one Hugging Face token reaches open-weight models run by providers such as Groq and Scaleway, billed at the providers' own prices with no extra fee.
+Hugging Face's [Inference Providers](https://huggingface.co/docs/inference-providers/index) router works like OpenRouter: one Hugging Face token reaches open-weight models run by inference providers (the services Hugging Face routes to, such as Groq and Scaleway), billed at their own prices with no extra fee.
 
 1. Visit [https://huggingface.co/](https://huggingface.co/) and sign up or log in.
 2. Make sure the account has Inference Providers credit: PRO accounts get some each month, otherwise buy some under **Billing**.
 3. Create a [fine-grained token with the "Make calls to Inference Providers" permission](https://huggingface.co/settings/tokens/new?ownUserPermissions=inference.serverless.write&tokenType=fineGrained).
 4. Copy the token and save it to an environment variable (`.env`), for example `HF_TOKEN`, then set **Hugging Face Token** to `$HF_TOKEN`.
-5. Set **Hugging Face Model** to a vision model's id, e.g. `Qwen/Qwen2.5-VL-7B-Instruct`. Without a suffix the fastest provider runs it; add `:cheapest`, or a provider such as `:groq`, to choose. [Browse the vision models](https://huggingface.co/models?pipeline_tag=image-text-to-text&inference_provider=all).
+5. Set **Hugging Face Model** to a vision model's id, e.g. `Qwen/Qwen2.5-VL-7B-Instruct`. Without a suffix the fastest inference provider runs it; add `:cheapest`, or an inference provider such as `:groq`, to choose. [Browse the vision models](https://huggingface.co/models?pipeline_tag=image-text-to-text&inference_provider=all).
 
-Hugging Face's Responses API is in beta, and its docs only show images sent as URLs, so this provider hasn't been tested against the real API yet. Images are always sent as base64, as for OpenRouter, and no image detail or reasoning setting is sent, so each model uses its own defaults. How good the alt text is varies between models more than on the other providers.
+Hugging Face's Responses API is in beta, and its docs only show images sent as URLs, so this provider hasn't been tested against the real API yet. Images are always sent as base64, as for OpenRouter. There is no image detail or reasoning setting, so each model uses its own reasoning defaults, but the request always includes an image `detail` value: `low` for images 512px or smaller and `auto` for larger ones. Hugging Face's router may reject it, as that is untested too. How good the alt text is varies between models more than on the other providers.
 
 ## OpenAI
 

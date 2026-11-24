@@ -31,7 +31,7 @@ A full walkthrough of all plugin features - [watch on YouTube](https://youtu.be/
 
 ## 🚀 Quick start
 
-Craft CMS 5.0.0 or later (running Craft 4? [Use the 4.x branch](https://github.com/heavymetalavo/craft-aialttext/blob/4.x/README.md)), PHP 8.2 or later, and an API key for Anthropic, OpenAI, Langdock or OpenRouter.
+Craft CMS 5.0.0 or later (running Craft 4? [Use the 4.x branch](https://github.com/heavymetalavo/craft-aialttext/blob/4.x/README.md)), PHP 8.2 or later, and an API key for Anthropic, OpenAI, Langdock, OpenRouter or Hugging Face.
 
 ```sh
 composer require heavymetalavo/craft-aialttext

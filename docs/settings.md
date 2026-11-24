@@ -10,7 +10,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 |---------|-------------|
 | **AI Provider** | Choose between OpenAI, Anthropic, Langdock, OpenRouter or Hugging Face. |
 | **OpenAI/Anthropic/Langdock/OpenRouter API Key, Hugging Face Token** | Your provider's API key. |
-| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-5-5`). For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. For Hugging Face, use the model's id, e.g. `Qwen/Qwen2.5-VL-7B-Instruct`, optionally with `:cheapest` or a provider such as `:groq`. |
+| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-5-5`). For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. For Hugging Face, use the model's id, e.g. `Qwen/Qwen2.5-VL-7B-Instruct`, optionally with `:cheapest` or an inference provider such as `:groq`. |
 | **Langdock Model Author** | Langdock only. `Anthropic` (models such as Claude) or `OpenAI` (models such as GPT). It must be the author of the model, and decides which of Langdock's compatible APIs requests are sent to. |
 | **Langdock Image Detail Level** | Langdock with the `OpenAI` model author only. Works like the OpenAI image detail level, `low`, `high` or `auto`. |
 | **Langdock Reasoning Effort** | Langdock with the `OpenAI` model author only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). |
@@ -64,6 +64,8 @@ Which values work depends on the model, as tested on 19 October 2026:
 **Langdock** with the `Anthropic` model author has no image detail setting: images are scaled to the `low` size (500px x 500px) and always sent as base64, since Langdock does not accept image URLs. With the `OpenAI` model author, **Langdock Image Detail Level** (`low`, `high` or `auto`) and **Langdock Reasoning Effort** work like the OpenAI settings above (both default to `low`).
 
 **OpenRouter** always sends images as base64. It scales them as OpenAI does, except for Claude models (`anthropic/…`), which are scaled as on the Anthropic API: the detail level picks the long-edge limit (500px at `low`, 1000px at `auto`, 1568px at `high` or `original`) as the Anthropic setting does, and a token budget of about 1,600 tokens (about 1.2 megapixels) also applies, which is what sets the size of larger photos. OpenAI models use **OpenRouter Image Detail Level** and **OpenRouter Reasoning Effort** (both default to `low`). The image detail level is sent to every model, and Gemini models also change how many tokens they use with it, while Qwen, GLM and Grok models ignored it in testing. The reasoning effort is only sent to OpenAI reasoning models, and other models use their own defaults.
+
+**Hugging Face** also always sends images as base64, and has no image detail or reasoning setting of its own, see [AI providers](providers.md#hugging-face).
 
 For more information, refer to the [OpenAI](https://platform.openai.com/docs/guides/images) and [Anthropic](https://docs.anthropic.com/en/docs/build-with-claude/vision) documentation.
 
