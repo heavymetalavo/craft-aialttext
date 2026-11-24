@@ -429,8 +429,7 @@ class AiAltTextService extends Component
     }
 
     /**
-     * Whether Craft's image driver can read SVGs. GD can't, and ImageMagick only can with its SVG coder, which some
-     * servers leave out, e.g. Alpine 3.19 and later without the `imagemagick-svg` package.
+     * Whether Craft's image driver can read SVGs: it's ImageMagick, and ImageMagick has an SVG coder.
      */
     public function canReadSvgs(): bool
     {
