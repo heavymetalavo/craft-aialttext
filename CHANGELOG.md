@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Fixed the **Anthropic Image Detail Level** (and the **OpenRouter Image Detail Level** for Claude models) having no effect on large images. The token budget's size replaced the detail level's smaller one, so a large photo was sent at about 1340px at every level. At `low` it's now 500px, which uses about a seventh of the image tokens.
+- Fixed the **Anthropic Image Detail Level** (and the **OpenRouter Image Detail Level** for Claude models) having no effect on large images. The token budget's size replaced the detail level's smaller one, so a large photo was sent at about 1340px at every level. At `low` it's now 500px, which uses about a seventh of the image tokens. Langdock's Anthropic models, which always use `low`, now get the smaller image too.
 
 ## 5.4.0 - 2026-10-30
 
