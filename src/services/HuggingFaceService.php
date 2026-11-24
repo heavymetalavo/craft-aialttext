@@ -11,7 +11,7 @@ use heavymetalavo\craftaialttext\models\Settings;
  * Hugging Face API Service
  *
  * Hugging Face's Inference Providers router serves the Responses API (in beta) on its own host for open-weight models
- * run by providers such as Groq and Scaleway. A model is named `org/model`, with an optional `:provider` suffix to pick
+ * run by inference providers such as Groq and Scaleway. A model is named `org/model`, with an optional `:provider` suffix to pick
  * the provider, or `:fastest` (the default) or `:cheapest`. Authentication is a Bearer Hugging Face token with the
  * "Make calls to Inference Providers" permission, and usage is billed at the providers' own prices.
  *
