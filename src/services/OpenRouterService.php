@@ -45,6 +45,10 @@ class OpenRouterService extends ResponsesApiService
                 $models = [];
 
                 foreach ($data as $model) {
+                    if (!is_string($model['id'] ?? null) || $model['id'] === '') {
+                        continue;
+                    }
+
                     // The query already filters, but a model is only suggested if it says it takes images and gives text
                     if (!in_array('image', $model['architecture']['input_modalities'] ?? [], true) || !in_array('text', $model['architecture']['output_modalities'] ?? [], true)) {
                         continue;
@@ -53,7 +57,7 @@ class OpenRouterService extends ResponsesApiService
                     $price = (float)($model['pricing']['prompt'] ?? 0) * 1000000;
                     $models[] = [
                         'name' => $model['id'],
-                        'hint' => ($model['name'] ?? $model['id']) . ($price > 0 ? ', $' . rtrim(rtrim(number_format($price, 3), '0'), '.') . '/M input tokens' : ''),
+                        'hint' => ($model['name'] ?? $model['id']) . ($price > 0 ? ', $' . rtrim(rtrim(number_format($price, $price < 0.001 ? 6 : 3), '0'), '.') . '/M input tokens' : ''),
                     ];
                 }
 
