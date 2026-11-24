@@ -326,7 +326,7 @@
     id: 'prompt',
     name: 'prompt',
     rows: 8,
-    instructions: "Sent to the AI provider as the system / instruction message. The field supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`. Consider `{site.languageName}` for the site's language display name (e.g. `English (United Kingdom)`) which can help with translations on non-english sites. Checkout [the docs](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/settings.md#-default-prompt) for the most up to date suggestion prompt template. **Reset to default** puts the default prompt back."|t("ai-alt-text"),
+    instructions: "Sent to the AI provider as the system / instruction message. The field supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`. Consider `{site.languageName}` for the site's language display name (e.g. `English (United Kingdom)`) which can help with translations on non-english sites. Checkout [the docs](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/settings.md#-default-prompt) for the most up to date suggestion prompt template. **Reset to default** fills the field with the plugin's current default prompt."|t("ai-alt-text"),
     value: settings.prompt,
     placeholder: defaultPrompt,
     errors: settings.getErrors('prompt'),
