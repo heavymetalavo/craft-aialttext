@@ -1,5 +1,13 @@
 # Release Notes for AI Alt Text
 
+## Unreleased
+
+- Added a **Reset to default** button under the **Prompt** setting, which fills the field with the plugin's current default prompt, to edit or save.
+- Added a check of the **Prompt** setting's `{asset.…}` and `{site.…}` variables when the settings are saved, so a misspelt one, such as `{asset.filenmae}`, is reported on the settings page rather than failing every generation. A prompt set by an environment variable, or applied by a project config change, is still only checked when alt text is generated.
+- Changed the plugin icon to a new design, an eye with the braille letter ⠞ "t", for text, in its iris, in the same style as the AI Hreflang Detector plugin's icon.
+- Fixed generating alt text for SVGs failing with "no decode delegate for this image format `SVG'" on servers whose ImageMagick has no SVG coder, such as Alpine 3.19 and later without the `imagemagick-svg` package. SVGs are now skipped there, with a warning on the settings page, as they are with the GD image driver.
+- Fixed the **Anthropic Image Detail Level** (and the **OpenRouter Image Detail Level** for Claude models) having no effect on large images. The token budget's size replaced the detail level's smaller one, so a large photo was sent at about 1340px at every level. At `low` it's now 500px, which uses about 85% fewer image tokens. Langdock's Anthropic models, which always use `low`, now get the smaller image too.
+
 ## 5.4.0 - 2026-10-30
 
 > {tip} The **Propagate** setting has been removed. When on, before Craft 5.11, it saved the same alt text to every site. When off, the plugin worked around Craft copying an asset's first alt text to every site regardless of the volume's **Alternative Text Translation Method**, which Craft 5.11 fixed ([craftcms/cms#19067](https://github.com/craftcms/cms/pull/19067)). Generated alt text now follows that translation method instead.
