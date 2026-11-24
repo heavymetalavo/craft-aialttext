@@ -71,7 +71,7 @@ class OpenRouterService extends ResponsesApiService
     }
 
     /**
-     * Claude models (`anthropic/claude-…`, the `~anthropic/…` latest aliases, or a bare `claude-…` name, which OpenRouter also accepts) are scaled as AnthropicService scales them (long edge by detail level, 5MB, about 1,600 tokens), since
+     * Claude models (`anthropic/claude-…`, the `~anthropic/…` latest aliases, or a bare `claude-…` name, which OpenRouter also accepts) are scaled as MessagesApiService scales them (long edge by detail level, 5MB, about 1,600 tokens), since
      * OpenAI's sizing sends them larger images than they need and costs about 15 to 20% more. The OpenRouter Image Detail
      * Level picks the size: `low` 500px, `auto` 1000px, `high` and `original` 1568px. Other models are scaled as OpenAI's are.
      *
