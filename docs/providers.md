@@ -38,7 +38,7 @@ OpenRouter takes the same request for every model, so there is no model author t
 
 ## Custom endpoints
 
-For a gateway or provider the plugin doesn't support, which takes OpenAI's Responses API or Anthropic's Messages API request unchanged, as Langdock does. Custom endpoints aren't supported: the plugin is only tested with the providers above, so test one before relying on it.
+For a gateway or provider the plugin doesn't support, which takes OpenAI's Responses API or Anthropic's Messages API request unchanged, as Langdock does. Custom endpoints aren't supported: the plugin is only tested with the providers above, so test one before relying on it. Use `https`: the endpoint receives each image and the API key, so only point it at a gateway you trust.
 
 1. Set **AI Provider** to **Custom endpoint**.
 2. Set **Custom Endpoint Base URL** to the URL the requests go under, without `/responses` or `/messages` at the end, e.g. `https://gateway.example.com/v1`.
@@ -47,7 +47,7 @@ For a gateway or provider the plugin doesn't support, which takes OpenAI's Respo
    - **Messages API** posts to `{base URL}/messages`, the request Anthropic and Langdock's Claude models take, with the key sent both as `x-api-key` and as a Bearer token, and `anthropic-version: 2023-06-01`.
 4. Set the API key and the model, as the endpoint names it.
 
-Images are always sent as base64, as a gateway may not be able to fetch URLs. With the Responses API, the image detail level is `low` and no reasoning setting is sent; with the Messages API, images are scaled as Anthropic's are at the `low` detail level.
+Images are always sent as base64, as a gateway may not be able to fetch URLs. With the Responses API, the image detail level is `low`, images are scaled to 1024px on the long edge, and no reasoning setting is sent; with the Messages API, images are scaled as Anthropic's are at the `low` detail level.
 
 ## OpenAI
 

@@ -2,7 +2,7 @@
 
 **README** · [Getting started](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/getting-started.md) · [AI providers](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/providers.md) · [Settings](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/settings.md) · [Console commands](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/console-commands.md) · [Images](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/images.md) · [Costs](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/costs.md)
 
-![AI Alt Text, for Anthropic, OpenAI, Langdock and OpenRouter, on Craft 5 and Craft 4 (lite). A photo of a polar bear waving, with its alt text below: "A young polar bear standing upright on snow, raising one paw as if waving, with a grey sky behind it."](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/5.x/docs/images/banner.png)
+![AI Alt Text, for Anthropic, OpenAI, Langdock, OpenRouter and custom endpoints, on Craft 5 and Craft 4 (lite). A photo of a polar bear waving, with its alt text below: "A young polar bear standing upright on snow, raising one paw as if waving, with a grey sky behind it."](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/5.x/docs/images/banner.png)
 
 Write alt text for every image on your Craft site with AI: one click, in bulk, or as images are uploaded, in each site's language.
 
@@ -29,7 +29,7 @@ Write alt text for every image on your Craft site with AI: one click, in bulk, o
 
 ## 🚀 Quick start
 
-Craft CMS 5.0.0 or later (running Craft 4? [Use the 4.x branch](https://github.com/heavymetalavo/craft-aialttext/blob/4.x/README.md)), PHP 8.2 or later, and an API key for Anthropic, OpenAI, Langdock or OpenRouter.
+Craft CMS 5.0.0 or later (running Craft 4? [Use the 4.x branch](https://github.com/heavymetalavo/craft-aialttext/blob/4.x/README.md)), PHP 8.2 or later, and an API key for Anthropic, OpenAI, Langdock, OpenRouter or a custom endpoint.
 
 ```sh
 composer require heavymetalavo/craft-aialttext
@@ -49,7 +49,7 @@ Then use it in your templates:
 ## 📚 Documentation
 
 - [Getting started](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/getting-started.md) - requirements, installation, the `alt` field, generating alt text, troubleshooting
-- [AI providers](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/providers.md) - API keys for Anthropic, OpenAI, Langdock and OpenRouter, and choosing a model
+- [AI providers](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/providers.md) - API keys for Anthropic, OpenAI, Langdock, OpenRouter and custom endpoints, and choosing a model
 - [Settings](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/settings.md) - every setting, the default prompt, image detail, reasoning effort and permissions
 - [Console commands](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/console-commands.md) - stats, missing, all and single
 - [Images](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/images.md) - supported file types, scaling and conversion, private volumes and limitations
