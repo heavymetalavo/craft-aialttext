@@ -557,7 +557,9 @@ class AiAltTextService extends Component
         try {
             if ($assets->moveAsset($asset, $asset->getFolder(), $filename)) {
                 Craft::info("Renamed asset {$asset->id} from $oldFilename to $filename", __METHOD__);
-                $this->renameFilenameTitles($asset, $oldFilename);
+                if (AiAltText::getInstance()->getSettings()->generateTitles) {
+                    $this->renameFilenameTitles($asset, $oldFilename);
+                }
                 return;
             }
 
@@ -568,9 +570,9 @@ class AiAltTextService extends Component
     }
 
     /**
-     * After a rename, gives the sites whose title is still the one Craft made from the old filename the one it would
-     * make from the new filename, e.g. `Polar bear waving on snow`, so it still counts as a filename title, which their
-     * own alt text generation replaces, see replaceFilenameTitle().
+     * After a rename, when the Generate titles setting is on, gives the sites whose title is still the one Craft made
+     * from the old filename the one it would make from the new filename, e.g. `Polar bear waving on snow`, so it still
+     * counts as a filename title, which their own alt text generation replaces, see replaceFilenameTitle().
      */
     private function renameFilenameTitles(Asset $asset, string $oldFilename): void
     {
