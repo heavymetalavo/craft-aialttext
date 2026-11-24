@@ -22,6 +22,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **Generate for new image assets (on upload or file replacement)** | Automatically generate alt text when new assets are created, or when an asset's file is replaced. On replacement, the alt text for the site the replacement was made in, and the sites that share it, is overwritten, since it describes the old image; other sites keep their existing alt text unless **Save translated results for each site** is enabled. |
 | **Process SVGs** | Attempt to generate alt text for SVG files when they are uploaded or batch processed. |
 | **Save translated results for each site** | Follows the asset volume's **Alternative Text Translation Method**: sites that share alt text (all sites on Not translatable, or sites in the same site group or language) get one result between them, from one request, in the language of the site it's generated for. When on, every site gets alt text. When off, only the current site and the sites that share its alt text do. |
+| **Send images as base64** | Send images to the AI provider as base64, rather than as URLs for it to download. This can be helpful in development environments, where the provider can't reach the site's asset URLs. See [Images](images.md). OpenRouter and Langdock's Anthropic models always get base64. |
 
 ## 💬 Default prompt
 

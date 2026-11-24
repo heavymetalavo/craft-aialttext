@@ -133,7 +133,7 @@ abstract class MessagesApiService extends ApiService
         $imageSource = null;
 
         // If no public URL is available, or base64 is forced
-        if ($forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls || !$this->isPublicUrl($imageUrl)) {
+        if ($forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls || AiAltText::getInstance()->getSettings()->sendImagesAsBase64) {
             $base64Image = match (true) {
                 $flattenedBase64 !== null => $flattenedBase64,
                 $isAnimatedGif => $this->getFirstFrameBase64($asset, $transformParams),

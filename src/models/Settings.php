@@ -20,6 +20,7 @@ use craft\models\Site;
  * @property string $openAiImageInputDetailLevel The detail level for image analysis
  * @property bool $generateForNewAssets Whether to generate alt text for new assets automatically
  * @property bool $processSvgs Whether to generate alt text for SVGs
+ * @property bool $sendImagesAsBase64 Whether to send images to the AI provider as base64 instead of as URLs
  * @property bool $saveTranslatedResultsToEachSite Whether to generate alt text for every site, not just the current site and the sites that share its alt text
  * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'langdock' or 'openrouter')
  * @property string $anthropicApiKey The Anthropic API key
@@ -172,6 +173,11 @@ class Settings extends Model
     public bool $processSvgs = false;
 
     /**
+     * @var bool Whether to send images as base64 instead of as URLs the AI provider has to download
+     */
+    public bool $sendImagesAsBase64 = false;
+
+    /**
      * @inheritdoc
      */
     public function setAttributes($values, $safeOnly = true): void
@@ -253,6 +259,7 @@ class Settings extends Model
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
+            ['sendImagesAsBase64', 'boolean'],
         ];
     }
 
