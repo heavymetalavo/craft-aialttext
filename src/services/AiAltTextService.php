@@ -382,6 +382,11 @@ class AiAltTextService extends Component
             throw new Exception('Empty alt text generated for asset: ' . $asset->filename);
         }
 
+        // Loaded again, after the provider's reply: Craft saves an asset's filename with every save, so one loaded before
+        // another job renamed the file would put the old filename back, see renameFile()
+        $asset = Asset::find()->id($asset->id)->siteId($asset->siteId)->one()
+            ?? throw new Exception("Asset not found: $asset->id");
+
         // The site's asset and the sites that share its alt text get the alt text, and the sites that share its title
         // get the title, so each site's asset is loaded and saved once
         $siteAssets = [$asset->siteId => $asset];
@@ -525,6 +530,12 @@ class AiAltTextService extends Component
 
         $base = trim(substr(StringHelper::toKebabCase(pathinfo($words, PATHINFO_FILENAME)), 0, 80), '-');
         if ($base === '') {
+            return;
+        }
+
+        // Loaded again, so saving it can't put back a filename another job has changed since, see generateAltText()
+        $asset = Asset::find()->id($asset->id)->siteId($asset->siteId)->one();
+        if (!$asset) {
             return;
         }
 
