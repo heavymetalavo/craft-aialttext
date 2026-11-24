@@ -494,9 +494,8 @@ class AiAltTextService extends Component
     }
 
     /**
-     * Sets a generated title on an asset whose title is still the one Craft made from its filename, e.g. `Hans jurgen
-     * mager q QWV91 TT Br E unsplash` for `hans-jurgen-mager-qQWV91TTBrE-unsplash.jpg`. A title someone has written, or
-     * one generated before, is kept.
+     * Sets a generated title on an asset whose title is still the one Craft made from its filename, e.g. `Img 4821`
+     * for `img-4821.jpg`. A title someone has written, or one generated before, is kept.
      */
     private function replaceFilenameTitle(Asset $siteAsset, string $title): void
     {
