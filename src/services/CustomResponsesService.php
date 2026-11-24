@@ -49,6 +49,17 @@ class CustomResponsesService extends ResponsesApiService
     }
 
     /**
+     * Images are always base64 at the `low` detail level, so they're scaled to a conservative 1024px and 5MB, as a
+     * gateway may forward them to a model with a 5MB limit, such as Claude.
+     *
+     * @inheritdoc
+     */
+    protected function visionTransformParams(Asset $asset): array
+    {
+        return $this->getVisionTransformParams($asset, maxLongEdge: 1024, maxFileSizeMb: 5);
+    }
+
+    /**
      * No reasoning setting is sent, so each model uses its own default.
      *
      * @inheritdoc
