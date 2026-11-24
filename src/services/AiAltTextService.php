@@ -11,6 +11,7 @@ use craft\helpers\{App, ArrayHelper};
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
+use Imagick;
 use Throwable;
 
 /**
@@ -419,12 +420,20 @@ class AiAltTextService extends Component
     }
 
     /**
-     * Whether SVGs get alt text: the Process SVGs setting is on and Craft uses the Imagick image driver, as GD
-     * can't read SVGs.
+     * Whether SVGs get alt text: the Process SVGs setting is on and Craft's image driver can read SVGs, see
+     * canReadSvgs().
      */
     public function canProcessSvgs(): bool
     {
-        return AiAltText::getInstance()->getSettings()->processSvgs && Craft::$app->getImages()->getIsImagick();
+        return AiAltText::getInstance()->getSettings()->processSvgs && $this->canReadSvgs();
+    }
+
+    /**
+     * Whether Craft's image driver can read SVGs: it's ImageMagick, and ImageMagick has an SVG coder.
+     */
+    public function canReadSvgs(): bool
+    {
+        return Craft::$app->getImages()->getIsImagick() && !empty(Imagick::queryFormats('SVG'));
     }
 
     /**
