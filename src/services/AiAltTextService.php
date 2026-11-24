@@ -528,7 +528,7 @@ class AiAltTextService extends Component
             return;
         }
 
-        $base = trim(substr(StringHelper::toKebabCase(pathinfo($words, PATHINFO_FILENAME)), 0, 80), '-');
+        $base = trim(mb_substr(StringHelper::toKebabCase(pathinfo($words, PATHINFO_FILENAME)), 0, 80), '-');
         if ($base === '') {
             return;
         }
