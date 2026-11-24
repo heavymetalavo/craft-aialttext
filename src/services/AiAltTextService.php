@@ -12,6 +12,7 @@ use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
 use Throwable;
+use yii\base\InvalidConfigException;
 
 /**
  * AI Alt Text Service
@@ -21,6 +22,11 @@ use Throwable;
  */
 class AiAltTextService extends Component
 {
+    /**
+     * @var array<int, array<int, string|null>> The sections of the entries each asset is related to, by asset ID,
+     * so a bulk run doesn't repeat the query for each of an asset's sites (see exclusionReason())
+     */
+    private array $sectionUidsByAsset = [];
 
     /**
      * Generates or queues alt text for an asset, once for each group of sites that share it (see
@@ -207,29 +213,27 @@ class AiAltTextService extends Component
             return "its volume ($volume->handle) is excluded";
         }
 
-        // e.g. `images/icons/` for an asset in the icons folder of the images volume, and `images/` for its root
-        $path = $volume->handle . '/' . ltrim($asset->getFolder()->path ?? '', '/');
+        // A broken folder ID means no folder exclusion, rather than an error that could fail an upload
+        try {
+            // e.g. `images/icons/` for an asset in the icons folder of the images volume, and `images/` for its root
+            $path = $volume->handle . '/' . ltrim($asset->getFolder()->path ?? '', '/');
+        } catch (InvalidConfigException) {
+            $path = null;
+        }
+
         foreach (preg_split('/\R/', $settings->excludedFolders, -1, PREG_SPLIT_NO_EMPTY) as $folder) {
             $folder = trim(trim($folder), '/') . '/';
-            if ($folder !== '/' && str_starts_with($path, $folder)) {
+            if ($path !== null && $folder !== '/' && str_starts_with($path, $folder)) {
                 return "its folder ($folder) is excluded";
             }
         }
 
-        if (empty($settings->excludedSections)) {
+        // A new upload isn't related to any entry yet, so there's nothing to look up
+        if (empty($settings->excludedSections) || $asset->firstSave) {
             return null;
         }
 
-        // The sections of the entries it's related to, on any site, by the entry that owns any nested ones
-        $sectionUids = [];
-        foreach (Entry::find()->relatedTo(['targetElement' => $asset->id])->site('*')->unique()->status(null)->all() as $entry) {
-            while ($entry instanceof NestedElementInterface && ($owner = $entry->getOwner()) !== null) {
-                $entry = $owner;
-            }
-
-            // An entry nested in something other than an entry, such as a global set, has no section
-            $sectionUids[] = $entry instanceof Entry ? $entry->getSection()?->uid : null;
-        }
+        $sectionUids = $this->relatedSectionUids($asset);
 
         $excluded = array_intersect($sectionUids, $settings->excludedSections);
 
@@ -241,6 +245,31 @@ class AiAltTextService extends Component
         }
 
         return null;
+    }
+
+    /**
+     * The sections of the entries an asset is related to, on any site, by the entry that owns any nested ones.
+     * Remembered for the rest of the request, so a bulk run doesn't repeat the query for each of an asset's sites.
+     *
+     * @return array<int, string|null> The section UIDs, null for an entry nested in something other than an entry
+     */
+    private function relatedSectionUids(Asset $asset): array
+    {
+        if (isset($this->sectionUidsByAsset[$asset->id])) {
+            return $this->sectionUidsByAsset[$asset->id];
+        }
+
+        $sectionUids = [];
+        foreach (Entry::find()->relatedTo(['targetElement' => $asset->id])->site('*')->unique()->status(null)->all() as $entry) {
+            while ($entry instanceof NestedElementInterface && ($owner = $entry->getOwner()) !== null) {
+                $entry = $owner;
+            }
+
+            // An entry nested in something other than an entry, such as a global set, has no section
+            $sectionUids[] = $entry instanceof Entry ? $entry->getSection()?->uid : null;
+        }
+
+        return $this->sectionUidsByAsset[$asset->id] = $sectionUids;
     }
 
     /**
