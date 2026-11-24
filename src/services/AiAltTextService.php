@@ -343,10 +343,13 @@ class AiAltTextService extends Component
      * hitting a rate limit and slows to the rate the account allows. Shared through Craft's cache, so it reaches every
      * queue worker.
      *
+     * An existing pause that would last longer is kept, so a later rate limit never shortens it.
+     *
      * @param int $seconds How long to wait
      */
     public function pauseForRateLimit(int $seconds): void
     {
+        $seconds = max($seconds, $this->rateLimitWait());
         Craft::$app->getCache()->set($this->rateLimitCacheKey(), time() + $seconds, $seconds);
     }
 
