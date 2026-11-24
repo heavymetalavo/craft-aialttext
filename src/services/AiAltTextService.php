@@ -480,9 +480,14 @@ class AiAltTextService extends Component
             return $result;
         }
 
+        // On one line, without tags, and within the 255 characters of an element's title, or saving it fails
+        $title = is_string($data['title'] ?? null)
+            ? trim(mb_substr(preg_replace('/\s+/u', ' ', strip_tags($data['title'])), 0, 255))
+            : '';
+
         return [
             'alt' => trim($data['alt']),
-            'title' => is_string($data['title'] ?? null) && trim($data['title']) !== '' ? trim($data['title']) : null,
+            'title' => $title !== '' ? $title : null,
             'filename' => is_string($data['filename'] ?? null) && trim($data['filename']) !== '' ? trim($data['filename']) : null,
         ];
     }
