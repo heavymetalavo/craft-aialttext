@@ -378,7 +378,7 @@ document.getElementById({{ 'prompt-default'|namespaceInputId|json_encode|raw }})
     label: 'Send images as base64'|t('ai-alt-text'),
     id: 'sendImagesAsBase64',
     name: 'sendImagesAsBase64',
-    instructions: "Send images to the AI provider as base64, rather than as URLs for it to download. This can be helpful in development environments, where the provider can't reach the site's asset URLs. OpenRouter and Langdock's Anthropic models always get base64."|t("ai-alt-text"),
+    instructions: "Send images to the AI provider as base64, rather than as URLs for it to download. This can work well when the provider can't reach your asset URLs, such as on a local development site, or a site behind basic auth or a firewall. Volumes without public URLs, OpenRouter and Langdock's Anthropic models always get base64."|t("ai-alt-text"),
     on: settings.sendImagesAsBase64,
     errors: settings.getErrors('sendImagesAsBase64'),
 }) }}
