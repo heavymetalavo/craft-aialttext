@@ -240,12 +240,12 @@ abstract class ResponsesApiService extends ApiService
             $asset->setTransform($transformParams);
         }
 
-        // The MIME type of the image sent: a JPG for a filled image and a PNG for an SVG, as both are rendered here
+        // The MIME type of the image sent: a JPG for a filled image and a WebP or PNG for an SVG, as both are rendered here
         // (an SVG can't use getMimeType(), which stays image/svg+xml when Craft's transformSvgs is off). Anything
         // else uses getMimeType(): the transform's output format after setTransform(), or the original's without one
         $mimeType = match (true) {
             $flattenedBase64 !== null => 'image/jpeg',
-            $isSvg => 'image/png',
+            $isSvg => 'image/' . $this->convertedFormat(),
             default => $asset->getMimeType(),
         };
         
