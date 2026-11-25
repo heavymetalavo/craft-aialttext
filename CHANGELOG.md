@@ -4,6 +4,7 @@
 
 - Added a **Reset to default** button under the **Prompt** setting, which fills the field with the plugin's current default prompt, to edit or save.
 - Added a check of the **Prompt** setting's `{asset.…}` and `{site.…}` variables when the settings are saved, so a misspelt one, such as `{asset.filenmae}`, is reported on the settings page rather than failing every generation. A prompt set by an environment variable, or applied by a project config change, is still only checked when alt text is generated.
+- Added an **Always send images as base64** setting, off by default. Images are otherwise sent as URLs for the AI provider to download, then as base64 if that fails. Always sending base64 can be helpful in development environments, such as a local site, where the provider can't reach the asset URLs and each generation logs a failed download.
 - Changed the plugin icon to a new design, an eye with the braille letter ⠞ "t", for text, in its iris, in the same style as the AI Hreflang Detector plugin's icon.
 - Changed the Anthropic and Langdock (Anthropic model author) services to share a base class, which holds the Messages API request, response and error handling. Sets foundations to support new providers which serve Anthropic's Messages API.
 - Fixed generating alt text for SVGs failing with "no decode delegate for this image format `SVG'" on servers whose ImageMagick has no SVG coder, such as Alpine 3.19 and later without the `imagemagick-svg` package. SVGs are now skipped there, with a warning on the settings page, as they are with the GD image driver.

@@ -374,6 +374,15 @@ document.getElementById({{ 'prompt-default'|namespaceInputId|json_encode|raw }})
     errors: settings.getErrors('saveTranslatedResultsToEachSite'),
 }) }}
 
+{{ forms.lightswitchField({
+    label: 'Always send images as base64'|t('ai-alt-text'),
+    id: 'sendImagesAsBase64',
+    name: 'sendImagesAsBase64',
+    instructions: "When off, the image's URL is sent first, then base64 if the provider can't download it. When on, base64 is always sent, preventing that failed first request."|t("ai-alt-text"),
+    on: settings.sendImagesAsBase64,
+    errors: settings.getErrors('sendImagesAsBase64'),
+}) }}
+
 
 
 
