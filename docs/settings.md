@@ -45,7 +45,9 @@ return [
 ];
 ```
 
-A setting in this file wins over the one saved on the settings page. Its field still shows the file's value and can still be edited and saved, but the change has no effect while the file sets it, so the field is marked with a warning naming the setting. Keep API keys in environment variables, as above, rather than in the file.
+[`src/config.php`](../src/config.php) lists every setting and its default, to copy from. Keep only the settings you want to set.
+
+A setting in this file wins over the one saved on the settings page. Its field shows the file's value and is marked with a warning naming the setting. Craft saves the values a settings page shows to project config, so a plain value the file sets, such as `'dev' => ['aiProvider' => 'openai']` or `App::env('AI_PROVIDER')`, would be saved as `openai` and reach production with the project config. The plugin keeps the previously saved value for those instead, and an edit to such a field is discarded. An environment variable reference, `'$AI_PROVIDER'`, is saved as it is, since it resolves per environment. Keep API keys in environment variables, as above, rather than in the file.
 
 For most projects, environment variables in the settings fields (e.g. `$OPENROUTER_MODEL`) are simpler: the values can differ per environment without a file, and the settings page stays in charge.
 

@@ -8,24 +8,91 @@
 {%- endmacro %}
 {% from _self import configWarning %}
 
-<h2>Instructions</h2>
+<div class="ai-alt-text-instructions">
+    <div class="flex">
+        <a href="https://github.com/heavymetalavo/craft-aialttext#readme" target="_blank" rel="noopener" class="btn" data-icon="external">{{ 'Read the docs'|t('ai-alt-text') }}</a>
+        <button
+            type="button"
+            class="btn ai-alt-text-instructions__toggle"
+            aria-expanded="false"
+            aria-controls="ai-alt-text-instructions"
+            data-show-label="{{ 'Show quick start'|t('ai-alt-text') }}"
+            data-hide-label="{{ 'Hide quick start'|t('ai-alt-text') }}"
+        >
+            <div class="inline-flex">
+                <div class="cp-icon puny">{{ iconSvg('bolt') }}</div>
+                <div class="label">{{ 'Show quick start'|t('ai-alt-text') }}</div>
+            </div>
+        </button>
+        <a href="{{ cpUrl('utilities/ai-alt-text-bulk-actions') }}" class="btn go">{{ 'Go to Utilities'|t('ai-alt-text') }}</a>
+    </div>
 
-<p>Lots of info in <a target="_blank" href="https://github.com/heavymetalavo/craft-aialttext">the plugin docs</a>, but a short summary;</p>
-<ol>
-    <li>Check the plugin settings are suitable for your project (and your API key is added)</li>
-    <li>Ensure your volumes have <a href="https://docs.craftcms.com/api/v5/craft-fieldlayoutelements-assets-altfield.html#altfield" target="_blank">the native alt field</a> assigned to the field layout</li>
-    <li>Ensure your templates are updated to use the <code>alt</code> field, you could consider a fallback <code>asset.alt ?: asset.title</code> if that what was used before</li>
-    <li>Then generate some AI Alt text by performing one of the following actions:
-        <ol>
-            <li>Triggering a bulk action in the <a href="{{ cpUrl('utilities/ai-alt-text-bulk-actions') }}">bulk actions utility</a></li>
-            <li>For individual or a group of specific assets find them in the <strong>Assets</strong> manager section, clicking the checkbox on a row, clicking the cog icon to reveal the Element actions menu and select <strong>Generate AI Alt Text</strong></li>
-            <li>When viewing a single asset's page, open the action menu and select <strong>Generate AI Alt Text</strong></li>
-            <li>Upload a new asset (if the upload setting is enabled)</li>
-        </ol>
-    </li>
-    <li>Alt text for a single asset, selected in the <strong>Assets</strong> manager or on its own page, is generated straight away. Multiple selected assets, the bulk actions utility, new uploads, and the other sites when <strong>Save translated results for each site</strong> is enabled are queued as jobs instead</li>
-</ol>
+    <div id="ai-alt-text-instructions" class="ai-alt-text-instructions__body" inert>
+        <div class="ai-alt-text-instructions__content">
+            <div class="ai-alt-text-instructions__inner">
+                <ol>
+                    <li>Choose a provider and add its API key below.</li>
+                    <li>Add the native <a href="https://docs.craftcms.com/api/v5/craft-fieldlayoutelements-assets-altfield.html#altfield" target="_blank">alt field</a> to your volumes' field layouts, and use it in your templates, e.g. <code>asset.alt ?: asset.title</code>.</li>
+                    <li>Generate alt text:
+                        <ul>
+                            <li>From an Asset's action menu, on its page or on the image in an entry's Assets field: <strong>Generate AI Alt Text</strong></li>
+                            <li>In the Assets manager select 1 or more assets, then the cog: <strong>Generate AI Alt Text</strong></li>
+                            <li>In bulk, from the <a href="{{ cpUrl('utilities/ai-alt-text-bulk-actions') }}">bulk actions utility</a> 
+                            <li>Console commands via the <a target="_blank" href="https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/console-commands.md">command line</a>.</li>
+                            <li>Automatically on upload or file replacement, if <strong>Generate for new image assets</strong> is on.</li>
+                        </ul>
+                    </li>
+                </ol>
+                <p>A single asset's alt text is generated straight away. Other methods are queued as jobs, including the other sites when <strong>Save translated results for each site</strong> is on.</p>
+            </div>
+        </div>
+    </div>
+</div>
 
+{# Slides open by animating the grid row from 0fr to 1fr. Inert while closed, so its links can't be tabbed to #}
+{% css %}
+    .ai-alt-text-instructions__body {
+        display: grid;
+        grid-template-rows: 0fr;
+        opacity: 0;
+        transition: grid-template-rows 0.3s ease, opacity 0.3s ease;
+    }
+    .ai-alt-text-instructions__body.is-open {
+        grid-template-rows: 1fr;
+        opacity: 1;
+    }
+    .ai-alt-text-instructions__content {
+        min-height: 0;
+        overflow: hidden;
+    }
+    .ai-alt-text-instructions__inner {
+        padding-top: var(--m);
+    }
+    .ai-alt-text-instructions__inner ul {
+        list-style: disc;
+        padding-inline-start: 1.5em;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .ai-alt-text-instructions__body {
+            transition: none;
+        }
+    }
+{% endcss %}
+
+{# Namespaced settings HTML, so find the elements by class rather than by id #}
+{% js %}
+    document.querySelectorAll('.ai-alt-text-instructions').forEach(function(wrapper) {
+        var toggle = wrapper.querySelector('.ai-alt-text-instructions__toggle');
+        var body = wrapper.querySelector('.ai-alt-text-instructions__body');
+        toggle.addEventListener('click', function() {
+            var show = !body.classList.contains('is-open');
+            body.classList.toggle('is-open', show);
+            body.inert = !show;
+            toggle.setAttribute('aria-expanded', show ? 'true' : 'false');
+            toggle.querySelector('.label').textContent = show ? toggle.dataset.hideLabel : toggle.dataset.showLabel;
+        });
+    });
+{% endjs %}
 
 <hr />
 
@@ -365,7 +432,7 @@
     id: 'prompt',
     name: 'prompt',
     warning: config.prompt is defined ? configWarning('prompt'),
-    rows: 8,
+    rows: 5,
     instructions: "Sent to the AI provider as the system / instruction message. The field supports simple Asset Model and Site Model property values using `{asset.property}` and `{site.property}`. Consider `{site.languageName}` for the site's language display name (e.g. `English (United Kingdom)`) which can help with translations on non-english sites. Checkout [the docs](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/settings.md#-default-prompt) for the most up to date suggestion prompt template. **Reset to default** fills the field with the plugin's current default prompt."|t("ai-alt-text"),
     value: settings.prompt,
     placeholder: defaultPrompt,
