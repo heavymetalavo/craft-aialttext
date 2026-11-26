@@ -268,15 +268,31 @@
         errors: settings.getErrors("openRouterApiKey"),
     }) }}
 
-    {{ forms.autosuggestField({
+    {# Selectize only renders the options it's given, so the saved value is added if the list lacks it (e.g. OpenRouter was unreachable), or saving would replace it #}
+    {% set openRouterModelOptions = [{ value: '', label: ' ' }]|merge(
+        (openRouterModelSuggestions|first.data ?? [])|map(m => { value: m.name, label: m.name, data: { hint: m.hint } })
+    ) %}
+    {% set savedOpenRouterModel = settings.openRouterModel %}
+    {% if savedOpenRouterModel and savedOpenRouterModel not in openRouterModelOptions|column('value') and savedOpenRouterModel not in craft.cp.getEnvOptions()|column('value') %}
+        {% set openRouterModelOptions = openRouterModelOptions|push({ value: savedOpenRouterModel, label: savedOpenRouterModel }) %}
+    {% endif %}
+
+    {{ forms.selectizeField({
         label: 'OpenRouter Model'|t('ai-alt-text'),
         id: 'openRouterModel',
         name: 'openRouterModel',
-        instructions: "The model's name on OpenRouter, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` (our top pick) or `google/gemini-3.5-flash-lite`. It must accept image input: [browse the vision models](https://openrouter.ai/models?input_modalities=image&output_modalities=text)."|t("ai-alt-text"),
+        instructions: "The model's name on OpenRouter, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` (our top pick) or `google/gemini-3.5-flash-lite`. It must accept image input: pick one of OpenRouter's vision models, type any model name, or [browse them](https://openrouter.ai/models?input_modalities=image&output_modalities=text)."|t("ai-alt-text"),
+        options: openRouterModelOptions,
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        selectizeOptions: {
+            create: true,
+            createOnBlur: true,
+            allowEmptyOption: true,
+            placeholder: 'anthropic/claude-haiku-5.5',
+        },
         value: settings.openRouterModel,
-        placeholder: 'anthropic/claude-haiku-5.5',
         errors: settings.getErrors('openRouterModel'),
-        suggestEnvVars: true,
     }) }}
 
     {{ forms.selectizeField({
