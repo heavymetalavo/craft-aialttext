@@ -374,7 +374,7 @@
         id: 'openRouterModel',
         name: 'openRouterModel',
         warning: config.openRouterModel is defined ? configWarning('openRouterModel'),
-        instructions: "The model's name on OpenRouter, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` (our top pick) or `google/gemini-3.5-flash-lite`. It must accept image input: pick one of OpenRouter's vision models, type any model name, or [browse them](https://openrouter.ai/models?input_modalities=image&output_modalities=text)."|t("ai-alt-text"),
+        instructions: "The model's name on OpenRouter, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` (our top pick) or `google/gemini-3.5-flash-lite`. It must accept image input and give text. The dropdown lists every OpenRouter model that does, with its price per million input tokens, or you can [browse them on OpenRouter](https://openrouter.ai/models?input_modalities=image&output_modalities=text) for more about each. You can also type any model name."|t("ai-alt-text"),
         options: openRouterModelOptions,
         includeEnvVars: true,
         allowedEnvValues: null,
