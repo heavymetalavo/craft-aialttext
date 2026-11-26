@@ -49,8 +49,9 @@ class OpenRouterService extends ResponsesApiService
                         continue;
                     }
 
-                    // The query already filters, but a model is only suggested if it says it takes images and gives text
-                    if (!in_array('image', $model['architecture']['input_modalities'] ?? [], true) || !in_array('text', $model['architecture']['output_modalities'] ?? [], true)) {
+                    // The query matches any model that gives text among other things, including image, video and audio generators,
+                    // so a model is only suggested if it takes images and gives only text
+                    if (!in_array('image', $model['architecture']['input_modalities'] ?? [], true) || ($model['architecture']['output_modalities'] ?? []) !== ['text']) {
                         continue;
                     }
 
