@@ -110,7 +110,7 @@
 {% set resolvedProvider = parseEnv(settings.aiProvider) %}
 {% set hiddenProviders = resolvedProvider in providerValues
     ? providerValues|filter(v => v != resolvedProvider)
-    : [] %}
+    : providerValues %}
 
 {% set langdockAuthors = ['anthropic', 'openai'] %}
 {% set resolvedLangdockAuthor = parseEnv(settings.langdockModelAuthor) %}
@@ -124,13 +124,18 @@
     id: "aiProvider",
     name: "aiProvider",
     warning: config.aiProvider is defined ? configWarning('aiProvider'),
-    options: providerOptions,
+    required: true,
+    options: [{ label: 'Choose a provider…'|t('ai-alt-text'), value: '' }]|merge(providerOptions),
     includeEnvVars: true,
     allowedEnvValues: null,
     value: settings.aiProvider,
     errors: settings.getErrors("aiProvider"),
     toggle: true,
     targetPrefix: '#provider-',
+    selectizeOptions: {
+        allowEmptyOption: true,
+        placeholder: 'Choose a provider…'|t('ai-alt-text'),
+    },
 }) }}
 
 

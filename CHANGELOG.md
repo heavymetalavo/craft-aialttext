@@ -8,6 +8,7 @@
 - Added suggestions to the **OpenRouter Model** setting: the models that take images and give only text, from OpenRouter's public models API, with their price per million input tokens. The list is cached for a day.
 - Added a warning to each settings field whose setting `config/ai-alt-text.php` sets, as the file's value wins over the one saved on the settings page. The file, e.g. for a different provider or model per environment, is described in [Settings](docs/settings.md#-config-file).
 - Added `src/config.php`, listing every setting and its default, to copy into `config/ai-alt-text.php`.
+- Added a blank **Choose a provider…** option to the **AI Provider** setting, which is selected until a provider is chosen, and no provider settings are shown until then.
 - Added **Read the docs**, **Show quick start** and **Go to Utilities** buttons to the top of the settings page. The instructions that were above the settings are now a quick start that slides open when asked for, so the settings sit higher.
 - Changed the plugin icon to a new design, an eye with the braille letter ⠞ "t", for text, in its iris, in the same style as the AI Hreflang Detector plugin's icon.
 - Changed the Anthropic and Langdock (Anthropic model author) services to share a base class, which holds the Messages API request, response and error handling. Sets foundations to support new providers which serve Anthropic's Messages API.
