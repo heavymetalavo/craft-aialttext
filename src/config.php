@@ -90,6 +90,9 @@ return [
 
         // Always send images as base64, rather than as URLs for the provider to download.
         //'sendImagesAsBase64' => false,
+
+        // How many times a queued job that hits a provider's rate limit is retried before it fails. 0 turns retrying off.
+        //'maxRateLimitRetries' => 5,
     ],
 
     // Settings for one environment win over the ones above, e.g. a cheap model while developing. Uncomment the one for

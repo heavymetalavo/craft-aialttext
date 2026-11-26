@@ -30,14 +30,9 @@ class GenerateAiAltText extends BaseJob
     public int $rateLimitRetries = 0;
 
     /**
-     * @var int How many times a job is put back in the queue after hitting a rate limit, before it fails
-     */
-    public const MAX_RATE_LIMIT_RETRIES = 5;
-
-    /**
      * Errors are not caught so Craft marks the job as failed and offers a retry, except a rate limit: the job is put
      * back in the queue to run later, after the provider's `Retry-After` or a wait that doubles each time from 30
-     * seconds, up to MAX_RATE_LIMIT_RETRIES times. Other jobs for the same provider and model wait too, rather than
+     * seconds, up to the Max rate limit retries setting. Other jobs for the same provider and model wait too, rather than
      * hitting the limit again, so a bulk run slows to the rate the account allows.
      *
      * @throws ElementNotFoundException
@@ -68,14 +63,15 @@ class GenerateAiAltText extends BaseJob
         } catch (Throwable $e) {
             $rateLimit = RateLimitException::find($e);
 
-            if ($rateLimit === null || $this->rateLimitRetries >= self::MAX_RATE_LIMIT_RETRIES) {
+            $maxRetries = AiAltText::getInstance()->getSettings()->maxRateLimitRetries;
+            if ($rateLimit === null || $this->rateLimitRetries >= $maxRetries) {
                 throw $e;
             }
 
             // 30 seconds, then 1, 2, 4 and 8 minutes, unless the provider said how long
             $delay = min($rateLimit->retryAfter ?? 30 * 2 ** $this->rateLimitRetries, 3600);
             $service->pauseForRateLimit($delay);
-            Craft::warning("Rate limited generating alt text for asset $this->assetId, trying again in {$delay}s (retry " . ($this->rateLimitRetries + 1) . ' of ' . self::MAX_RATE_LIMIT_RETRIES . '): ' . $e->getMessage(), __METHOD__);
+            Craft::warning("Rate limited generating alt text for asset $this->assetId, trying again in {$delay}s (retry " . ($this->rateLimitRetries + 1) . ' of ' . $maxRetries . '): ' . $e->getMessage(), __METHOD__);
             $this->requeue($delay, $this->rateLimitRetries + 1);
             return;
         }

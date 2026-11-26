@@ -21,6 +21,7 @@ use craft\models\Site;
  * @property bool $generateForNewAssets Whether to generate alt text for new assets automatically
  * @property bool $processSvgs Whether to generate alt text for SVGs
  * @property bool $sendImagesAsBase64 Whether to send images to the AI provider as base64 instead of as URLs
+ * @property int $maxRateLimitRetries How many times a queued job that hits a rate limit is retried before it fails
  * @property bool $saveTranslatedResultsToEachSite Whether to generate alt text for every site, not just the current site and the sites that share its alt text
  * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'langdock' or 'openrouter')
  * @property string $anthropicApiKey The Anthropic API key
@@ -178,6 +179,11 @@ class Settings extends Model
     public bool $sendImagesAsBase64 = false;
 
     /**
+     * @var int How many times a queued job that hits a provider's rate limit is put back in the queue before it fails
+     */
+    public int $maxRateLimitRetries = 5;
+
+    /**
      * @inheritdoc
      */
     public function setAttributes($values, $safeOnly = true): void
@@ -260,6 +266,7 @@ class Settings extends Model
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
             ['sendImagesAsBase64', 'boolean'],
+            ['maxRateLimitRetries', 'integer', 'min' => 0],
         ];
     }
 
