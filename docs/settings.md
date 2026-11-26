@@ -24,6 +24,33 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **Save translated results for each site** | Follows the asset volume's **Alternative Text Translation Method**: sites that share alt text (all sites on Not translatable, or sites in the same site group or language) get one result between them, from one request, in the language of the site it's generated for. When on, every site gets alt text. When off, only the current site and the sites that share its alt text do. |
 | **Always send images as base64** | When off, the image's URL is sent first, then base64 if the provider can't download it. When on, base64 is always sent, preventing that failed first request. It can work well for local sites, or sites behind basic auth or a firewall. |
 
+## 📁 Config file
+
+Settings can also be set in `config/ai-alt-text.php`, for example to use a different provider or model in each environment. Each key is a setting's name, as listed in the plugin's [`Settings` model](../src/models/Settings.php), and the file can use Craft's [multi-environment config](https://craftcms.com/docs/5.x/configure.html#multi-environment-configs):
+
+```php
+<?php
+
+return [
+    // Every environment
+    '*' => [
+        'aiProvider' => 'openrouter',
+        'openRouterApiKey' => '$OPENROUTER_API_KEY',
+        'openRouterModel' => 'anthropic/claude-haiku-5.5',
+    ],
+    // A cheaper model while developing
+    'dev' => [
+        'openRouterModel' => 'openai/gpt-6-luna',
+    ],
+];
+```
+
+[`src/config.php`](../src/config.php) lists every setting and its default, to copy from. Every setting in it is commented out, so uncomment only the ones you want to set.
+
+A setting in this file wins over the one saved on the settings page. Its field shows the file's value and is marked with a warning naming the setting. Craft saves the values a settings page shows to project config, so a plain value the file sets, such as `'dev' => ['aiProvider' => 'openai']` or `App::env('AI_PROVIDER')`, would be saved as `openai` and reach production with the project config. The plugin keeps the previously saved value for those instead, and an edit to such a field is discarded. An environment variable reference, `'$AI_PROVIDER'`, is saved as it is, since it resolves per environment. Keep API keys in environment variables, as above, rather than in the file.
+
+For most projects, environment variables in the settings fields (e.g. `$OPENROUTER_MODEL`) are simpler: the values can differ per environment without a file, and the settings page stays in charge.
+
 ## 💬 Default prompt
 
 This is sent to the provider as the system / instruction message (Anthropic `system`, OpenAI `instructions`); the image is sent in the user turn with a short trigger. `{site.languageName}` resolves to the language's display name and `{site.language}` to its BCP 47 language tag (e.g. `en-GB`), so the default pairs them - edit the parenthesised format freely.
