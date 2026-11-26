@@ -56,11 +56,12 @@ To add this field:
 2. Ensure your volumes have the native `alt` field assigned to the field layout
 3. Ensure your templates are updated to use the `alt` field, you could consider a fallback `asset.alt ?: asset.title` if that what was used before
 4. Then generate some AI Alt text by performing one of the following actions:
-    1. Triggering a bulk action in the bulk actions table
-    2. For individual or a group of specific assets find them in the <strong>Assets</strong> manager section</a> clicking the checkbox on a row, clicking the cog icon to reveal the Element actions menu and select <strong>Generate AI Alt Text</strong>
-    3. When viewing a single asset's page, open the action menu and select <strong>Generate AI Alt Text</strong>
-    4. Upload a new asset (if the upload setting is enabled)
-5. A single asset, selected in the **Assets** manager or on its own page, is generated straight away. Multiple selected assets, the bulk actions, new uploads, and the other sites when **Save translated results for each site** is enabled are queued as jobs instead
+    1. Triggering a bulk action in the bulk actions utility
+    2. For individual or a group of specific assets find them in the <strong>Assets</strong> manager section, clicking the checkbox on a row, clicking the cog icon to reveal the Element actions menu and select <strong>Generate AI Alt Text</strong>
+    3. When viewing a single asset's page, or from an asset's menu in an Assets field, open the action menu and select <strong>Generate AI Alt Text</strong>
+    4. Upload a new image or replace an asset's file (if **Generate for new image assets** is enabled)
+    5. From the command line, e.g. `./craft ai-alt-text/generate/missing`, see the [console commands](console-commands.md)
+5. A single asset, selected in the **Assets** manager or on its own page, is generated straight away. Multiple selected assets, the bulk actions utility, the command line (apart from `single`), new uploads and replaced files, and the other sites when **Save translated results for each site** is enabled are queued as jobs instead
 
 ![Where to generate alt text: on an asset's page, from its action menu; for selected assets in Assets, from the actions menu (the cog); from an asset's menu in an Assets field; from the bulk actions utility in Utilities, for all sites or one site at a time; from the command line, with ai-alt-text/generate/stats, missing or single; or automatically, with the "Generate for new image assets (on upload or file replacement)" setting turned on](images/where-to-generate.png)
 

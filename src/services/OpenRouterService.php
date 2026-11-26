@@ -4,7 +4,7 @@ namespace heavymetalavo\craftaialttext\services;
 
 use Craft;
 use craft\elements\Asset;
-use craft\helpers\App;
+use craft\helpers\{App, Json};
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\models\api\OpenAiResponse;
@@ -20,6 +20,59 @@ use heavymetalavo\craftaialttext\models\Settings;
 class OpenRouterService extends ResponsesApiService
 {
     protected string $providerLabel = 'OpenRouter';
+
+    /**
+     * @var string OpenRouter's public list of models that take image input and give text output, which needs no key
+     */
+    private const VISION_MODELS_URL = 'https://openrouter.ai/api/v1/models?input_modalities=image&output_modalities=text';
+
+    /**
+     * Suggestions for the OpenRouter Model setting: the models that accept images, from OpenRouter's public models API,
+     * e.g. `anthropic/claude-haiku-5.5` with the hint `Anthropic: Claude Haiku 5.5, $1/M input tokens`. Cached for a day,
+     * as the settings page fetches them. If OpenRouter can't be reached there are none, and it's tried again after 10
+     * minutes, so the page never waits more than 5 seconds for it.
+     *
+     * @return array{label: string, data: array{name: string, hint: string}[]}[] In the format Craft's autosuggest field takes
+     */
+    public function visionModelSuggestions(): array
+    {
+        $cache = Craft::$app->getCache();
+        $models = $cache->get('ai-alt-text:openrouter-vision-models');
+
+        if ($models === false) {
+            try {
+                $data = Json::decode((string)Craft::createGuzzleClient(['timeout' => 5])->get(self::VISION_MODELS_URL)->getBody())['data'] ?? [];
+                $models = [];
+
+                foreach ($data as $model) {
+                    if (!is_string($model['id'] ?? null) || $model['id'] === '') {
+                        continue;
+                    }
+
+                    // The query matches any model that gives text among other things, including image, video and audio generators,
+                    // so a model is only suggested if it takes images and gives only text
+                    if (!in_array('image', $model['architecture']['input_modalities'] ?? [], true) || ($model['architecture']['output_modalities'] ?? []) !== ['text']) {
+                        continue;
+                    }
+
+                    $price = (float)($model['pricing']['prompt'] ?? 0) * 1000000;
+                    $models[] = [
+                        'name' => $model['id'],
+                        'hint' => ($model['name'] ?? $model['id']) . ($price > 0 ? ', $' . rtrim(rtrim(number_format($price, $price < 0.001 ? 6 : 3), '0'), '.') . '/M input tokens' : ''),
+                    ];
+                }
+
+                usort($models, fn(array $a, array $b) => strcmp($a['name'], $b['name']));
+                $cache->set('ai-alt-text:openrouter-vision-models', $models, 86400);
+            } catch (\Throwable $e) {
+                Craft::warning("Couldn't load OpenRouter's vision models for the model suggestions: " . $e->getMessage(), __METHOD__);
+                $models = [];
+                $cache->set('ai-alt-text:openrouter-vision-models', $models, 600);
+            }
+        }
+
+        return $models ? [['label' => Craft::t('ai-alt-text', 'OpenRouter vision models'), 'data' => $models]] : [];
+    }
 
     /**
      * Names the app in OpenRouter's logs, which make an app of each distinct `HTTP-Referer`: the primary site's URL,
@@ -71,7 +124,7 @@ class OpenRouterService extends ResponsesApiService
     }
 
     /**
-     * Claude models (`anthropic/claude-…`, the `~anthropic/…` latest aliases, or a bare `claude-…` name, which OpenRouter also accepts) are scaled as AnthropicService scales them (long edge by detail level, 5MB, about 1,600 tokens), since
+     * Claude models (`anthropic/claude-…`, the `~anthropic/…` latest aliases, or a bare `claude-…` name, which OpenRouter also accepts) are scaled as MessagesApiService scales them (long edge by detail level, 5MB, about 1,600 tokens), since
      * OpenAI's sizing sends them larger images than they need and costs about 15 to 20% more. The OpenRouter Image Detail
      * Level picks the size: `low` 500px, `auto` 1000px, `high` and `original` 1568px. Other models are scaled as OpenAI's are.
      *

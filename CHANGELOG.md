@@ -2,7 +2,23 @@
 
 ## Unreleased
 
+- Added a **Reset to default** button under the **Prompt** setting, which fills the field with the plugin's current default prompt, to edit or save.
+- Added a check of the **Prompt** setting's `{asset.…}` and `{site.…}` variables when the settings are saved, so a misspelt one, such as `{asset.filenmae}`, is reported on the settings page rather than failing every generation. A prompt set by an environment variable, or applied by a project config change, is still only checked when alt text is generated.
+- Added an **Always send images as base64** setting, off by default. Images are otherwise sent as URLs for the AI provider to download, then as base64 if that fails. Always sending base64 can be helpful in development environments, such as a local site, where the provider can't reach the asset URLs and each generation logs a failed download.
+- Added suggestions to the **OpenRouter Model** setting: the models that take images and give only text, from OpenRouter's public models API, with their price per million input tokens. The list is cached for a day.
+- Added a warning to each settings field whose setting `config/ai-alt-text.php` sets, as the file's value wins over the one saved on the settings page. The file, e.g. for a different provider or model per environment, is described in [Settings](docs/settings.md#-config-file).
+- Added `src/config.php`, listing every setting and its default, all commented out, to copy into `config/ai-alt-text.php` and uncomment from.
+- Added a blank **Choose a provider…** option to the **AI Provider** setting, which is selected until a provider is chosen, and no provider settings are shown until then.
+- Added **Read the docs**, **Show quick start** and **Go to Utilities** buttons to the top of the settings page. The instructions that were above the settings are now a quick start that slides open when asked for, so the settings sit higher.
+- Changed the plugin icon to a new design, an eye with the braille letter ⠞ "t", for text, in its iris, in the same style as the AI Hreflang Detector plugin's icon.
+- Changed the Anthropic and Langdock (Anthropic model author) services to share a base class, which holds the Messages API request, response and error handling. Sets foundations to support new providers which serve Anthropic's Messages API.
+- Changed SVG, AVIF, HEIC and HEIF images to be converted to WebP rather than PNG before they're sent, where Craft's image driver can write WebP, so requests are much smaller. PNG is still used where WebP isn't supported.
+- Changed the instructions on the settings page into a shorter quick start, and the steps in the getting started docs, to list replacing an asset's file, an Assets field's menu and the command line as ways to generate alt text, as well as the bulk actions utility, which the docs called a table.
+- Changed the **Prompt** setting's text area to be 5 rows tall instead of 8, so the settings below it sit higher.
 - Changed queued jobs that hit a provider's rate limit (HTTP 429) to be put back in the queue and tried again later, after the provider's `Retry-After` or a wait that doubles from 30 seconds, up to 5 times, rather than failing. Other jobs for the same provider and model wait too, so a bulk run slows to the rate the account allows.
+- Fixed saving the settings page writing the plain values `config/ai-alt-text.php` sets to project config, where they could reach other environments. The saved value is now kept. Environment variable references, such as `'$AI_PROVIDER'`, are still saved as they are.
+- Fixed generating alt text for SVGs failing with "no decode delegate for this image format `SVG'" on servers whose ImageMagick has no SVG coder, such as Alpine 3.19 and later without the `imagemagick-svg` package. SVGs are now skipped there, with a warning on the settings page, as they are with the GD image driver.
+- Fixed the **Anthropic Image Detail Level** (and the **OpenRouter Image Detail Level** for Claude models) having no effect on large images. The token budget's size replaced the detail level's smaller one, so a large photo was sent at about 1340px at every level. At `low` it's now 500px, which uses about 85% fewer image tokens. Langdock's Anthropic models, which always use `low`, now get the smaller image too.
 
 ## 5.4.0 - 2026-10-30
 

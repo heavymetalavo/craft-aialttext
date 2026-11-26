@@ -14,13 +14,11 @@ use heavymetalavo\craftaialttext\models\Settings;
  * Langdock serves the Anthropic Messages API on its own host. It differs from Anthropic's in three
  * ways: the URL carries a region (always eu), the API key is a Bearer token, and images must be sent as base64.
  */
-class LangdockAnthropicService extends AnthropicService
+class LangdockAnthropicService extends MessagesApiService
 {
     protected string $providerLabel = 'Langdock';
 
     /**
-     * Reads the Langdock settings in place of the Anthropic ones.
-     *
      * @inheritdoc
      */
     protected function applySettings(Settings $settings): void
@@ -30,7 +28,7 @@ class LangdockAnthropicService extends AnthropicService
         // Langdock has no image detail setting of its own, so use the plugin's default
         $this->detailLevel = Settings::DEFAULT_ANTHROPIC_IMAGE_DETAIL_LEVEL;
         // Langdock hosts its Anthropic models in the EU region
-        $this->baseUrl = 'https://api.langdock.com/anthropic/eu/v1/messages';
+        $this->baseUrl = 'https://api.langdock.com/anthropic/eu/v1';
     }
 
     /**
