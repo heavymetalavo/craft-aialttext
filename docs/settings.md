@@ -40,12 +40,12 @@ return [
     ],
     // A cheaper model while developing
     'dev' => [
-        'openRouterModel' => 'google/gemini-3.5-flash-lite',
+        'openRouterModel' => 'openai/gpt-6-luna',
     ],
 ];
 ```
 
-[`src/config.php`](../src/config.php) lists every setting and its default, to copy from. Keep only the settings you want to set.
+[`src/config.php`](../src/config.php) lists every setting and its default, to copy from. Every setting in it is commented out, so uncomment only the ones you want to set.
 
 A setting in this file wins over the one saved on the settings page. Its field shows the file's value and is marked with a warning naming the setting. Craft saves the values a settings page shows to project config, so a plain value the file sets, such as `'dev' => ['aiProvider' => 'openai']` or `App::env('AI_PROVIDER')`, would be saved as `openai` and reach production with the project config. The plugin keeps the previously saved value for those instead, and an edit to such a field is discarded. An environment variable reference, `'$AI_PROVIDER'`, is saved as it is, since it resolves per environment. Keep API keys in environment variables, as above, rather than in the file.
 
