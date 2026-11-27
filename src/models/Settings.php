@@ -23,7 +23,7 @@ use craft\models\Site;
  * @property bool $sendImagesAsBase64 Whether to send images to the AI provider as base64 instead of as URLs
  * @property int $maxRateLimitRetries How many times a queued job that hits a rate limit is retried before it fails
  * @property bool $saveTranslatedResultsToEachSite Whether to generate alt text for every site, not just the current site and the sites that share its alt text
- * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'google', 'langdock', 'openrouter' or 'huggingface')
+ * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'google', 'langdock', 'openrouter', 'huggingface' or 'custom')
  * @property string $anthropicApiKey The Anthropic API key
  * @property string $anthropicModel The Anthropic Model
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
@@ -45,6 +45,10 @@ use craft\models\Site;
  * @property string $huggingFaceApiKey The Hugging Face token
  * @property string $huggingFaceModel The Hugging Face model to use, as `org/model`
  * @property string $huggingFaceRouting Which inference provider runs the Hugging Face model: `fastest`, `cheapest`, an inference provider, or empty to let the router choose
+ * @property string $customBaseUrl The custom endpoint's base URL, e.g. `https://gateway.example.com/v1`
+ * @property string $customApiFormat The request format the custom endpoint takes ('responses', 'messages', 'chat-completions' or 'interactions')
+ * @property string $customApiKey The custom endpoint's API key
+ * @property string $customModel The model to use, as the custom endpoint names it
  * @property int $animationFrames How many frames of an animated GIF or WebP to send (1 to 20, or more from a config file)
  */
 class Settings extends Model
@@ -206,6 +210,30 @@ class Settings extends Model
     public string $huggingFaceRouting = '';
 
     /**
+     * @var string The base URL of a gateway that takes the Responses API, Messages API, Chat Completions API or Interactions API request unchanged, without the
+     * `/responses` or `/messages` at the end, e.g. `https://gateway.example.com/v1`
+     */
+    public string $customBaseUrl = '';
+
+    /**
+     * @var string The request format the custom endpoint takes
+     *
+     * Options: responses (OpenAI's Responses API, as OpenAI, Langdock's GPT models and OpenRouter take it), messages
+     * (Anthropic's Messages API, as Anthropic and Langdock's Claude models take it)
+     */
+    public string $customApiFormat = 'responses';
+
+    /**
+     * @var string The custom endpoint's API key
+     */
+    public string $customApiKey = '';
+
+    /**
+     * @var string The model to use, as the custom endpoint names it, must have vision capabilities
+     */
+    public string $customModel = '';
+
+    /**
      * @var bool Whether to save the translated result to each Site's Asset's translatable alt text field
      */
     public bool $saveTranslatedResultsToEachSite = false;
@@ -284,7 +312,7 @@ class Settings extends Model
                 ['aiProvider'],
                 function($attribute) {
                     $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['openai', 'anthropic', 'google', 'langdock', 'openrouter', 'huggingface'], true)) {
+                    if (!in_array($val, ['openai', 'anthropic', 'google', 'langdock', 'openrouter', 'huggingface', 'custom'], true)) {
                         $this->addError($attribute, 'Invalid AI Provider configured.');
                     }
                 }
@@ -340,6 +368,8 @@ class Settings extends Model
             ['openRouterReasoningEffort', 'string'],
             [['openRouterReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid OpenRouter Reasoning Effort configured.']],
             [['huggingFaceApiKey', 'huggingFaceModel', 'huggingFaceRouting'], 'string'],
+            [['customBaseUrl', 'customApiKey', 'customModel'], 'string'],
+            [['customApiFormat'], 'validateOneOf', 'params' => ['allowed' => ['responses', 'messages', 'chat-completions', 'interactions'], 'message' => 'Invalid Custom endpoint API format configured.']],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],

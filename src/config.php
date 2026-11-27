@@ -25,7 +25,7 @@
 
 return [
     '*' => [
-        // The AI provider to use: 'anthropic', 'openai', 'google', 'langdock', 'openrouter' or 'huggingface'. Only that provider's settings below are used.
+        // The AI provider to use: 'anthropic', 'openai', 'google', 'langdock', 'openrouter', 'huggingface' or 'custom'. Only that provider's settings below are used.
         //'aiProvider' => '',
 
         // The Anthropic API key. Use an environment variable reference, e.g. '$ANTHROPIC_API_KEY'.
@@ -93,6 +93,18 @@ return [
 
         // Which inference provider runs the Hugging Face model: '' (Hugging Face chooses), 'fastest', 'cheapest', or a provider such as 'deepinfra'.
         //'huggingFaceRouting' => '',
+
+        // The custom endpoint's base URL, without `/responses` or `/messages` at the end, e.g. 'https://gateway.example.com/v1'.
+        //'customBaseUrl' => '',
+
+        // The request format the custom endpoint takes: 'responses' (OpenAI's Responses API), 'messages' (Anthropic's Messages API), 'chat-completions' (the Chat Completions API) or 'interactions' (Google's Interactions API).
+        //'customApiFormat' => 'responses',
+
+        // The custom endpoint's API key. Use an environment variable reference, e.g. '$CUSTOM_AI_API_KEY'.
+        //'customApiKey' => '',
+
+        // The model, as the custom endpoint names it.
+        //'customModel' => '',
 
         // The prompt sent to the provider, which can use `{asset.…}` and `{site.…}` variables.
         //'prompt' => \heavymetalavo\craftaialttext\models\Settings::DEFAULT_PROMPT,

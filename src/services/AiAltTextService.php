@@ -426,8 +426,8 @@ class AiAltTextService extends Component
             return Craft::t('ai-alt-text', 'No AI provider is configured. Choose one in the AI Alt Text plugin settings.');
         }
 
-        if (!in_array($provider, ['openai', 'anthropic', 'google', 'langdock', 'openrouter', 'huggingface'], true)) {
-            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Google, Langdock, OpenRouter or Hugging Face in the AI Alt Text plugin settings.', ['provider' => $provider]);
+        if (!in_array($provider, ['openai', 'anthropic', 'google', 'langdock', 'openrouter', 'huggingface', 'custom'], true)) {
+            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Google, Langdock, OpenRouter, Hugging Face or a custom endpoint in the AI Alt Text plugin settings.', ['provider' => $provider]);
         }
 
         // An empty Google model uses the default one, see GoogleService, so it's never missing
@@ -438,12 +438,21 @@ class AiAltTextService extends Component
             'openai' => ['OpenAI', $settings->openAiApiKey, $settings->openAiModel],
             'openrouter' => ['OpenRouter', $settings->openRouterApiKey, $settings->openRouterModel],
             'huggingface' => ['Hugging Face', $settings->huggingFaceApiKey, $settings->huggingFaceModel],
+            'custom' => ['Custom endpoint', $settings->customApiKey, $settings->customModel],
         };
 
         $apiKey = App::parseEnv($apiKey);
 
         if ($apiKey === '' || $apiKey === null) {
             return Craft::t('ai-alt-text', 'No API key is configured for the {provider} provider. Add one in the AI Alt Text plugin settings.', ['provider' => $label]);
+        }
+
+        if ($provider === 'custom' && !preg_match('#^https?://#i', (string)App::parseEnv($settings->customBaseUrl))) {
+            return Craft::t('ai-alt-text', 'The custom endpoint needs a base URL starting with https:// or http://. Add one in the AI Alt Text plugin settings.');
+        }
+
+        if ($provider === 'custom' && !in_array(App::parseEnv($settings->customApiFormat), ['responses', 'messages', 'chat-completions', 'interactions'], true)) {
+            return Craft::t('ai-alt-text', 'The custom endpoint API format must be the Responses API, the Messages API, the Chat Completions API or the Interactions API. Choose one in the AI Alt Text plugin settings.');
         }
 
         // Without this the request is built and refused, with an error that reads "Model cannot be blank"
@@ -500,6 +509,7 @@ class AiAltTextService extends Component
             'openai' => $settings->openAiModel,
             'openrouter' => $settings->openRouterModel,
             'huggingface' => $settings->huggingFaceModel,
+            'custom' => $settings->customModel,
             default => '',
         };
 
@@ -524,6 +534,12 @@ class AiAltTextService extends Component
             'openai' => $plugin->openAiService,
             'openrouter' => $plugin->openRouterService,
             'huggingface' => $plugin->huggingFaceService,
+            'custom' => match (App::parseEnv($settings->customApiFormat)) {
+                'messages' => $plugin->customMessagesService,
+                'chat-completions' => $plugin->customChatCompletionsService,
+                'interactions' => $plugin->customInteractionsService,
+                default => $plugin->customResponsesService,
+            },
         };
     }
 
