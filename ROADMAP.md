@@ -5,7 +5,6 @@ Planned work, not yet scheduled or promised. Shipped changes are in [CHANGELOG.m
 ## Settings
 
 - **Excluded assets.** Let images be skipped by bulk and on-upload generation: by volume or folder (e.g. icons), or by where they're used (e.g. assets related to entries in a given section). An asset can be related to several entries, so a rule would need to say whether one match is enough. Generating for a single asset on request would still work.
-- **Animation strategy.** Let admins choose how animated GIFs, WebPs and PNGs (APNG) are sent: as one film strip image of evenly spaced frames, at a size the AI provider supports (e.g. 1000×1000 or 2000×2000, up to 8000×8000 for some), or as one request per frame, combining the responses into a single description saved against the asset. A separate setting would set how many frames are sent (e.g. 3, 5 or 10), spread evenly through the animation.
 
 ## Providers
 
