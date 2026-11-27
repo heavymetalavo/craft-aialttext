@@ -208,7 +208,9 @@ abstract class MessagesApiService extends ApiService
             $responseModel = (new AnthropicResponse())->setProviderLabel($this->providerLabel);
 
             if ($e instanceof RequestException && $e->hasResponse() && $e->getResponse()->getStatusCode() === 429) {
-                $message = $responseModel->parseResponse($errorResponse) && $responseModel->hasError() ? $responseModel->getErrorMessage() : $errorResponse;
+                // parseResponse() returns false for an error body, but still sets the error
+                $responseModel->parseResponse($errorResponse);
+                $message = $responseModel->hasError() ? $responseModel->getErrorMessage() : $errorResponse;
                 throw new RateLimitException($this->providerLabel . ' API rate limit: ' . $message, RateLimitException::retryAfter($e->getResponse()), $e);
             }
 
