@@ -147,7 +147,7 @@ class HuggingFaceService extends ChatCompletionsApiService
         $model = (string) App::parseEnv($settings->huggingFaceModel);
         $routing = ltrim(trim((string) App::parseEnv($settings->huggingFaceRouting)), ':');
 
-        // An undefined environment variable parses to null, which would stop the settings page loading. getConfigurationError() reports a missing API key
+        // An undefined environment variable parses to null, which would stop the settings page loading. getConfigurationError() reports a missing API key or model
         $this->apiKey = (string) App::parseEnv($settings->huggingFaceApiKey);
         $this->model = $model !== '' && $routing !== '' && !str_contains($model, ':') ? $model . ':' . $routing : $model;
         $this->baseUrl = 'https://router.huggingface.co/v1';

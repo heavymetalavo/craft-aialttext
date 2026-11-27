@@ -27,6 +27,11 @@ class OpenRouterService extends ResponsesApiService
     private const VISION_MODELS_URL = 'https://openrouter.ai/api/v1/models?input_modalities=image&output_modalities=text';
 
     /**
+     * @var string Bumped when what the cached suggestions hold changes, so an old cache isn't read as the new one
+     */
+    private const SUGGESTIONS_CACHE_KEY = 'ai-alt-text:openrouter-vision-models:2';
+
+    /**
      * Suggestions for the OpenRouter Model setting: the models that accept images, from OpenRouter's public models API,
      * e.g. `anthropic/claude-haiku-5.5` with the hint `Anthropic: Claude Haiku 5.5, $1/M input tokens`. Cached for a day,
      * as the settings page fetches them. If OpenRouter can't be reached there are none, and it's tried again after 10
@@ -37,7 +42,7 @@ class OpenRouterService extends ResponsesApiService
     public function visionModelSuggestions(): array
     {
         $cache = Craft::$app->getCache();
-        $models = $cache->get('ai-alt-text:openrouter-vision-models');
+        $models = $cache->get(self::SUGGESTIONS_CACHE_KEY);
 
         if ($models === false) {
             try {
@@ -55,6 +60,12 @@ class OpenRouterService extends ResponsesApiService
                         continue;
                     }
 
+                    // A `:batch` model is for OpenRouter's Batch API, which the plugin doesn't use, and the endpoint it does
+                    // use refuses it ("moonshotai/kimi-k3:batch cannot be used with the chat/completions endpoint")
+                    if (str_ends_with($model['id'], ':batch')) {
+                        continue;
+                    }
+
                     $price = (float)($model['pricing']['prompt'] ?? 0) * 1000000;
                     $isFree = isset($model['pricing']['prompt']) && $price == 0 && !str_contains(strtolower($model['name'] ?? ''), '(free)');
                     $models[] = [
@@ -64,11 +75,11 @@ class OpenRouterService extends ResponsesApiService
                 }
 
                 usort($models, fn(array $a, array $b) => strcmp($a['name'], $b['name']));
-                $cache->set('ai-alt-text:openrouter-vision-models', $models, 86400);
+                $cache->set(self::SUGGESTIONS_CACHE_KEY, $models, 86400);
             } catch (\Throwable $e) {
                 Craft::warning("Couldn't load OpenRouter's vision models for the model suggestions: " . $e->getMessage(), __METHOD__);
                 $models = [];
-                $cache->set('ai-alt-text:openrouter-vision-models', $models, 600);
+                $cache->set(self::SUGGESTIONS_CACHE_KEY, $models, 600);
             }
         }
 
@@ -103,7 +114,7 @@ class OpenRouterService extends ResponsesApiService
      */
     protected function applySettings(Settings $settings): void
     {
-        // An undefined environment variable parses to null, which would stop the settings page loading. getConfigurationError() reports a missing API key
+        // An undefined environment variable parses to null, which would stop the settings page loading. getConfigurationError() reports a missing API key or model
         $this->apiKey = (string) App::parseEnv($settings->openRouterApiKey);
         $this->model = $this->modelWithRouting((string) App::parseEnv($settings->openRouterModel), (string) App::parseEnv($settings->openRouterRouting));
         $this->baseUrl = 'https://openrouter.ai/api/v1';
@@ -204,6 +215,11 @@ class OpenRouterService extends ResponsesApiService
 
         if (preg_match('/not a valid model|invalid model|model .*(not found|does not exist)|no endpoints found/i', $message)) {
             $message .= ' ' . Craft::t('ai-alt-text', "Check the model's name on OpenRouter, which starts with the model's author (for example `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`), and that the model accepts image input.");
+        }
+
+        // OpenRouter words this as an endpoint problem, as it converts the plugin's request for the model's own API
+        if (preg_match('/:batch cannot be used/i', $message)) {
+            $message .= ' ' . Craft::t('ai-alt-text', "A `:batch` model is for OpenRouter's Batch API, which the plugin doesn't use. Use the same model without `:batch`.");
         }
 
         return $message === $e->getMessage() ? $e : new Exception($message, (int) $e->getCode(), $e);
