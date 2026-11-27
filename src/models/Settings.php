@@ -49,6 +49,11 @@ class Settings extends Model
     public const DEFAULT_ANTHROPIC_IMAGE_DETAIL_LEVEL = 'low';
 
     /**
+     * @var string The Google model used when the Google Model setting is left empty
+     */
+    public const DEFAULT_GOOGLE_MODEL = 'gemini-3.5-flash-lite';
+
+    /**
      * @var string The plugin's current default prompt, which the settings page's Reset to default button fills the Prompt field with
      */
     public const DEFAULT_PROMPT = 'Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. "#", "alt text:", "An image of", "A photo of"). Do not wrap the output in quotes. Output in the language: {site.languageName} (BCP 47: {site.language})';
@@ -113,7 +118,7 @@ class Settings extends Model
     /**
      * @var string The Google model to use, as Google names it (e.g. `gemini-3.5-flash-lite`), must have vision capabilities
      */
-    public string $googleModel = 'gemini-3.5-flash-lite';
+    public string $googleModel = self::DEFAULT_GOOGLE_MODEL;
 
     /**
      * @var string The Langdock API key

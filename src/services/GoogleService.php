@@ -22,7 +22,8 @@ class GoogleService extends InteractionsApiService
     protected function applySettings(Settings $settings): void
     {
         $this->apiKey = App::parseEnv($settings->googleApiKey);
-        $this->model = App::parseEnv($settings->googleModel);
+        // The settings page saves an empty field as an empty string rather than the default, so fall back to it here
+        $this->model = App::parseEnv($settings->googleModel) ?: Settings::DEFAULT_GOOGLE_MODEL;
     }
 
     /**
