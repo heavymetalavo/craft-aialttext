@@ -522,8 +522,8 @@ abstract class ApiService extends Component
      * Renders frames of an animated GIF or WebP as JPGs, each scaled to fit $transformParams and with any transparent
      * areas filled by flattenTransparency(), and returns them base64 encoded, in order.
      *
-     * The Animation frames setting says how many: the first frame only, or 3 or 5 evenly spaced from the first to the
-     * last. Craft's own JPG transform of an animated image stacks its frames on the Imagick driver, leaving the last
+     * The Animation frames setting says how many: the first frame only, or that many evenly spaced from the first to the
+     * last, or every frame if the animation has fewer. Craft's own JPG transform of an animated image stacks its frames on the Imagick driver, leaving the last
      * one showing, so the frames are rendered here instead. GD only reads the first frame, so it's the only one sent
      * there.
      *
