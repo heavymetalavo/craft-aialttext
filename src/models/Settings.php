@@ -2,8 +2,11 @@
 
 namespace heavymetalavo\craftaialttext\models;
 
+use Craft;
 use craft\base\Model;
+use craft\elements\Asset;
 use craft\helpers\App;
+use craft\models\Site;
 
 /**
  * Plugin Settings Model
@@ -17,12 +20,16 @@ use craft\helpers\App;
  * @property string $openAiImageInputDetailLevel The detail level for image analysis
  * @property bool $generateForNewAssets Whether to generate alt text for new assets automatically
  * @property bool $processSvgs Whether to generate alt text for SVGs
+ * @property bool $sendImagesAsBase64 Whether to send images to the AI provider as base64 instead of as URLs
+ * @property int $maxRateLimitRetries How many times a queued job that hits a rate limit is retried before it fails
  * @property bool $saveTranslatedResultsToEachSite Whether to generate alt text for every site, not just the current site and the sites that share its alt text
- * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'langdock', 'openrouter' or 'custom')
+ * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'google', 'langdock', 'openrouter', 'huggingface' or 'custom')
  * @property string $anthropicApiKey The Anthropic API key
  * @property string $anthropicModel The Anthropic Model
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
  * @property string $openAiReasoningEffort The reasoning effort level for OpenAI models
+ * @property string $googleApiKey The Google API key, from Google AI Studio
+ * @property string $googleModel The Google model to use, as Google names it
  * @property string $langdockApiKey The Langdock API key
  * @property string $langdockModelAuthor The author of the Langdock model, which picks its API ('anthropic' for models such as Claude or 'openai' for models such as GPT)
  * @property string $langdockModel The Langdock model to use
@@ -30,12 +37,19 @@ use craft\helpers\App;
  * @property string $langdockReasoningEffort The reasoning effort level for Langdock's OpenAI API
  * @property string $openRouterApiKey The OpenRouter API key
  * @property string $openRouterModel The OpenRouter model to use, as named by OpenRouter
+ * @property string $openRouterRouting How OpenRouter picks the provider that runs the model ('fastest', 'cheapest', or empty for its default)
  * @property string $openRouterImageInputDetailLevel The image detail level for OpenRouter's Responses API
  * @property string $openRouterReasoningEffort The reasoning effort level for OpenRouter's Responses API
+ * @property string[] $excludedVolumes UIDs of the volumes whose assets bulk and automatic generation skip
+ * @property array<int, array{volumeUid: string, path: string}> $excludedPaths Paths whose assets are skipped, each as a volume's UID and a path in it
+ * @property string $huggingFaceApiKey The Hugging Face token
+ * @property string $huggingFaceModel The Hugging Face model to use, as `org/model`
+ * @property string $huggingFaceRouting Which inference provider runs the Hugging Face model: `fastest`, `cheapest`, an inference provider, or empty to let the router choose
  * @property string $customBaseUrl The custom endpoint's base URL, e.g. `https://gateway.example.com/v1`
  * @property string $customApiFormat The request format the custom endpoint takes ('responses' or 'messages')
  * @property string $customApiKey The custom endpoint's API key
  * @property string $customModel The model to use, as the custom endpoint names it
+ * @property int $animationFrames How many frames of an animated GIF or WebP to send (1 to 20, or more from a config file)
  */
 class Settings extends Model
 {
@@ -43,6 +57,16 @@ class Settings extends Model
      * @var string The default Anthropic image detail level, also used by Langdock's Anthropic API
      */
     public const DEFAULT_ANTHROPIC_IMAGE_DETAIL_LEVEL = 'low';
+
+    /**
+     * @var string The Google model used when the Google Model setting is left empty
+     */
+    public const DEFAULT_GOOGLE_MODEL = 'gemini-3.5-flash-lite';
+
+    /**
+     * @var string The plugin's current default prompt, which the settings page's Reset to default button fills the Prompt field with
+     */
+    public const DEFAULT_PROMPT = 'Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. "#", "alt text:", "An image of", "A photo of"). Do not wrap the output in quotes. Output in the language: {site.languageName} (BCP 47: {site.language})';
 
     /**
      * @var string The API provider to use
@@ -77,7 +101,7 @@ class Settings extends Model
     /**
      * @var string The prompt template for generating alt text
      */
-    public string $prompt = 'Describe the image provided (roughly 150 characters). The output MUST be suitable for use directly as an HTML alt attribute value. Consider transparency within the image if supported by the file type, e.g. don\'t suggest it has a dark background if it is transparent. When describing a person do not assume their gender. Do not add a prefix of any kind (e.g. "#", "alt text:", "An image of", "A photo of"). Do not wrap the output in quotes. Output in the language: {site.languageName} (BCP 47: {site.language})';
+    public string $prompt = self::DEFAULT_PROMPT;
 
     /**
      * @var string The detail level for image analysis
@@ -95,6 +119,16 @@ class Settings extends Model
      * Options: none, minimal, low, medium, high, xhigh
      */
     public string $openAiReasoningEffort = 'low';
+
+    /**
+     * @var string The Google API key, from Google AI Studio
+     */
+    public string $googleApiKey = '';
+
+    /**
+     * @var string The Google model to use, as Google names it (e.g. `gemini-3.5-flash-lite`), must have vision capabilities
+     */
+    public string $googleModel = self::DEFAULT_GOOGLE_MODEL;
 
     /**
      * @var string The Langdock API key
@@ -139,6 +173,12 @@ class Settings extends Model
     public string $openRouterModel = '';
 
     /**
+     * @var string How OpenRouter picks the provider that runs the model: `fastest` (the `:nitro` suffix, highest
+     * throughput), `cheapest` (the `:floor` suffix, lowest price) or empty for OpenRouter's default routing
+     */
+    public string $openRouterRouting = '';
+
+    /**
      * @var string The image detail level for OpenRouter's Responses API
      *
      * Options: low, high, auto, original
@@ -151,6 +191,23 @@ class Settings extends Model
      * Options: none, minimal, low, medium, high, xhigh
      */
     public string $openRouterReasoningEffort = 'low';
+
+    /**
+     * @var string The Hugging Face token, which needs the "Make calls to Inference Providers" permission
+     */
+    public string $huggingFaceApiKey = '';
+
+    /**
+     * @var string The Hugging Face model to use, as `org/model` (e.g. `deepseek-ai/DeepSeek-V4.1-Flash-1017`), must have
+     * vision capabilities
+     */
+    public string $huggingFaceModel = '';
+
+    /**
+     * @var string Which inference provider runs the Hugging Face model: `fastest`, `cheapest` or an inference provider
+     * such as `deepinfra`, which is added to the model as a `:` suffix. Empty lets Hugging Face's router choose.
+     */
+    public string $huggingFaceRouting = '';
 
     /**
      * @var string The base URL of a gateway that takes the Responses API or Messages API request unchanged, without the
@@ -192,6 +249,36 @@ class Settings extends Model
     public bool $processSvgs = false;
 
     /**
+     * @var string[] UIDs of the volumes whose assets are skipped by bulk and automatic generation
+     */
+    public array $excludedVolumes = [];
+
+    /**
+     * @var array<int, array{volumeUid: string, path: string}> Paths whose assets are skipped by generation: a volume's
+     * UID and a path in it, e.g. `staff` for a folder and everything in it, or `*.svg` for files. `*` matches any
+     * characters, including across folders
+     */
+    public array $excludedPaths = [];
+
+    /**
+     * @var int How many frames of an animated GIF or WebP to send, evenly spaced from the first to the last
+     *
+     * 1 sends the first frame only. The settings page allows up to 20. `config/ai-alt-text.php` isn't validated, so it
+     * can set more, up to the provider's limit on images in one request, e.g. 100 for Anthropic's 200k-context models
+     */
+    public int $animationFrames = 3;
+
+    /**
+     * @var bool Whether to send images as base64 instead of as URLs the AI provider has to download
+     */
+    public bool $sendImagesAsBase64 = false;
+
+    /**
+     * @var int How many times a queued job that hits a provider's rate limit is put back in the queue before it fails
+     */
+    public int $maxRateLimitRetries = 5;
+
+    /**
      * @inheritdoc
      */
     public function setAttributes($values, $safeOnly = true): void
@@ -202,6 +289,13 @@ class Settings extends Model
         if (is_array($values) && isset($values['langdockModelFamily'])) {
             $values['langdockModelAuthor'] = $values['langdockModelFamily'];
             unset($values['langdockModelFamily']);
+        }
+
+        // A checkbox select or table with nothing in it posts an empty string
+        foreach (['excludedVolumes', 'excludedPaths'] as $key) {
+            if (is_array($values) && array_key_exists($key, $values) && !is_array($values[$key])) {
+                $values[$key] = array_filter([$values[$key]]);
+            }
         }
 
         parent::setAttributes($values, $safeOnly);
@@ -218,7 +312,7 @@ class Settings extends Model
                 ['aiProvider'],
                 function($attribute) {
                     $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['openai', 'anthropic', 'langdock', 'openrouter', 'custom'], true)) {
+                    if (!in_array($val, ['openai', 'anthropic', 'google', 'langdock', 'openrouter', 'huggingface', 'custom'], true)) {
                         $this->addError($attribute, 'Invalid AI Provider configured.');
                     }
                 }
@@ -238,6 +332,7 @@ class Settings extends Model
             ],
 
             ['prompt', 'string'],
+            ['prompt', 'validatePromptVariables'],
             ['openAiImageInputDetailLevel', 'string'],
             [
                 ['openAiImageInputDetailLevel'],
@@ -258,6 +353,7 @@ class Settings extends Model
                     }
                 }
             ],
+            [['googleApiKey', 'googleModel'], 'string'],
             [['langdockApiKey', 'langdockModel'], 'string'],
             [['langdockModelAuthor'], 'validateOneOf', 'params' => ['allowed' => ['anthropic', 'openai'], 'message' => 'Invalid Langdock Model Author configured.']],
             ['langdockImageInputDetailLevel', 'string'],
@@ -265,16 +361,121 @@ class Settings extends Model
             ['langdockReasoningEffort', 'string'],
             [['langdockReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid Langdock Reasoning Effort configured.']],
             [['openRouterApiKey', 'openRouterModel'], 'string'],
+            ['openRouterRouting', 'string'],
+            [['openRouterRouting'], 'validateOneOf', 'params' => ['allowed' => ['fastest', 'cheapest', ''], 'message' => 'Invalid OpenRouter Routing configured.']],
             ['openRouterImageInputDetailLevel', 'string'],
             [['openRouterImageInputDetailLevel'], 'validateOneOf', 'params' => ['allowed' => ['low', 'high', 'auto', 'original', ''], 'message' => 'Invalid OpenRouter Image Input Detail Level configured.']],
             ['openRouterReasoningEffort', 'string'],
             [['openRouterReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid OpenRouter Reasoning Effort configured.']],
+            [['huggingFaceApiKey', 'huggingFaceModel', 'huggingFaceRouting'], 'string'],
             [['customBaseUrl', 'customApiKey', 'customModel'], 'string'],
             [['customApiFormat'], 'validateOneOf', 'params' => ['allowed' => ['responses', 'messages'], 'message' => 'Invalid Custom endpoint API format configured.']],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
+            ['excludedVolumes', 'each', 'rule' => ['string']],
+            ['excludedPaths', 'validateExcludedPaths'],
+            ['animationFrames', 'integer', 'min' => 1, 'max' => 20],
+            ['sendImagesAsBase64', 'boolean'],
+            ['maxRateLimitRetries', 'integer', 'min' => 0],
         ];
+    }
+
+    /**
+     * Inline validator: the prompt's `{asset.…}` and `{site.…}` variables must name something an asset or a site has,
+     * so a typo like `{asset.filenmae}` is caught when the setting is saved rather than when alt text is generated.
+     *
+     * Only names that can be ruled out are rejected, as a false positive would block a prompt that works. An asset
+     * variable passes if an asset has the property (including custom fields' and other plugins' behaviours), if it's a
+     * field or generated field handle in any volume's field layout, `field:` and such a handle, an image transform's
+     * handle, or `transform:` and anything. Whether the value can be used as text isn't checked: `{asset.volume}` passes,
+     * and ApiService::resolvePrompt() still fails on it at generation time. An environment variable prompt isn't checked,
+     * nor is a prompt applied from project config, so that runtime error stays as the safety net.
+     */
+    /**
+     * Each excluded path needs a volume that exists and a path inside it.
+     */
+    public function validateExcludedPaths(string $attribute): void
+    {
+        $volumeUids = array_map(fn($volume) => $volume->uid, Craft::$app->getVolumes()->getAllVolumes());
+
+        foreach ($this->$attribute as $row) {
+            $path = is_array($row) && is_string($row['path'] ?? null) ? trim($row['path'], "/ \t") : null;
+
+            if (!is_array($row) || !in_array($row['volumeUid'] ?? null, $volumeUids, true)) {
+                $this->addError($attribute, Craft::t('ai-alt-text', 'Choose an existing volume for every excluded path.'));
+            } elseif ($path === null || $path === '') {
+                $this->addError($attribute, Craft::t('ai-alt-text', 'Enter a path for every excluded path row, or exclude the whole volume above.'));
+            } elseif (trim($path, '*/') === '') {
+                $this->addError($attribute, Craft::t('ai-alt-text', 'An excluded path needs some text besides `*`, or exclude the whole volume above.'));
+            } elseif (preg_match('~(^|/)\.\.?(/|$)~', $path)) {
+                $this->addError($attribute, Craft::t('ai-alt-text', 'Excluded paths are relative to the volume, without `.` or `..` parts.'));
+            }
+        }
+    }
+
+    public function validatePromptVariables(string $attribute): void
+    {
+        if (App::parseEnv($this->$attribute) !== $this->$attribute) {
+            return;
+        }
+
+        preg_match_all('/{(asset|site)\.(.*?)}/', $this->$attribute, $matches, PREG_SET_ORDER);
+        if (empty($matches)) {
+            return;
+        }
+
+        $asset = new Asset();
+        $site = new Site();
+        $layoutHandles = null;
+
+        foreach ($matches as [$variable, $model, $name]) {
+            if ($model === 'site') {
+                $valid = $name === 'languageName' || $site->canGetProperty($name);
+            } else {
+                $layoutHandles ??= $this->volumeFieldHandles();
+                $valid = $asset->canGetProperty($name)
+                    || in_array($name, $layoutHandles, true)
+                    || (str_starts_with($name, 'field:') && in_array(substr($name, 6), $layoutHandles, true))
+                    || str_starts_with($name, 'transform:')
+                    || Craft::$app->getImageTransforms()->getTransformByHandle($name) !== null;
+            }
+
+            if (!$valid) {
+                $this->addError($attribute, Craft::t('ai-alt-text', "Prompt variable \"{variable}\" isn't a property of {model}. Check its spelling.", [
+                    'variable' => $variable,
+                    'model' => $model === 'site'
+                        ? Craft::t('ai-alt-text', 'a site')
+                        : Craft::t('ai-alt-text', "an asset, or a field in a volume's field layout"),
+                ]));
+            }
+        }
+    }
+
+    /**
+     * The handles of the custom fields, and generated fields (Craft 5.8 and later), in every volume's field layout.
+     *
+     * @return string[]
+     */
+    private function volumeFieldHandles(): array
+    {
+        $handles = [];
+
+        foreach (Craft::$app->getVolumes()->getAllVolumes() as $volume) {
+            $layout = $volume->getFieldLayout();
+
+            foreach ($layout->getCustomFields() as $field) {
+                $handles[] = $field->handle;
+            }
+
+            if (method_exists($layout, 'getGeneratedFields')) {
+                foreach ($layout->getGeneratedFields() as $field) {
+                    $handles[] = $field['handle'] ?? '';
+                }
+            }
+        }
+
+        return $handles;
     }
 
     /**

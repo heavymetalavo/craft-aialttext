@@ -50,6 +50,12 @@ abstract class ApiService extends Component
     protected const TRANSPARENCY_NOTE = 'The image has a transparent background, filled with %s here so you can see what is drawn.';
 
     /**
+     * @var string Added to the trigger when several frames of an animated image are sent, see getFramesBase64(). %d is
+     * how many.
+     */
+    protected const FRAMES_NOTE = 'The %d images are frames of one animated image, in order from its first frame to its last, so write one alt text for the animation as a whole.';
+
+    /**
      * @var int Default request timeout in seconds, used unless the project sets its own `timeout`
      * in config/guzzle.php.
      */
@@ -164,13 +170,17 @@ abstract class ApiService extends Component
     }
 
     /**
-     * The text sent with the image: GENERATE_TRIGGER, and TRANSPARENCY_NOTE if the image's transparent areas were filled,
-     * e.g. `Generate the alt text for this image now. The image has a transparent background, filled with white here so
-     * you can see what is drawn.`
+     * The text sent with the image: GENERATE_TRIGGER, FRAMES_NOTE if several frames of an animated image are sent, and
+     * TRANSPARENCY_NOTE if the image's transparent areas were filled, e.g. `Generate the alt text for this image now.
+     * The image has a transparent background, filled with white here so you can see what is drawn.`
+     *
+     * @param int $frames How many images are sent
      */
-    protected function generateTrigger(): string
+    protected function generateTrigger(int $frames = 1): string
     {
-        return self::GENERATE_TRIGGER . ($this->transparencyFill !== null ? ' ' . sprintf(self::TRANSPARENCY_NOTE, $this->transparencyFill) : '');
+        return self::GENERATE_TRIGGER
+            . ($frames > 1 ? ' ' . sprintf(self::FRAMES_NOTE, $frames) : '')
+            . ($this->transparencyFill !== null ? ' ' . sprintf(self::TRANSPARENCY_NOTE, $this->transparencyFill) : '');
     }
 
     /**
@@ -337,6 +347,42 @@ abstract class ApiService extends Component
     }
 
     /**
+     * Checks if an asset is an animated GIF or WebP.
+     *
+     * @param Asset $asset The asset to check
+     * @return bool Whether it's animated
+     */
+    protected function isAnimated(Asset $asset): bool
+    {
+        return $this->isAnimatedGif($asset) || $this->isAnimatedWebp($asset);
+    }
+
+    /**
+     * Checks if a WebP asset is animated: an extended WebP, which starts with a VP8X chunk, with its animation flag set.
+     * Its frames follow in ANIM and ANMF chunks.
+     *
+     * @param Asset $asset The asset to check
+     * @return bool Whether the WebP is animated
+     */
+    protected function isAnimatedWebp(Asset $asset): bool
+    {
+        if ($asset->getMimeType() !== 'image/webp') {
+            return false;
+        }
+
+        $stream = $asset->getStream();
+
+        try {
+            // "RIFF", the file size, "WEBP", then the first chunk's name, its size and the VP8X flags byte
+            $header = stream_get_contents($stream, 21);
+        } finally {
+            fclose($stream);
+        }
+
+        return is_string($header) && strlen($header) === 21 && substr($header, 12, 4) === 'VP8X' && (ord($header[20]) & 0x02) !== 0;
+    }
+
+    /**
      * Checks if a GIF asset contains multiple frames (animated).
      *
      * Only the first GIF_FRAME_SCAN_BYTES of the file are read, a small piece at a time. If that
@@ -408,7 +454,20 @@ abstract class ApiService extends Component
     }
 
     /**
-     * Checks if the asset format requires conversion to a natively supported format (JPEG/PNG).
+     * The format SVG, AVIF, HEIC and HEIF images are converted to before they're sent: WebP if Craft's image driver can
+     * write it, as every provider accepts it and it's usually much smaller than PNG, otherwise PNG. Both keep fine detail
+     * that a JPG would blur, such as text in a logo. Craft saves WebP at its image quality setting, or lossless when its
+     * `optimizeImageFilesize` setting is off.
+     *
+     * @return string `webp` or `png`
+     */
+    protected function convertedFormat(): string
+    {
+        return Craft::$app->getImages()->getSupportsWebP() ? 'webp' : 'png';
+    }
+
+    /**
+     * Checks if the asset format requires conversion to a natively supported format (JPEG/WebP/PNG).
      *
      * @param Asset $asset The asset to check
      * @return bool
@@ -460,23 +519,67 @@ abstract class ApiService extends Component
     }
 
     /**
-     * Renders the first frame of an animated GIF as a JPG, scaled to fit $transformParams and with any transparent areas
-     * filled by flattenTransparency(), and returns it base64 encoded.
+     * Renders frames of an animated GIF or WebP as JPGs, each scaled to fit $transformParams and with any transparent
+     * areas filled by flattenTransparency(), and returns them base64 encoded, in order.
      *
-     * Craft's own JPG transform of an animated GIF stacks its frames on the Imagick driver, leaving the last one showing,
-     * so the first frame is rendered here instead. GD only reads the first frame, so it's unaffected.
+     * The Animation frames setting says how many: the first frame only, or that many evenly spaced from the first to the
+     * last, or every frame if the animation has fewer. Craft's own JPG transform of an animated image stacks its frames on the Imagick driver, leaving the last
+     * one showing, so the frames are rendered here instead. GD only reads the first frame, so it's the only one sent
+     * there.
      *
-     * @param Asset $asset The animated GIF
+     * @param Asset $asset The animated GIF or WebP
      * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
+     * @return string[] The base64 encoded JPGs
+     */
+    protected function getFramesBase64(Asset $asset, array $transformParams): array
+    {
+        $images = Craft::$app->getImages();
+        $count = AiAltText::getInstance()->getSettings()->animationFrames;
+
+        /** @var Raster $image */
+        $image = $images->loadImage(ImageTransforms::getLocalImageSource($asset));
+        $layers = $image->getImagineImage()->layers();
+        $total = count($layers);
+
+        if ($count < 2 || $total < 2) {
+            $image->disableAnimation()->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
+            $this->flattenTransparency($image);
+
+            return [$this->getJpgBase64($image, $asset)];
+        }
+
+        // Later frames often hold only what changed since the one before, so each is drawn in full first
+        $layers->coalesce();
+        $frames = [];
+
+        foreach (array_unique(array_map(fn(int $i) => (int)round($i * ($total - 1) / ($count - 1)), range(0, $count - 1))) as $index) {
+            // Craft's images can only be loaded from a file
+            $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false) . '.png');
+            $layers->get($index)->save($path);
+
+            try {
+                $frame = $images->loadImage($path);
+                $frame->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
+                // The first fill found is used for every frame, so the message sent names the fill all of them have
+                $this->flattenTransparency($frame, $this->transparencyFill);
+                $frames[] = $this->getJpgBase64($frame, $asset);
+            } finally {
+                FileHelper::unlink($path);
+            }
+        }
+
+        return $frames;
+    }
+
+    /**
+     * Saves an image as a JPG and returns it base64 encoded.
+     *
+     * @param Raster $image The image
+     * @param Asset $asset The asset it was rendered from, which names the temporary file
      * @return string The base64 encoded JPG
      */
-    protected function getFirstFrameBase64(Asset $asset, array $transformParams): string
+    private function getJpgBase64(Raster $image, Asset $asset): string
     {
-        /** @var Raster $image */
-        $image = Craft::$app->getImages()->loadImage(ImageTransforms::getLocalImageSource($asset));
-        $image->disableAnimation()->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
-        $this->flattenTransparency($image);
-
         $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false) . '.jpg');
         $image->saveAs($path);
 
@@ -495,7 +598,7 @@ abstract class ApiService extends Component
      * stores: often the colour of what's drawn, so a black line on transparent comes out as a solid black square, but
      * it can be anything, even a hidden image that would then be described. Others, such as Claude, see white, which
      * hides white artwork. Filling the transparent areas ourselves means every model sees the same, chosen background.
-     * Animated GIFs and SVGs are flattened by getFirstFrameBase64() and getSvgBase64() instead.
+     * Animated GIFs and WebPs, and SVGs, are flattened by getFramesBase64() and getSvgBase64() instead.
      *
      * @param Asset $asset The image, checked before a transform is set on it
      * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
@@ -515,22 +618,14 @@ abstract class ApiService extends Component
             return null;
         }
 
-        // An animated WebP would have its frames stacked, leaving the last one showing, so only its first frame is
-        // kept, as for GIFs
+        // Only the first frame is kept if there are several, as saving a JPG would flatten them into one
         $image->disableAnimation()->scaleToFit($transformParams['width'] ?? null, $transformParams['height'] ?? null, false);
 
         if (!$this->flattenTransparency($image)) {
             return null;
         }
 
-        $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false) . '.jpg');
-        $image->saveAs($path);
-
-        try {
-            return base64_encode(file_get_contents($path));
-        } finally {
-            FileHelper::unlink($path);
-        }
+        return $this->getJpgBase64($image, $asset);
     }
 
     /**
@@ -538,9 +633,10 @@ abstract class ApiService extends Component
      * doesn't disappear. Models don't reliably see transparency, see getFlattenedBase64().
      *
      * @param Raster $image The image
+     * @param string|null $fill 'white' or 'grey' to use that fill, rather than choosing one from the image
      * @return bool Whether the image had any transparency
      */
-    protected function flattenTransparency(Raster $image): bool
+    protected function flattenTransparency(Raster $image, ?string $fill = null): bool
     {
         // A small copy is enough to tell whether any of it is transparent, and how light the rest is
         $sample = $image->getImagineImage()->copy()->resize(new Box(64, 64));
@@ -567,14 +663,15 @@ abstract class ApiService extends Component
         }
 
         // Grey shows light content better than white does once it's lighter than 75%
-        [$background, $this->transparencyFill] = $opacity > 0 && $lightness / $opacity > 0.75 ? ['#808080', 'grey'] : ['#ffffff', 'white'];
-        $image->scaleToFitAndFill($image->getWidth(), $image->getHeight(), $background, 'center-center', false);
+        $this->transparencyFill = $fill ?? ($opacity > 0 && $lightness / $opacity > 0.75 ? 'grey' : 'white');
+        $image->scaleToFitAndFill($image->getWidth(), $image->getHeight(), $this->transparencyFill === 'grey' ? '#808080' : '#ffffff', 'center-center', false);
 
         return true;
     }
 
     /**
-     * Renders an SVG as a PNG, its transparent areas filled by flattenTransparency(), and returns it base64 encoded.
+     * Renders an SVG as a WebP, or a PNG where Craft's image driver can't write WebP (see convertedFormat()), its
+     * transparent areas filled by flattenTransparency(), and returns it base64 encoded.
      *
      * Craft loads SVGs into Imagick from a string, which ImageMagick often renders with its own built-in SVG renderer,
      * and that renderer draws gradients as solid black. So the SVG is rendered here, with its gradients flattened first
@@ -584,7 +681,7 @@ abstract class ApiService extends Component
      *
      * @param Asset $asset The SVG
      * @param array $transformParams The transform params from getVisionTransformParams(), for the width and height
-     * @return string The base64 encoded PNG
+     * @return string The base64 encoded WebP or PNG
      */
     protected function getSvgBase64(Asset $asset, array $transformParams): string
     {
@@ -600,6 +697,7 @@ abstract class ApiService extends Component
         // files, deleted at the end
         $path = Craft::$app->getPath()->getTempPath() . DIRECTORY_SEPARATOR . FileHelper::uniqueName($asset->getFilename(false));
         FileHelper::writeToFile("$path.svg", $svg);
+        $format = $this->convertedFormat();
 
         try {
             // Rendered at the provider's size limit if the SVG is larger, otherwise at 1000px, as Craft's transforms do
@@ -615,12 +713,13 @@ abstract class ApiService extends Component
             $image = $images->loadImage("$path.png");
 
             $this->flattenTransparency($image);
-            $image->saveAs("$path.png");
+            $image->saveAs("$path.converted.$format");
 
-            return base64_encode(file_get_contents("$path.png"));
+            return base64_encode(file_get_contents("$path.converted.$format"));
         } finally {
             FileHelper::unlink("$path.svg");
             FileHelper::unlink("$path.png");
+            FileHelper::unlink("$path.converted.$format");
         }
     }
 
@@ -790,7 +889,7 @@ abstract class ApiService extends Component
 
     /**
      * Generates a standardized array of transform parameters across AI Vision boundaries.
-     * Handles unsupported MIME type fallback conversions (SVG/WEBP to PNG/JPG) and dimensional bounding.
+     * Handles unsupported MIME type fallback conversions (SVG, AVIF and HEIC to WebP or PNG, others to JPG) and dimensional bounding.
      *
      * @param Asset $asset The original asset
      * @param int|null $maxLongEdge The maximum allowed length for the longest edge of the image
@@ -807,9 +906,9 @@ abstract class ApiService extends Component
         $asset->setTransform(null);
 
         $aiAltTextService = AiAltText::getInstance()->aiAltTextService;
-        // SVG, AVIF and HEIC are converted to PNG, which is lossless. Any transparency is filled before this transform is
-        // used, see getFlattenedBase64() and getSvgBase64()
-        $preferPng = $aiAltTextService->isSvg($asset) || $aiAltTextService->isAvif($asset) || $aiAltTextService->isHeic($asset);
+        // SVG, AVIF and HEIC are converted to WebP, or PNG where WebP can't be written, see convertedFormat(). Any
+        // transparency is filled before this transform is used, see getFlattenedBase64() and getSvgBase64()
+        $keepDetail = $aiAltTextService->isSvg($asset) || $aiAltTextService->isAvif($asset) || $aiAltTextService->isHeic($asset);
         
         // Set up transform parameters
         $transformParams = [];
@@ -819,12 +918,12 @@ abstract class ApiService extends Component
         
         // Always convert format if needed, regardless of dimensions
         if ($needsFormatConversion) {
-            $transformParams['format'] = $preferPng ? 'png' : 'jpg';
+            $transformParams['format'] = $keepDetail ? $this->convertedFormat() : 'jpg';
         }
         
-        // Animated GIFs are sent as a JPG of their first frame, rendered by getFirstFrameBase64(), so the format matches
-        if ($this->isAnimatedGif($asset)) {
-            Craft::info("Asset {$asset->filename} is an animated GIF. Sending its first frame as a JPG.", __METHOD__);
+        // Animated GIFs and WebPs are sent as JPGs of their frames, see getFramesBase64(), so the format matches
+        if ($this->isAnimated($asset)) {
+            Craft::info("Asset {$asset->filename} is animated. Sending its frames as JPGs.", __METHOD__);
             $transformParams['format'] = 'jpg';
         }
         
@@ -832,46 +931,39 @@ abstract class ApiService extends Component
         $width = $asset->getWidth();
         $height = $asset->getHeight();
         
-        // Cap the longest edge if it exceeds the provider's limit, Craft's 'fit' mode will preserve the aspect ratio
-        if ($maxLongEdge !== null && ($width > $maxLongEdge || $height > $maxLongEdge)) {
-            if ($width >= $height) {
-                // Wide/square image: cap the width
-                $transformParams['width'] = $maxLongEdge;
-            } else {
-                // Tall image: cap the height
-                $transformParams['height'] = $maxLongEdge;
-            }
+        // Each limit gives the longest edge it allows, and the smallest wins: the provider's long edge, OpenAI's patch
+        // budget and Anthropic's token budget. Craft's 'fit' mode preserves the aspect ratio
+        $longEdge = max($width, $height);
+        $limit = $longEdge;
+
+        // The provider's long edge, e.g. 500px for Anthropic's low detail level
+        if ($maxLongEdge !== null) {
+            $limit = min($limit, $maxLongEdge);
         }
-        
+
         // OpenAI patch budget: if the image would produce more tiles than allowed, scale down proportionally
         if ($maxPatches !== null) {
             $patchCount = ceil($width / 32) * ceil($height / 32);
             if ($patchCount > $maxPatches) {
-                // Calculate scale factor to fit within patch budget
-                $scaleFactor = sqrt($maxPatches / $patchCount);
-                $scaledLongEdge = (int) floor(max($width, $height) * $scaleFactor);
-                
-                if ($width >= $height) {
-                    $transformParams['width'] = $scaledLongEdge;
-                } else {
-                    $transformParams['height'] = $scaledLongEdge;
-                }
+                $limit = min($limit, (int) floor($longEdge * sqrt($maxPatches / $patchCount)));
             }
         }
-        
+
         // Anthropic token budget: if the pixel area would exceed the token limit, scale down proportionally
         if ($maxTokens !== null) {
             $tokenCount = ($width * $height) / 750;
             if ($tokenCount > $maxTokens) {
-                // Calculate scale factor to fit within token budget
-                $scaleFactor = sqrt(($maxTokens * 750) / ($width * $height));
-                $scaledLongEdge = (int) floor(max($width, $height) * $scaleFactor);
-                
-                if ($width >= $height) {
-                    $transformParams['width'] = $scaledLongEdge;
-                } else {
-                    $transformParams['height'] = $scaledLongEdge;
-                }
+                $limit = min($limit, (int) floor($longEdge * sqrt(($maxTokens * 750) / ($width * $height))));
+            }
+        }
+
+        if ($limit < $longEdge) {
+            if ($width >= $height) {
+                // Wide/square image: cap the width
+                $transformParams['width'] = $limit;
+            } else {
+                // Tall image: cap the height
+                $transformParams['height'] = $limit;
             }
         }
         

@@ -4,14 +4,18 @@ namespace heavymetalavo\craftaialttext\services;
 
 use Craft;
 use craft\base\{Component, Field};
+use craft\db\{Query, Table};
 use craft\elements\Asset;
+use craft\elements\db\AssetQuery;
 use craft\enums\MenuItemType;
 use craft\events\DefineMenuItemsEvent;
 use craft\helpers\{App, ArrayHelper};
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
+use Imagick;
 use Throwable;
+use yii\base\InvalidConfigException;
 
 /**
  * AI Alt Text Service
@@ -21,7 +25,6 @@ use Throwable;
  */
 class AiAltTextService extends Component
 {
-
     /**
      * Generates or queues alt text for an asset, once for each group of sites that share it (see
      * sitesSharingAltText()): the current site's group straight away or as a queued job, and, when
@@ -33,11 +36,17 @@ class AiAltTextService extends Component
      * @param bool $skipExistingJobCheck Whether to skip the check for existing jobs (useful for bulk operations)
      * @param bool $skipSaveTranslatedResultsToEachSiteSetting Whether to only do the current site's group, whatever the setting
      * @param array|null $existingJobs Queue job info to check against, so bulk callers can fetch it once instead of per asset
-     * @return bool Whether anything was generated or queued, false if the asset was skipped
+     * @return bool Whether anything was generated or queued, false if the asset was skipped, e.g. because it's excluded
      * @throws Exception
      */
     public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $skipSaveTranslatedResultsToEachSiteSetting = false, ?array $existingJobs = null): bool
     {
+        // Whatever started this, an excluded asset gets no alt text
+        if (($reason = $this->exclusionReason($asset)) !== null) {
+            Craft::info("Not generating alt text for {$asset->filename} (ID: {$asset->id}): $reason", __METHOD__);
+            return false;
+        }
+
         $queue = Craft::$app->getQueue();
 
         $assetSiteId = (int)($currentSiteId ?? $asset->siteId);
@@ -145,12 +154,17 @@ class AiAltTextService extends Component
      * @param bool $includeExisting Whether the run includes assets that already have alt text
      * @param bool $allSites Whether the run covers every site, rather than just the asset's
      * @param array|null $existingJobs Queue job info for the duplicate-job check
-     * @return string `queued`, `copied`, or `skipped` when an earlier site sharing its alt text handles
-     * it, a job is already queued, or the asset isn't eligible
+     * @return string `queued`, `copied`, `excluded` by the Excluded assets settings (see exclusionReason()), or
+     * `skipped` when an earlier site sharing its alt text handles it, a job is already queued, or the asset isn't eligible
      * @throws Exception
      */
     public function createBulkJob(Asset $asset, bool $includeExisting, bool $allSites, ?array $existingJobs = null): string
     {
+        if (($reason = $this->exclusionReason($asset)) !== null) {
+            Craft::info("Skipping {$asset->filename} (ID: {$asset->id}) in a bulk run: $reason", __METHOD__);
+            return 'excluded';
+        }
+
         $siteIds = $this->siteIdsBySharedAltText($asset)[$this->sharedAltTextKey($asset)];
 
         if (!$includeExisting) {
@@ -179,6 +193,115 @@ class AiAltTextService extends Component
 
         // The caller has already chosen the sites, so skip the saveTranslatedResultsToEachSite fan-out
         return $this->createJob($asset, false, $asset->siteId, false, true, $existingJobs) ? 'queued' : 'skipped';
+    }
+
+    /**
+     * The regular expression for an excluded path, which can use `*` for any characters, including across folders, and
+     * matches the path itself, or, as a folder, everything in it, ignoring case.
+     * e.g. `staff*` matches `staff/amy.jpg` and `staffing/bob.jpg`, and `*.svg` matches every SVG.
+     */
+    private static function pathPatternRegex(string $pattern): string
+    {
+        return '~^' . strtr(preg_quote($pattern, '~'), ['\\*' => '.*']) . '(?:/.*)?$~iu';
+    }
+
+    /**
+     * Leaves the assets in excluded volumes and at excluded paths out of an asset query, in SQL, so coverage figures can count
+     * what generation can reach. The same rules as exclusionReason().
+     */
+    public function withoutExcluded(AssetQuery $query): AssetQuery
+    {
+        $settings = AiAltText::getInstance()->getSettings();
+        $volumes = Craft::$app->getVolumes();
+
+        $volumeIds = [];
+        foreach ($settings->excludedVolumes as $uid) {
+            if ($volume = $volumes->getVolumeByUid($uid)) {
+                $volumeIds[] = $volume->id;
+            }
+        }
+
+        if ($volumeIds) {
+            $query->andWhere(['not in', 'assets.volumeId', $volumeIds]);
+        }
+
+        foreach ($settings->excludedPaths as $row) {
+            $pattern = trim($row['path'] ?? '', "/ \t");
+            $volume = $volumes->getVolumeByUid($row['volumeUid'] ?? '');
+
+            if ($pattern === '' || !$volume) {
+                continue;
+            }
+
+            // An asset's path in its volume is its folder's path, which has a trailing slash, e.g. `staff/sub/`, then
+            // its filename. `staff/%` is a folder and everything in it. The same rule as pathPatternRegex().
+            $like = strtr(addcslashes($pattern, '%_\\'), ['*' => '%']);
+            $assetPath = "CONCAT(COALESCE(f.path, ''), a.filename)";
+            $query->andWhere(['not in', 'assets.id', (new Query())
+                ->select('a.id')
+                ->from(['a' => Table::ASSETS])
+                ->innerJoin(['f' => Table::VOLUMEFOLDERS], '[[f.id]] = [[a.folderId]]')
+                ->where(['a.volumeId' => $volume->id])
+                ->andWhere(['or', ['like', $assetPath, $like, false], ['like', $assetPath, $like . '/%', false]])]);
+        }
+
+        return $query;
+    }
+
+    /**
+     * How many image assets on a site the Excluded volumes and Excluded paths settings leave out of the coverage
+     * figures.
+     */
+    public function countExcluded(int $siteId): int
+    {
+        $settings = AiAltText::getInstance()->getSettings();
+
+        if (empty($settings->excludedVolumes) && empty($settings->excludedPaths)) {
+            return 0;
+        }
+
+        $all = Asset::find()->kind(Asset::KIND_IMAGE)->siteId($siteId);
+
+        return $all->count() - $this->withoutExcluded(clone $all)->count();
+    }
+
+    /**
+     * Why no alt text is generated for an asset under the Excluded assets settings, or null if it isn't excluded.
+     * This covers every way of generating: bulk runs, upload and file replacement, and generating for chosen assets.
+     *
+     * - Its volume is an excluded volume.
+     * - Its path in the volume matches an excluded path: a volume and a path in it, e.g. `staff`, for a folder and
+     *   everything in it, or `*.svg`, for files. `*` is a wildcard for any characters, including across folders.
+     *
+     * @return string|null The reason, e.g. `its volume is excluded`
+     */
+    public function exclusionReason(Asset $asset): ?string
+    {
+        $settings = AiAltText::getInstance()->getSettings();
+        $volume = $asset->getVolume();
+
+        if (in_array($volume->uid, $settings->excludedVolumes, true)) {
+            return "its volume ($volume->handle) is excluded";
+        }
+
+        // A broken folder ID means no path exclusion, rather than an error that could fail an upload
+        try {
+            // e.g. `staff/sub/amy.jpg` for a file in the sub folder of the staff folder, and `amy.jpg` in the root
+            $path = ltrim(($asset->getFolder()->path ?? '') . $asset->getFilename(), '/');
+        } catch (InvalidConfigException) {
+            $path = null;
+        }
+
+        foreach ($settings->excludedPaths as $row) {
+            $pattern = trim($row['path'] ?? '', "/ \t");
+            if ($path !== null && $pattern !== '' && ($row['volumeUid'] ?? null) === $volume->uid
+                && preg_match(self::pathPatternRegex($pattern), $path)
+            ) {
+                return "it matches the excluded path ($volume->handle/$pattern)";
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -303,16 +426,19 @@ class AiAltTextService extends Component
             return Craft::t('ai-alt-text', 'No AI provider is configured. Choose one in the AI Alt Text plugin settings.');
         }
 
-        if (!in_array($provider, ['openai', 'anthropic', 'langdock', 'openrouter', 'custom'], true)) {
-            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Langdock, OpenRouter or a custom endpoint in the AI Alt Text plugin settings.', ['provider' => $provider]);
+        if (!in_array($provider, ['openai', 'anthropic', 'google', 'langdock', 'openrouter', 'huggingface', 'custom'], true)) {
+            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Google, Langdock, OpenRouter, Hugging Face or a custom endpoint in the AI Alt Text plugin settings.', ['provider' => $provider]);
         }
 
-        [$label, $apiKey] = match ($provider) {
-            'anthropic' => ['Anthropic', $settings->anthropicApiKey],
-            'langdock' => ['Langdock', $settings->langdockApiKey],
-            'openai' => ['OpenAI', $settings->openAiApiKey],
-            'openrouter' => ['OpenRouter', $settings->openRouterApiKey],
-            'custom' => ['Custom endpoint', $settings->customApiKey],
+        // An empty Google model uses the default one, see GoogleService, so it's never missing
+        [$label, $apiKey, $model] = match ($provider) {
+            'anthropic' => ['Anthropic', $settings->anthropicApiKey, $settings->anthropicModel],
+            'google' => ['Google', $settings->googleApiKey, \heavymetalavo\craftaialttext\models\Settings::DEFAULT_GOOGLE_MODEL],
+            'langdock' => ['Langdock', $settings->langdockApiKey, $settings->langdockModel],
+            'openai' => ['OpenAI', $settings->openAiApiKey, $settings->openAiModel],
+            'openrouter' => ['OpenRouter', $settings->openRouterApiKey, $settings->openRouterModel],
+            'huggingface' => ['Hugging Face', $settings->huggingFaceApiKey, $settings->huggingFaceModel],
+            'custom' => ['Custom endpoint', $settings->customApiKey, $settings->customModel],
         };
 
         $apiKey = App::parseEnv($apiKey);
@@ -329,11 +455,65 @@ class AiAltTextService extends Component
             return Craft::t('ai-alt-text', 'The custom endpoint API format must be the Responses API or the Messages API. Choose one in the AI Alt Text plugin settings.');
         }
 
+        // Without this the request is built and refused, with an error that reads "Model cannot be blank"
+        $model = App::parseEnv($model);
+
+        if ($model === '' || $model === null) {
+            return Craft::t('ai-alt-text', 'No model is configured for the {provider} provider. Set one in the AI Alt Text plugin settings.', ['provider' => $label]);
+        }
+
         if ($provider === 'langdock' && !in_array(App::parseEnv($settings->langdockModelAuthor), ['anthropic', 'openai'], true)) {
             return Craft::t('ai-alt-text', 'The Langdock Model Author must be Anthropic or OpenAI. Choose one in the AI Alt Text plugin settings.');
         }
 
         return null;
+    }
+
+    /**
+     * How many seconds jobs for the configured provider and model should wait before sending another request, because
+     * one of them hit its rate limit, see pauseForRateLimit(). 0 if they needn't.
+     */
+    public function rateLimitWait(): int
+    {
+        $until = Craft::$app->getCache()->get($this->rateLimitCacheKey());
+
+        return $until === false ? 0 : max(0, (int)$until - time());
+    }
+
+    /**
+     * Makes jobs for the configured provider and model wait before sending another request, so a bulk run doesn't keep
+     * hitting a rate limit and slows to the rate the account allows. Shared through Craft's cache, so it reaches every
+     * queue worker.
+     *
+     * An existing pause that would last longer is kept, so a later rate limit never shortens it.
+     *
+     * @param int $seconds How long to wait
+     */
+    public function pauseForRateLimit(int $seconds): void
+    {
+        $seconds = max($seconds, $this->rateLimitWait());
+        Craft::$app->getCache()->set($this->rateLimitCacheKey(), time() + $seconds, $seconds);
+    }
+
+    /**
+     * The cache key of a rate limit pause: one per provider and model, as limits apply per model on OpenRouter.
+     */
+    private function rateLimitCacheKey(): string
+    {
+        $settings = AiAltText::getInstance()->getSettings();
+        $provider = (string)App::parseEnv($settings->aiProvider);
+        $model = match ($provider) {
+            'anthropic' => $settings->anthropicModel,
+            'google' => $settings->googleModel,
+            'langdock' => $settings->langdockModel,
+            'openai' => $settings->openAiModel,
+            'openrouter' => $settings->openRouterModel,
+            'huggingface' => $settings->huggingFaceModel,
+            'custom' => $settings->customModel,
+            default => '',
+        };
+
+        return 'ai-alt-text:rate-limit-pause:' . md5($provider . ':' . App::parseEnv($model));
     }
 
     /**
@@ -347,11 +527,13 @@ class AiAltTextService extends Component
 
         return match (App::parseEnv($settings->aiProvider)) {
             'anthropic' => $plugin->anthropicService,
+            'google' => $plugin->googleService,
             'langdock' => App::parseEnv($settings->langdockModelAuthor) === 'openai'
                 ? $plugin->langdockOpenAiService
                 : $plugin->langdockAnthropicService,
             'openai' => $plugin->openAiService,
             'openrouter' => $plugin->openRouterService,
+            'huggingface' => $plugin->huggingFaceService,
             'custom' => App::parseEnv($settings->customApiFormat) === 'messages'
                 ? $plugin->customMessagesService
                 : $plugin->customResponsesService,
@@ -431,12 +613,20 @@ class AiAltTextService extends Component
     }
 
     /**
-     * Whether SVGs get alt text: the Process SVGs setting is on and Craft uses the Imagick image driver, as GD
-     * can't read SVGs.
+     * Whether SVGs get alt text: the Process SVGs setting is on and Craft's image driver can read SVGs, see
+     * canReadSvgs().
      */
     public function canProcessSvgs(): bool
     {
-        return AiAltText::getInstance()->getSettings()->processSvgs && Craft::$app->getImages()->getIsImagick();
+        return AiAltText::getInstance()->getSettings()->processSvgs && $this->canReadSvgs();
+    }
+
+    /**
+     * Whether Craft's image driver can read SVGs: it's ImageMagick, and ImageMagick has an SVG coder.
+     */
+    public function canReadSvgs(): bool
+    {
+        return Craft::$app->getImages()->getIsImagick() && !empty(Imagick::queryFormats('SVG'));
     }
 
     /**

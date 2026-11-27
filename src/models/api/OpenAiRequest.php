@@ -17,7 +17,8 @@ class OpenAiRequest extends Model
 
     private string $instructions = '';
     private string $prompt = '';
-    private string $imageUrl = '';
+    /** @var string[] */
+    private array $imageUrls = [];
     private string $detail = 'low';
     private string $reasoningEffort = 'low';
 
@@ -49,9 +50,14 @@ class OpenAiRequest extends Model
         return $this;
     }
 
-    public function setImageUrl(string $imageUrl): self
+    /**
+     * Sets the images, as URLs or base64 data URLs, sent in order after the prompt, e.g. the frames of an animated image.
+     *
+     * @param string[] $imageUrls
+     */
+    public function setImageUrls(array $imageUrls): self
     {
-        $this->imageUrl = $imageUrl;
+        $this->imageUrls = $imageUrls;
         return $this;
     }
 
@@ -94,10 +100,10 @@ class OpenAiRequest extends Model
             ];
         }
 
-        if (!empty($this->imageUrl)) {
+        foreach ($this->imageUrls as $imageUrl) {
             $content[] = [
                 'type' => 'input_image',
-                'image_url' => $this->imageUrl,
+                'image_url' => $imageUrl,
                 'detail' => $this->detail,
             ];
         }

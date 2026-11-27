@@ -8,21 +8,55 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 | Setting | Description |
 |---------|-------------|
-| **AI Provider** | Choose between OpenAI, Anthropic, Langdock, OpenRouter or a custom endpoint. |
-| **OpenAI/Anthropic/Langdock/OpenRouter API Key** | Your provider's API key. |
-| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-5-5`). For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. |
+| **AI Provider** | Choose between OpenAI, Anthropic, Google, Langdock, OpenRouter, Hugging Face or a custom endpoint. |
+| **OpenAI/Anthropic/Google/Langdock/OpenRouter API Key, Hugging Face Token** | Your provider's API key. |
+| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-5-5`). For Google, use its Gemini name, e.g. `gemini-3.5-flash-lite`. For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. For Hugging Face, use the model's id, e.g. `deepseek-ai/DeepSeek-V4.1-Flash-1017`. |
+| **Hugging Face Routing** | Hugging Face only. Which inference provider runs the model: **Default** (Hugging Face's router weighs price, speed and reliability, and tries another provider if one fails), **Fastest**, **Cheapest**, or one of the model's inference providers, e.g. `deepinfra`. Choosing a provider that doesn't serve the model fails. The dropdown lists the providers that serve the chosen model, cheapest first, with their price and speed. It's added to the model as a suffix, e.g. `:cheapest`. |
 | **Langdock Model Author** | Langdock only. `Anthropic` (models such as Claude) or `OpenAI` (models such as GPT). It must be the author of the model, and decides which of Langdock's compatible APIs requests are sent to. |
 | **Langdock Image Detail Level** | Langdock with the `OpenAI` model author only. Works like the OpenAI image detail level, `low`, `high` or `auto`. |
 | **Langdock Reasoning Effort** | Langdock with the `OpenAI` model author only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). |
+| **OpenRouter Routing** | OpenRouter only. How OpenRouter picks the provider that runs the model: **Default** (price, speed and reliability, with another provider tried if one fails), **Fastest** (`:nitro`, sorted by throughput, and can use priority endpoints that cost more) or **Cheapest** (`:floor`, sorted by price, and can use cheaper flex endpoints). A free model, e.g. `google/gemma-4-26b-a4b-it:free`, only has Default. |
 | **OpenRouter Image Detail Level** | OpenRouter only. Works like the OpenAI image detail level, `low`, `high`, `original` or `auto`. OpenAI and Gemini models use it, and in testing Qwen, GLM and Grok models ignored it. For Claude models it picks the size limit, as the Anthropic setting does. |
 | **OpenRouter Reasoning Effort** | OpenRouter only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). Only sent to OpenAI reasoning models. |
 | **Custom Endpoint Base URL, API Format, API Key and Model** | Custom endpoint only, see [Custom endpoints](providers.md#custom-endpoints). |
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |
 | **OpenAI Reasoning Effort**| The reasoning effort level for OpenAI reasoning models. |
-| **Prompt** | The instructions sent to the AI provider as the system / instruction message (example [below](#-default-prompt)). Supports `{asset.property}` and `{site.property}` variables, plus `{site.languageName}` for the language's display name (e.g. `English (United Kingdom)`). |
+| **Prompt** | The instructions sent to the AI provider as the system / instruction message (example [below](#-default-prompt)). Supports `{asset.property}` and `{site.property}` variables, plus `{site.languageName}` for the language's display name (e.g. `English (United Kingdom)`). A variable that names nothing an asset or site has, such as `{asset.filenmae}`, is reported when the settings are saved. |
 | **Generate for new image assets (on upload or file replacement)** | Automatically generate alt text when new assets are created, or when an asset's file is replaced. On replacement, the alt text for the site the replacement was made in, and the sites that share it, is overwritten, since it describes the old image; other sites keep their existing alt text unless **Save translated results for each site** is enabled. |
 | **Process SVGs** | Attempt to generate alt text for SVG files when they are uploaded or batch processed. |
+| **Animation frames** | How many frames of an animated GIF or WebP to send: from `1`, the first frame only, to `20`, evenly spaced from the first frame to the last. The default is `3`, the first, middle and last frames, the fewest that show the motion. An animation with fewer frames sends all of them. The frames are sent in order as separate images in one request, which tells the model they're frames of one animation, so the alt text can describe what happens rather than one moment of it. The cost rises roughly with the number of frames, see [Costs](costs.md). With Craft's GD image driver, only the first frame is sent, see [Images](images.md). `config/ai-alt-text.php` can set more than 20, but providers limit the images in one request, e.g. Anthropic allows 100 for its 200k-context models, so a higher value can fail for a long animation. |
 | **Save translated results for each site** | Follows the asset volume's **Alternative Text Translation Method**: sites that share alt text (all sites on Not translatable, or sites in the same site group or language) get one result between them, from one request, in the language of the site it's generated for. When on, every site gets alt text. When off, only the current site and the sites that share its alt text do. |
+| **Always send images as base64** | When off, the image's URL is sent first, then base64 if the provider can't download it. When on, base64 is always sent, preventing that failed first request. It can work well for local sites, or sites behind basic auth or a firewall. |
+| **Max rate limit retries** | How many times a queued job that hits the provider's rate limit is put back in the queue before it fails (default 5), see [Getting started](getting-started.md). Raise it for a large bulk run on an account with a daily limit. 0 turns retrying off. |
+| **Excluded volumes** | No alt text is generated for assets in these volumes by any method: bulk generation, upload or file replacement, the action menu, the asset's edit page or the console commands, e.g. for a volume of staff photos. |
+| **Excluded paths** | Like **Excluded volumes**, for a folder and everything in it, or for files. Each is a volume and a path in it relative to the volume, chosen in a table: `staff` covers the `staff` folder and its subfolders, and `*.svg` covers every SVG in the volume. `*` stands for any characters, including across folders, so `staff/*/headshots` covers `staff/amy/headshots` and the files in it. Paths aren't case-sensitive, and a path can't be only `*`: exclude the volume instead. Excluded assets aren't counted in the bulk actions utility's alt text coverage or by the `stats` console command, which say how many are left out. |
+
+## 📁 Config file
+
+Settings can also be set in `config/ai-alt-text.php`, for example to use a different provider or model in each environment. Each key is a setting's name, as listed in the plugin's [`Settings` model](../src/models/Settings.php), and the file can use Craft's [multi-environment config](https://craftcms.com/docs/5.x/configure.html#multi-environment-configs):
+
+```php
+<?php
+
+return [
+    // Every environment
+    '*' => [
+        'aiProvider' => 'openrouter',
+        'openRouterApiKey' => '$OPENROUTER_API_KEY',
+        'openRouterModel' => 'anthropic/claude-haiku-5.5',
+    ],
+    // A cheaper model while developing
+    'dev' => [
+        'openRouterModel' => 'openai/gpt-6-luna',
+    ],
+];
+```
+
+[`src/config.php`](../src/config.php) lists every setting and its default, to copy from. Every setting in it is commented out, so uncomment only the ones you want to set.
+
+A setting in this file wins over the one saved on the settings page. Its field shows the file's value and is marked with a warning naming the setting. Craft saves the values a settings page shows to project config, so a plain value the file sets, such as `'dev' => ['aiProvider' => 'openai']` or `App::env('AI_PROVIDER')`, would be saved as `openai` and reach production with the project config. The plugin keeps the previously saved value for those instead, and an edit to such a field is discarded. An environment variable reference, `'$AI_PROVIDER'`, is saved as it is, since it resolves per environment. Keep API keys in environment variables, as above, rather than in the file.
+
+For most projects, environment variables in the settings fields (e.g. `$OPENROUTER_MODEL`) are simpler: the values can differ per environment without a file, and the settings page stays in charge.
 
 ## 💬 Default prompt
 
@@ -64,12 +98,14 @@ Which values work depends on the model, as tested on 19 October 2026:
 
 **Langdock** with the `Anthropic` model author has no image detail setting: images are scaled to the `low` size (500px x 500px) and always sent as base64, since Langdock does not accept image URLs. With the `OpenAI` model author, **Langdock Image Detail Level** (`low`, `high` or `auto`) and **Langdock Reasoning Effort** work like the OpenAI settings above (both default to `low`).
 
-**OpenRouter** always sends images as base64. It scales them as OpenAI does, except for Claude models (`anthropic/…`), which are scaled as on the Anthropic API: the detail level picks the long-edge limit (500px at `low`, 1000px at `auto`, 1568px at `high` or `original`) as the Anthropic setting does, and a token budget of about 1,600 tokens (about 1.2 megapixels) also applies, which is what sets the size of larger photos. OpenAI models use **OpenRouter Image Detail Level** and **OpenRouter Reasoning Effort** (both default to `low`). The image detail level is sent to every model, and Gemini models also change how many tokens they use with it, while Qwen, GLM and Grok models ignored it in testing. The reasoning effort is only sent to OpenAI reasoning models, and other models use their own defaults.
+**OpenRouter** always sends images as base64. It scales them as OpenAI does, except for Claude models (`anthropic/…`), which are scaled as on the Anthropic API: the detail level picks the long-edge limit (500px at `low`, 1000px at `auto`, 1568px at `high` or `original`) as the Anthropic setting does, and a token budget of about 1,600 tokens (about 1.2 megapixels) also applies, and the smaller of the two sets the size of larger photos. OpenAI models use **OpenRouter Image Detail Level** and **OpenRouter Reasoning Effort** (both default to `low`). The image detail level is sent to every model, and Gemini models also change how many tokens they use with it, while Qwen, GLM and Grok models ignored it in testing. The reasoning effort is only sent to OpenAI reasoning models, and other models use their own defaults.
+
+**Hugging Face** also always sends images as base64, and has no image detail or reasoning setting of its own, see [AI providers](providers.md#hugging-face).
 
 For more information, refer to the [OpenAI](https://platform.openai.com/docs/guides/images) and [Anthropic](https://docs.anthropic.com/en/docs/build-with-claude/vision) documentation.
 
 ## 🔐 Permissions
 
-Bulk generation is gated by the **AI Alt Text Bulk Actions** utility permission, which Craft registers automatically for the plugin's utility. Grant it to the relevant user groups under **Settings → Users → (group or user) → Permissions → Utilities** after installing. Admins always have it. One checkbox covers viewing the utility and running its "Generate all" / "Generate missing" actions.
+Bulk generation is gated by the **AI Alt Text** utility permission, which Craft registers automatically for the plugin's utility. Grant it to the relevant user groups under **Settings → Users → (group or user) → Permissions → Utilities** after installing. Admins always have it. One checkbox covers viewing the utility and running its "Generate all" / "Generate missing" actions.
 
 Generating for a single asset doesn't have its own permission - it's available to anyone who can save the asset in question (for assets uploaded by other users this requires the "Save assets uploaded by other users" volume permission, matching what they could edit manually). Automatic generation on upload or file replacement is controlled by the "Generate for new image assets" setting alone.
