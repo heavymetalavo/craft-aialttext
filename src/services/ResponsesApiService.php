@@ -9,6 +9,7 @@ use craft\helpers\{App, Json};
 use Exception;
 use GuzzleHttp\Exception\{GuzzleException, RequestException};
 use heavymetalavo\craftaialttext\AiAltText;
+use heavymetalavo\craftaialttext\errors\RateLimitException;
 use heavymetalavo\craftaialttext\models\api\{OpenAiRequest, OpenAiResponse};
 use heavymetalavo\craftaialttext\models\Settings;
 use yii\base\InvalidConfigException;
@@ -165,6 +166,16 @@ abstract class ResponsesApiService extends ApiService
                 // Get the response body and parse it
                 $responseBody = (string) $e->getResponse()->getBody();
                 $errorData = json_decode($responseBody, true);
+
+                // OpenAI also answers 429 when the account is out of credit (`insufficient_quota`), which waiting
+                // won't fix, so that fails straight away rather than being retried as a rate limit. OpenRouter passes
+                // the upstream provider's error on in `error.metadata.raw`, as a string.
+                $rawError = $errorData['error']['metadata']['raw'] ?? null;
+                $outOfCredit = in_array('insufficient_quota', [$errorData['error']['code'] ?? null, $errorData['error']['type'] ?? null], true)
+                    || (is_string($rawError) && str_contains($rawError, 'insufficient_quota'));
+                if ($e->getResponse()->getStatusCode() === 429 && !$outOfCredit) {
+                    $errorResponse->rateLimitedFor = RateLimitException::retryAfter($e->getResponse()) ?? 0;
+                }
 
                 // Extract just the error message from the response. Langdock reports some errors
                 // as a flat {"message": "..."} rather than an error object.
@@ -323,6 +334,10 @@ abstract class ResponsesApiService extends ApiService
             if ($errorDetails && isset($errorDetails['type']) && $errorDetails['type'] === 'invalid_request_error' && !$forceBase64 && !$isBase64) {
                 Craft::warning('Can access the asset URL, but the provider could not, forcing base64 fallback', __METHOD__);
                 return $this->generateAltText($asset, $siteId, true);
+            }
+
+            if ($response->rateLimitedFor !== null) {
+                throw new RateLimitException($response->getErrorMessage(), $response->rateLimitedFor ?: null);
             }
 
             throw new Exception($response->getErrorMessage());

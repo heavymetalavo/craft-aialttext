@@ -8,6 +8,7 @@ use craft\helpers\Json;
 use Exception;
 use GuzzleHttp\Exception\{GuzzleException, RequestException};
 use heavymetalavo\craftaialttext\AiAltText;
+use heavymetalavo\craftaialttext\errors\RateLimitException;
 use heavymetalavo\craftaialttext\models\api\{AnthropicRequest, AnthropicResponse};
 use heavymetalavo\craftaialttext\models\Settings;
 
@@ -205,6 +206,14 @@ abstract class MessagesApiService extends ApiService
             Craft::error($this->providerLabel . " API Error: " . trim($errorResponse), __METHOD__);
             
             $responseModel = (new AnthropicResponse())->setProviderLabel($this->providerLabel);
+
+            if ($e instanceof RequestException && $e->hasResponse() && $e->getResponse()->getStatusCode() === 429) {
+                // parseResponse() returns false for an error body, but still sets the error
+                $responseModel->parseResponse($errorResponse);
+                $message = $responseModel->hasError() ? $responseModel->getErrorMessage() : $errorResponse;
+                throw new RateLimitException($this->providerLabel . ' API rate limit: ' . $message, RateLimitException::retryAfter($e->getResponse()), $e);
+            }
+
             if ($responseModel->parseResponse($errorResponse) && $responseModel->hasError()) {
                 throw new Exception($this->providerLabel . " API request failed parsed response: " . $responseModel->getErrorMessage());
             }

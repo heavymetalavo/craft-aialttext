@@ -23,6 +23,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **Process SVGs** | Attempt to generate alt text for SVG files when they are uploaded or batch processed. |
 | **Save translated results for each site** | Follows the asset volume's **Alternative Text Translation Method**: sites that share alt text (all sites on Not translatable, or sites in the same site group or language) get one result between them, from one request, in the language of the site it's generated for. When on, every site gets alt text. When off, only the current site and the sites that share its alt text do. |
 | **Always send images as base64** | When off, the image's URL is sent first, then base64 if the provider can't download it. When on, base64 is always sent, preventing that failed first request. It can work well for local sites, or sites behind basic auth or a firewall. |
+| **Max rate limit retries** | How many times a queued job that hits the provider's rate limit is put back in the queue before it fails (default 5), see [Getting started](getting-started.md). Raise it for a large bulk run on an account with a daily limit. 0 turns retrying off. |
 
 ## 📁 Config file
 
