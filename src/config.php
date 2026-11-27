@@ -25,7 +25,7 @@
 
 return [
     '*' => [
-        // The AI provider to use: 'anthropic', 'openai', 'langdock', 'openrouter' or 'huggingface'. Only that provider's settings below are used.
+        // The AI provider to use: 'anthropic', 'openai', 'google', 'langdock', 'openrouter' or 'huggingface'. Only that provider's settings below are used.
         //'aiProvider' => '',
 
         // The Anthropic API key. Use an environment variable reference, e.g. '$ANTHROPIC_API_KEY'.
@@ -48,6 +48,12 @@ return [
 
         // The reasoning effort for OpenAI reasoning models: 'none', 'minimal', 'low', 'medium', 'high' or 'xhigh'. Which values work depends on the model.
         //'openAiReasoningEffort' => 'low',
+
+        // The Google API key, from Google AI Studio. Use an environment variable reference, e.g. '$GOOGLE_API_KEY'.
+        //'googleApiKey' => '',
+
+        // The Google model to use, as Google names it, e.g. 'gemini-3.5-flash-lite'.
+        //'googleModel' => 'gemini-3.5-flash-lite',
 
         // The Langdock API key. Use an environment variable reference, e.g. '$LANGDOCK_API_KEY'.
         //'langdockApiKey' => '',
@@ -119,6 +125,9 @@ return [
     //
     //    // OpenRouter
     //    'openRouterModel' => 'openai/gpt-6-luna',
+    //
+    //    // Google
+    //    'googleModel' => 'gemini-3.5-flash-lite',
     //
     //    // Anthropic
     //    'anthropicModel' => 'claude-haiku-5-5',

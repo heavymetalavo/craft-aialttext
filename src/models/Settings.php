@@ -23,11 +23,13 @@ use craft\models\Site;
  * @property bool $sendImagesAsBase64 Whether to send images to the AI provider as base64 instead of as URLs
  * @property int $maxRateLimitRetries How many times a queued job that hits a rate limit is retried before it fails
  * @property bool $saveTranslatedResultsToEachSite Whether to generate alt text for every site, not just the current site and the sites that share its alt text
- * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'langdock', 'openrouter' or 'huggingface')
+ * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'google', 'langdock', 'openrouter' or 'huggingface')
  * @property string $anthropicApiKey The Anthropic API key
  * @property string $anthropicModel The Anthropic Model
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
  * @property string $openAiReasoningEffort The reasoning effort level for OpenAI models
+ * @property string $googleApiKey The Google API key, from Google AI Studio
+ * @property string $googleModel The Google model to use, as Google names it
  * @property string $langdockApiKey The Langdock API key
  * @property string $langdockModelAuthor The author of the Langdock model, which picks its API ('anthropic' for models such as Claude or 'openai' for models such as GPT)
  * @property string $langdockModel The Langdock model to use
@@ -49,6 +51,11 @@ class Settings extends Model
      * @var string The default Anthropic image detail level, also used by Langdock's Anthropic API
      */
     public const DEFAULT_ANTHROPIC_IMAGE_DETAIL_LEVEL = 'low';
+
+    /**
+     * @var string The Google model used when the Google Model setting is left empty
+     */
+    public const DEFAULT_GOOGLE_MODEL = 'gemini-3.5-flash-lite';
 
     /**
      * @var string The plugin's current default prompt, which the settings page's Reset to default button fills the Prompt field with
@@ -106,6 +113,16 @@ class Settings extends Model
      * Options: none, minimal, low, medium, high, xhigh
      */
     public string $openAiReasoningEffort = 'low';
+
+    /**
+     * @var string The Google API key, from Google AI Studio
+     */
+    public string $googleApiKey = '';
+
+    /**
+     * @var string The Google model to use, as Google names it (e.g. `gemini-3.5-flash-lite`), must have vision capabilities
+     */
+    public string $googleModel = self::DEFAULT_GOOGLE_MODEL;
 
     /**
      * @var string The Langdock API key
@@ -246,7 +263,7 @@ class Settings extends Model
                 ['aiProvider'],
                 function($attribute) {
                     $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['openai', 'anthropic', 'langdock', 'openrouter', 'huggingface'], true)) {
+                    if (!in_array($val, ['openai', 'anthropic', 'google', 'langdock', 'openrouter', 'huggingface'], true)) {
                         $this->addError($attribute, 'Invalid AI Provider configured.');
                     }
                 }
@@ -287,6 +304,7 @@ class Settings extends Model
                     }
                 }
             ],
+            [['googleApiKey', 'googleModel'], 'string'],
             [['langdockApiKey', 'langdockModel'], 'string'],
             [['langdockModelAuthor'], 'validateOneOf', 'params' => ['allowed' => ['anthropic', 'openai'], 'message' => 'Invalid Langdock Model Author configured.']],
             ['langdockImageInputDetailLevel', 'string'],

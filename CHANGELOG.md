@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added Google as an AI provider, which calls Gemini models directly through Google's Interactions API with an API key from Google AI Studio, using the new **Google API Key** and **Google Model** settings. Requests ask Google not to store them, and images are sent as base64. Vertex AI isn't supported. See [AI providers](docs/providers.md#google).
 - Added a **Reset to default** button under the **Prompt** setting, which fills the field with the plugin's current default prompt, to edit or save.
 - Added a check of the **Prompt** setting's `{asset.…}` and `{site.…}` variables when the settings are saved, so a misspelt one, such as `{asset.filenmae}`, is reported on the settings page rather than failing every generation. A prompt set by an environment variable, or applied by a project config change, is still only checked when alt text is generated.
 - Added an **Always send images as base64** setting, off by default. Images are otherwise sent as URLs for the AI provider to download, then as base64 if that fails. Always sending base64 can be helpful in development environments, such as a local site, where the provider can't reach the asset URLs and each generation logs a failed download.

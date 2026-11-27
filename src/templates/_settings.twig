@@ -102,6 +102,7 @@
 {% set providerOptions = [
     { label: 'Anthropic', value: 'anthropic' },
     { label: 'OpenAI', value: 'openai' },
+    { label: 'Google', value: 'google' },
     { label: 'Langdock', value: 'langdock' },
     { label: 'OpenRouter', value: 'openrouter' },
     { label: 'Hugging Face', value: 'huggingface' }
@@ -253,6 +254,37 @@
         allowedEnvValues: null,
         value: settings.openAiReasoningEffort,
         errors: settings.getErrors('openAiReasoningEffort')
+    }) }}
+</div>
+
+
+<div id="provider-google" class="{{ 'google' in hiddenProviders ? 'hidden' }}">
+    <hr />
+
+    <h3>Google Settings</h3>
+
+    {{ forms.autosuggestField({
+        label: "Google API Key"|t("ai-alt-text"),
+        instructions: "An API key from [Google AI Studio](https://aistudio.google.com/apikey). Google Cloud's Vertex AI keys aren't supported."|t("ai-alt-text"),
+        id: "googleApiKey",
+        name: "googleApiKey",
+        warning: config.googleApiKey is defined ? configWarning('googleApiKey'),
+        placeholder: '$GOOGLE_API_KEY',
+        suggestEnvVars: true,
+        value: settings.googleApiKey,
+        errors: settings.getErrors("googleApiKey"),
+    }) }}
+
+    {{ forms.autosuggestField({
+        label: 'Google Model'|t('ai-alt-text'),
+        id: 'googleModel',
+        name: 'googleModel',
+        warning: config.googleModel is defined ? configWarning('googleModel'),
+        instructions: "The Gemini model to use, which must accept image input. [See available models list](https://ai.google.dev/gemini-api/docs/models). E.g., `gemini-3.5-flash-lite`."|t("ai-alt-text"),
+        value: settings.googleModel,
+        placeholder: 'gemini-3.5-flash-lite',
+        errors: settings.getErrors('googleModel'),
+        suggestEnvVars: true,
     }) }}
 </div>
 

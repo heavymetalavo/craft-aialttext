@@ -11,6 +11,23 @@ Setting up an API key for each provider, and choosing a model.
 3. Create a new API key and save it to an environment variable (`.env`).
 4. Ensure you have credits in your account under **Billing**.
 
+## Google
+
+Gemini models, called directly with an API key from Google AI Studio, through Google's [Interactions API](https://ai.google.dev/gemini-api/docs/interactions-overview).
+
+1. Visit [Google AI Studio](https://aistudio.google.com/apikey) and sign in with a Google account.
+2. Click **Create API key**, and choose a Google Cloud project for it (AI Studio can create one).
+3. Copy the key and save it to an environment variable (`.env`), for example `GOOGLE_API_KEY`, then set **Google API Key** to `$GOOGLE_API_KEY`.
+4. Set **Google Model** to a Gemini model's name that accepts images, e.g. `gemini-3.5-flash-lite`, which is the default. See [Google's models](https://ai.google.dev/gemini-api/docs/models).
+5. A free key is rate limited, and Google's terms say how it uses content sent on the free tier. For a production site, set up billing for the project in AI Studio.
+
+Worth knowing:
+
+- Every request asks Google not to store the request and its response (`store: false`). Google otherwise keeps them for 1 day on the free tier and 55 days on a paid one.
+- Images are always sent as base64, scaled so the long edge is at most 1024px. GIFs, which Gemini doesn't read, are sent as JPGs.
+- There is no image detail or reasoning setting, so each model uses its own thinking default.
+- Google Cloud's Vertex AI, which signs in with a service account rather than an API key, is not supported. Gemini models are also available through [OpenRouter](#openrouter), as `google/…`.
+
 ## Langdock
 
 1. In [Langdock](https://langdock.com/), click your account name (bottom left), then go to **Settings → Products → API**. On the **Workspace API keys** tab tick only **Completion API**, which covers both the OpenAI and Anthropic endpoints this plugin uses (see the [Completion API overview](https://docs.langdock.com/en/developer/completion-api/completion-overview)), then click **Create API key**. Creating a workspace key needs a workspace admin. The **Personal API keys** tab on the same page also works, see [Personal API keys](https://docs.langdock.com/en/using-langdock/account/personal-api-keys).
@@ -65,7 +82,7 @@ This provider uses Hugging Face's Chat Completions API, not its Responses API: t
 
 All vision models should work. In our tests these small models hit the sweet spot between quality and cost:
 - **Top pick:** `claude-haiku-5-5` (`anthropic/claude-haiku-5.5` on OpenRouter), on Anthropic, Langdock or OpenRouter. The most accurate in our tests, and the most consistent across languages.
-- **Runner-up:** `google/gemini-3.5-flash-lite`, on OpenRouter only. Nearly as accurate, faster and a little cheaper.
+- **Runner-up:** `gemini-3.5-flash-lite` (`google/gemini-3.5-flash-lite` on OpenRouter), on Google or OpenRouter. Nearly as accurate, faster and a little cheaper.
 - **Cheapest:** `gpt-6-luna`, on OpenAI or OpenRouter. Fine for most photos, but it got more details wrong on illustrations, logos and animations.
 
 See [Estimated cost per alt text](costs.md) to compare providers and models.
