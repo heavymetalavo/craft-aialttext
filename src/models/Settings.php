@@ -180,7 +180,7 @@ class Settings extends Model
      * 1 sends the first frame only. The settings page allows up to 20. `config/ai-alt-text.php` isn't validated, so it
      * can set more, up to the provider's limit on images in one request, e.g. 100 for Anthropic's 200k-context models
      */
-    public int $animationFrames = 1;
+    public int $animationFrames = 3;
 
     /**
      * @var bool Whether to send images as base64 instead of as URLs the AI provider has to download
