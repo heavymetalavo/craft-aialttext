@@ -116,14 +116,10 @@ return [
         // How many times a queued job that hits a provider's rate limit is retried before it fails. 0 turns retrying off.
         //'maxRateLimitRetries' => 5,
 
-        // Skip these in bulk generation and on upload or file replacement: volume UIDs, folders (one `volumeHandle/path`
-        // per line, including subfolders), and the UIDs of sections whose entries' assets are skipped.
+        // Skip these in bulk generation and on upload or file replacement: volume UIDs, and folders (a volume UID
+        // and a path in it, including subfolders).
         //'excludedVolumes' => [],
-        //'excludedFolders' => '',
-        //'excludedSections' => [],
-
-        // 'any': an asset related to one entry in an excluded section is skipped. 'all': only if every entry it's related to is.
-        //'excludedSectionsMatch' => 'any',
+        //'excludedFolders' => [['volumeUid' => '', 'path' => 'staff']],
     ],
 
     // Settings for one environment win over the ones above, e.g. a cheap model while developing. Uncomment the one for

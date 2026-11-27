@@ -5,9 +5,11 @@ use Craft;
 use craft\base\Utility;
 use craft\elements\Asset;
 use Exception;
+use heavymetalavo\craftaialttext\AiAltText;
+use heavymetalavo\craftaialttext\web\assets\utility\UtilityAsset;
 
 /**
- * AI Alt Text Bulk Actions Utility
+ * AI Alt Text Utility
  */
 class AiAltTextUtility extends Utility
 {
@@ -16,7 +18,7 @@ class AiAltTextUtility extends Utility
      */
     public static function displayName(): string
     {
-        return Craft::t('ai-alt-text', 'AI Alt Text Bulk Actions');
+        return Craft::t('ai-alt-text', 'AI Alt Text');
     }
 
     /**
@@ -40,11 +42,15 @@ class AiAltTextUtility extends Utility
      */
     public static function contentHtml(): string
     {
+        Craft::$app->getView()->registerAssetBundle(UtilityAsset::class);
+
         $currentSite = Craft::$app->getSites()->getCurrentSite();
         $sites = Craft::$app->getSites()->getAllSites();
         
+        $service = AiAltText::getInstance()->aiAltTextService;
         $totalAssetsWithAltTextForAllSites = 0;
         $totalAssetsWithoutAltTextForAllSites = 0;
+        $totalExcludedForAllSites = 0;
         $siteAltTextCounts = [];
         
         foreach ($sites as $site) {
@@ -52,32 +58,37 @@ class AiAltTextUtility extends Utility
                 'total' => 0,
                 'with' => 0,
                 'without' => 0,
+                'excluded' => 0,
                 'coverage' => null,
             ];
 
             try {
-                $totalImageAssets = Asset::find()
+                // Excluded assets are left out, as no alt text is generated for them
+                $totalImageAssets = $service->withoutExcluded(Asset::find()
                     ->kind(Asset::KIND_IMAGE)
-                    ->siteId($site->id)
+                    ->siteId($site->id))
                     ->count();
                 
-                $withAltCount = Asset::find()
+                $withAltCount = $service->withoutExcluded(Asset::find()
                     ->kind(Asset::KIND_IMAGE)
                     ->siteId($site->id)
-                    ->hasAlt(true)
+                    ->hasAlt(true))
                     ->count();
                 
                 $withoutAltCount = $totalImageAssets - $withAltCount;
+                $excludedCount = $service->countExcluded($site->id);
                 
                 $siteAltTextCounts[$site->id] = [
-                    'total' => $totalImageAssets,
+                    'total' => $totalImageAssets + $excludedCount,
                     'with' => $withAltCount,
                     'without' => $withoutAltCount,
+                    'excluded' => $excludedCount,
                     'coverage' => $totalImageAssets > 0 ? ($withAltCount / $totalImageAssets * 100) : null,
                 ];
                 
                 $totalAssetsWithAltTextForAllSites += $withAltCount;
                 $totalAssetsWithoutAltTextForAllSites += $withoutAltCount;
+                $totalExcludedForAllSites += $siteAltTextCounts[$site->id]['excluded'];
             } catch (Exception $e) {
                 Craft::error("Error counting assets for site {$site->name}: " . $e->getMessage(), __METHOD__);
             }
@@ -93,6 +104,7 @@ class AiAltTextUtility extends Utility
                 'coverageForAllSites' => $totalForAllSites > 0 ? ($totalAssetsWithAltTextForAllSites / $totalForAllSites * 100) : null,
                 'sites' => $sites,
                 'siteAltTextCounts' => $siteAltTextCounts,
+                'totalExcludedForAllSites' => $totalExcludedForAllSites,
             ]
         );
     }

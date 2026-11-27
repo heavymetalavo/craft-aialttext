@@ -51,6 +51,13 @@ class GenerateController extends Controller
         try {
             $service = AiAltText::getInstance()->aiAltTextService;
 
+            if (($reason = $service->exclusionReason($asset)) !== null) {
+                return $this->asJson([
+                    'success' => false,
+                    'message' => Craft::t('ai-alt-text', 'Nothing was generated: {reason}', ['reason' => $reason]),
+                ]);
+            }
+
             if (!$service->createJob($asset, true)) {
                 return $this->asJson([
                     'success' => false,

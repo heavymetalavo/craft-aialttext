@@ -41,9 +41,7 @@ use craft\models\Site;
  * @property string $openRouterImageInputDetailLevel The image detail level for OpenRouter's Responses API
  * @property string $openRouterReasoningEffort The reasoning effort level for OpenRouter's Responses API
  * @property string[] $excludedVolumes UIDs of the volumes whose assets bulk and automatic generation skip
- * @property string $excludedFolders Folders whose assets bulk and automatic generation skip, one `volumeHandle/path` per line
- * @property string[] $excludedSections UIDs of the sections whose entries' assets bulk and automatic generation skip
- * @property string $excludedSectionsMatch Whether one related entry in an excluded section is enough ('any') or every one must be ('all')
+ * @property array<int, array{volumeUid: string, path: string}> $excludedFolders Folders whose assets are skipped, each as a volume's UID and a path in it
  * @property string $huggingFaceApiKey The Hugging Face token
  * @property string $huggingFaceModel The Hugging Face model to use, as `org/model`
  * @property string $huggingFaceRouting Which inference provider runs the Hugging Face model: `fastest`, `cheapest`, an inference provider, or empty to let the router choose
@@ -228,22 +226,10 @@ class Settings extends Model
     public array $excludedVolumes = [];
 
     /**
-     * @var string Folders whose assets, including those in subfolders, are skipped by bulk and automatic generation,
-     * one per line as the volume handle and the folder's path, e.g. `images/icons`
+     * @var array<int, array{volumeUid: string, path: string}> Folders whose assets, including those in subfolders, are
+     * skipped by generation: a volume's UID and the folder's path in it, e.g. `staff`
      */
-    public string $excludedFolders = '';
-
-    /**
-     * @var string[] UIDs of the sections whose entries' related assets are skipped by bulk and automatic generation
-     */
-    public array $excludedSections = [];
-
-    /**
-     * @var string How an asset related to several entries is matched against the excluded sections
-     *
-     * Options: any (one entry in an excluded section is enough), all (every entry must be in one)
-     */
-    public string $excludedSectionsMatch = 'any';
+    public array $excludedFolders = [];
 
     /**
      * @var int How many frames of an animated GIF or WebP to send, evenly spaced from the first to the last
@@ -276,8 +262,8 @@ class Settings extends Model
             unset($values['langdockModelFamily']);
         }
 
-        // A checkbox select with nothing checked posts an empty string
-        foreach (['excludedVolumes', 'excludedSections'] as $key) {
+        // A checkbox select or table with nothing in it posts an empty string
+        foreach (['excludedVolumes', 'excludedFolders'] as $key) {
             if (is_array($values) && array_key_exists($key, $values) && !is_array($values[$key])) {
                 $values[$key] = array_filter([$values[$key]]);
             }
@@ -356,9 +342,8 @@ class Settings extends Model
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
-            [['excludedVolumes', 'excludedSections'], 'each', 'rule' => ['string']],
-            ['excludedFolders', 'string'],
-            [['excludedSectionsMatch'], 'validateOneOf', 'params' => ['allowed' => ['any', 'all'], 'message' => 'Invalid Excluded Sections match configured.']],
+            ['excludedVolumes', 'each', 'rule' => ['string']],
+            ['excludedFolders', 'validateExcludedFolders'],
             ['animationFrames', 'integer', 'min' => 1, 'max' => 20],
             ['sendImagesAsBase64', 'boolean'],
             ['maxRateLimitRetries', 'integer', 'min' => 0],
@@ -376,6 +361,26 @@ class Settings extends Model
      * and ApiService::resolvePrompt() still fails on it at generation time. An environment variable prompt isn't checked,
      * nor is a prompt applied from project config, so that runtime error stays as the safety net.
      */
+    /**
+     * Each excluded folder needs a volume that exists and a path inside it.
+     */
+    public function validateExcludedFolders(string $attribute): void
+    {
+        $volumeUids = array_map(fn($volume) => $volume->uid, Craft::$app->getVolumes()->getAllVolumes());
+
+        foreach ($this->$attribute as $row) {
+            $path = is_array($row) && is_string($row['path'] ?? null) ? trim($row['path'], "/ \t") : null;
+
+            if (!is_array($row) || !in_array($row['volumeUid'] ?? null, $volumeUids, true)) {
+                $this->addError($attribute, Craft::t('ai-alt-text', 'Choose an existing volume for every excluded folder.'));
+            } elseif ($path === null || $path === '') {
+                $this->addError($attribute, Craft::t('ai-alt-text', 'Enter a folder path for every excluded folder, or exclude the whole volume above.'));
+            } elseif (preg_match('~(^|/)\.\.?(/|$)~', $path)) {
+                $this->addError($attribute, Craft::t('ai-alt-text', 'Excluded folder paths are relative to the volume, without `.` or `..` parts.'));
+            }
+        }
+    }
+
     public function validatePromptVariables(string $attribute): void
     {
         if (App::parseEnv($this->$attribute) !== $this->$attribute) {

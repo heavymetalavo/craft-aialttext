@@ -3,8 +3,10 @@
 namespace heavymetalavo\craftaialttext\services;
 
 use Craft;
-use craft\base\{Component, Field, NestedElementInterface};
-use craft\elements\{Asset, Entry};
+use craft\base\{Component, Field};
+use craft\db\{Query, Table};
+use craft\elements\Asset;
+use craft\elements\db\AssetQuery;
 use craft\enums\MenuItemType;
 use craft\events\DefineMenuItemsEvent;
 use craft\helpers\{App, ArrayHelper};
@@ -24,12 +26,6 @@ use yii\base\InvalidConfigException;
 class AiAltTextService extends Component
 {
     /**
-     * @var array<int, array<int, string|null>> The sections of the entries each asset is related to, by asset ID,
-     * so a bulk run doesn't repeat the query for each of an asset's sites (see exclusionReason())
-     */
-    private array $sectionUidsByAsset = [];
-
-    /**
      * Generates or queues alt text for an asset, once for each group of sites that share it (see
      * sitesSharingAltText()): the current site's group straight away or as a queued job, and, when
      * Save translated results for each site is on, a queued job for each other group.
@@ -40,11 +36,17 @@ class AiAltTextService extends Component
      * @param bool $skipExistingJobCheck Whether to skip the check for existing jobs (useful for bulk operations)
      * @param bool $skipSaveTranslatedResultsToEachSiteSetting Whether to only do the current site's group, whatever the setting
      * @param array|null $existingJobs Queue job info to check against, so bulk callers can fetch it once instead of per asset
-     * @return bool Whether anything was generated or queued, false if the asset was skipped
+     * @return bool Whether anything was generated or queued, false if the asset was skipped, e.g. because it's excluded
      * @throws Exception
      */
     public function createJob(Asset $asset, $saveCurrentSiteOffQueue = false, $currentSiteId = null, $skipExistingJobCheck = false, $skipSaveTranslatedResultsToEachSiteSetting = false, ?array $existingJobs = null): bool
     {
+        // Whatever started this, an excluded asset gets no alt text
+        if (($reason = $this->exclusionReason($asset)) !== null) {
+            Craft::info("Not generating alt text for {$asset->filename} (ID: {$asset->id}): $reason", __METHOD__);
+            return false;
+        }
+
         $queue = Craft::$app->getQueue();
 
         $assetSiteId = (int)($currentSiteId ?? $asset->siteId);
@@ -194,14 +196,67 @@ class AiAltTextService extends Component
     }
 
     /**
-     * Why bulk and automatic generation skip an asset under the Excluded assets settings, or null if they don't.
-     * Generating for chosen assets on request isn't affected.
+     * Leaves the assets in excluded volumes and folders out of an asset query, in SQL, so coverage figures can count
+     * what generation can reach. The same rules as exclusionReason().
+     */
+    public function withoutExcluded(AssetQuery $query): AssetQuery
+    {
+        $settings = AiAltText::getInstance()->getSettings();
+        $volumes = Craft::$app->getVolumes();
+
+        $volumeIds = [];
+        foreach ($settings->excludedVolumes as $uid) {
+            if ($volume = $volumes->getVolumeByUid($uid)) {
+                $volumeIds[] = $volume->id;
+            }
+        }
+
+        if ($volumeIds) {
+            $query->andWhere(['not in', 'assets.volumeId', $volumeIds]);
+        }
+
+        foreach ($settings->excludedFolders as $row) {
+            $folder = trim($row['path'] ?? '', "/ \t");
+            $volume = $volumes->getVolumeByUid($row['volumeUid'] ?? '');
+
+            if ($folder === '' || !$volume) {
+                continue;
+            }
+
+            // Folder paths are stored with a trailing slash, e.g. `staff/` and `staff/sub/`
+            $query->andWhere(['not in', 'assets.folderId', (new Query())
+                ->select('id')
+                ->from(Table::VOLUMEFOLDERS)
+                ->where(['volumeId' => $volume->id])
+                ->andWhere(['or', ['path' => "$folder/"], ['like', 'path', addcslashes($folder, '%_\\') . '/%', false]])]);
+        }
+
+        return $query;
+    }
+
+    /**
+     * How many image assets on a site the Excluded volumes and Excluded folders settings leave out of the coverage
+     * figures.
+     */
+    public function countExcluded(int $siteId): int
+    {
+        $settings = AiAltText::getInstance()->getSettings();
+
+        if (empty($settings->excludedVolumes) && empty($settings->excludedFolders)) {
+            return 0;
+        }
+
+        $all = Asset::find()->kind(Asset::KIND_IMAGE)->siteId($siteId);
+
+        return $all->count() - $this->withoutExcluded(clone $all)->count();
+    }
+
+    /**
+     * Why no alt text is generated for an asset under the Excluded assets settings, or null if it isn't excluded.
+     * This covers every way of generating: bulk runs, upload and file replacement, and generating for chosen assets.
      *
      * - Its volume is an excluded volume.
-     * - Its folder is an excluded folder, or inside one. Folders are written `volumeHandle/path`, e.g. `images/icons`.
-     * - It's related to entries in the excluded sections: any of them, or, with the match set to `all`, every one.
-     *   An asset in a nested entry, such as one in a Matrix field, counts as related to the entry that owns it.
-     *   A newly uploaded asset isn't related to any entry yet, so this only applies once it's used.
+     * - Its folder is an excluded folder, or inside one. Each is a volume and a path in it, e.g. `staff`.
      *
      * @return string|null The reason, e.g. `its volume is excluded`
      */
@@ -216,61 +271,22 @@ class AiAltTextService extends Component
 
         // A broken folder ID means no folder exclusion, rather than an error that could fail an upload
         try {
-            // e.g. `images/icons/` for an asset in the icons folder of the images volume, and `images/` for its root
-            $path = $volume->handle . '/' . ltrim($asset->getFolder()->path ?? '', '/');
+            // e.g. `staff/sub` for an asset in the sub folder of the staff folder, and `` for the volume's root
+            $path = trim($asset->getFolder()->path ?? '', '/');
         } catch (InvalidConfigException) {
             $path = null;
         }
 
-        foreach (preg_split('/\R/', $settings->excludedFolders, -1, PREG_SPLIT_NO_EMPTY) as $folder) {
-            $folder = trim(trim($folder), '/') . '/';
-            if ($path !== null && $folder !== '/' && str_starts_with($path, $folder)) {
-                return "its folder ($folder) is excluded";
+        foreach ($settings->excludedFolders as $row) {
+            $folder = trim($row['path'] ?? '', "/ \t");
+            if ($path !== null && $folder !== '' && ($row['volumeUid'] ?? null) === $volume->uid
+                && ($path === $folder || str_starts_with($path, $folder . '/'))
+            ) {
+                return "its folder ($volume->handle/$folder) is excluded";
             }
-        }
-
-        // A new upload isn't related to any entry yet, so there's nothing to look up
-        if (empty($settings->excludedSections) || $asset->firstSave) {
-            return null;
-        }
-
-        $sectionUids = $this->relatedSectionUids($asset);
-
-        $excluded = array_intersect($sectionUids, $settings->excludedSections);
-
-        if ($settings->excludedSectionsMatch === 'all'
-            ? !empty($sectionUids) && count($excluded) === count($sectionUids)
-            : !empty($excluded)
-        ) {
-            return 'it is used in an excluded section';
         }
 
         return null;
-    }
-
-    /**
-     * The sections of the entries an asset is related to, on any site, by the entry that owns any nested ones.
-     * Remembered for the rest of the request, so a bulk run doesn't repeat the query for each of an asset's sites.
-     *
-     * @return array<int, string|null> The section UIDs, null for an entry nested in something other than an entry
-     */
-    private function relatedSectionUids(Asset $asset): array
-    {
-        if (isset($this->sectionUidsByAsset[$asset->id])) {
-            return $this->sectionUidsByAsset[$asset->id];
-        }
-
-        $sectionUids = [];
-        foreach (Entry::find()->relatedTo(['targetElement' => $asset->id])->site('*')->unique()->status(null)->all() as $entry) {
-            while ($entry instanceof NestedElementInterface && ($owner = $entry->getOwner()) !== null) {
-                $entry = $owner;
-            }
-
-            // An entry nested in something other than an entry, such as a global set, has no section
-            $sectionUids[] = $entry instanceof Entry ? $entry->getSection()?->uid : null;
-        }
-
-        return $this->sectionUidsByAsset[$asset->id] = $sectionUids;
     }
 
     /**

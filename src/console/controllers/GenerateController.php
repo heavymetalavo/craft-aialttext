@@ -117,6 +117,11 @@ class GenerateController extends Controller
             
             $service = AiAltText::getInstance()->aiAltTextService;
 
+            if (($reason = $service->exclusionReason($asset)) !== null) {
+                $this->failure("Nothing was generated: $reason");
+                return ExitCode::DATAERR;
+            }
+
             if (!$service->createJob($asset, true, $targetSiteId)) {
                 $this->failure("Nothing was generated: the asset is already queued, is not an image, or is an SVG while SVG processing is off or Craft's image driver can't read SVGs");
                 return ExitCode::DATAERR;
@@ -195,7 +200,7 @@ class GenerateController extends Controller
     public function actionStats(): int
     {
         $this->success("Asset Alt Text Statistics");
-        $this->note("Image assets only. Videos, PDFs and audio are excluded. Formats the provider can't yet process are still counted.");
+        $this->note("Image assets only. Videos, PDFs and audio aren't counted. Formats the provider can't yet process are still counted.");
         
         $sites = $this->siteId ? [Craft::$app->getSites()->getSiteById($this->siteId)] : Craft::$app->getSites()->getAllSites();
         
@@ -205,41 +210,49 @@ class GenerateController extends Controller
         }
         
         $totalAssets = 0;
+        $totalCounted = 0;
         $totalWithAlt = 0;
         $totalWithoutAlt = 0;
+        $totalExcluded = 0;
         $siteStats = [];
         
         foreach ($sites as $site) {
             // Count total image assets
-            $siteTotal = Asset::find()
+            // Excluded assets are left out, as no alt text is generated for them
+            $service = AiAltText::getInstance()->aiAltTextService;
+            $siteTotal = $service->withoutExcluded(Asset::find()
                 ->kind(Asset::KIND_IMAGE)
-                ->siteId($site->id)
+                ->siteId($site->id))
                 ->count();
 
             // Count assets with alt text. hasAlt() reads the per-site alt value (falling back to
             // the asset's own alt), so these counts match the utility's; a raw `alt` condition
             // would hit the site-agnostic assets.alt column and report the same figure per site.
-            $siteWithAlt = Asset::find()
+            $siteWithAlt = $service->withoutExcluded(Asset::find()
                 ->kind(Asset::KIND_IMAGE)
                 ->siteId($site->id)
-                ->hasAlt(true)
+                ->hasAlt(true))
                 ->count();
             
             $siteWithoutAlt = $siteTotal - $siteWithAlt;
+            $siteExcluded = $service->countExcluded($site->id);
             
             // Collected rather than printed here so the all-sites row can lead the table, as it
             // does in the utility
             $siteStats[] = [
                 'name' => $site->name,
-                'total' => $siteTotal,
+                'total' => $siteTotal + $siteExcluded,
                 'with' => $siteWithAlt,
                 'without' => $siteWithoutAlt,
+                'excluded' => $siteExcluded,
                 'coverage' => $siteTotal > 0 ? ($siteWithAlt / $siteTotal * 100) : 0,
             ];
             
-            $totalAssets += $siteTotal;
+            $totalAssets += $siteTotal + $siteExcluded;
+            $totalCounted += $siteTotal;
             $totalWithAlt += $siteWithAlt;
             $totalWithoutAlt += $siteWithoutAlt;
+            $totalExcluded += $siteExcluded;
         }
         
         $headers = [
@@ -247,6 +260,7 @@ class GenerateController extends Controller
             'total' => ['Image assets', 'align' => 'right'],
             'with' => ['With alt', 'align' => 'right'],
             'missing' => ['Missing', 'align' => 'right'],
+            'excluded' => ['Excluded', 'align' => 'right'],
             'coverage' => ['Coverage', 'align' => 'right'],
         ];
 
@@ -254,12 +268,13 @@ class GenerateController extends Controller
 
         // All-sites row leads the table, mirroring the utility
         if (count($sites) > 1) {
-            $totalCoverage = $totalAssets > 0 ? ($totalWithAlt / $totalAssets * 100) : 0;
+            $totalCoverage = $totalCounted > 0 ? ($totalWithAlt / $totalCounted * 100) : 0;
             $rows[] = [
                 'site' => $this->ansiFormat('All sites', BaseConsole::BOLD),
                 'total' => [(string)$totalAssets, 'align' => 'right'],
                 'with' => [(string)$totalWithAlt, 'align' => 'right'],
                 'missing' => [(string)$totalWithoutAlt, 'align' => 'right'],
+                'excluded' => [(string)$totalExcluded, 'align' => 'right'],
                 'coverage' => [$this->coverageCell($totalCoverage), 'align' => 'right'],
             ];
         }
@@ -270,6 +285,7 @@ class GenerateController extends Controller
                 'total' => [(string)$stats['total'], 'align' => 'right'],
                 'with' => [(string)$stats['with'], 'align' => 'right'],
                 'missing' => [(string)$stats['without'], 'align' => 'right'],
+                'excluded' => [(string)$stats['excluded'], 'align' => 'right'],
                 'coverage' => [$this->coverageCell($stats['coverage']), 'align' => 'right'],
             ];
         }
@@ -279,7 +295,7 @@ class GenerateController extends Controller
         // Provide recommendations
         if ($totalWithoutAlt > 0) {
             $this->tip("Run 'ai-alt-text/generate/missing' to generate alt text for {$totalWithoutAlt} assets without alt text");
-        } else {
+        } elseif ($totalCounted > 0) {
             $this->success("All assets have alt text! 🎉");
         }
         
