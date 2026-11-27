@@ -23,7 +23,7 @@ use craft\models\Site;
  * @property bool $sendImagesAsBase64 Whether to send images to the AI provider as base64 instead of as URLs
  * @property int $maxRateLimitRetries How many times a queued job that hits a rate limit is retried before it fails
  * @property bool $saveTranslatedResultsToEachSite Whether to generate alt text for every site, not just the current site and the sites that share its alt text
- * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'google', 'langdock' or 'openrouter')
+ * @property string $aiProvider The API provider to use ('anthropic', 'openai', 'google', 'langdock', 'openrouter' or 'huggingface')
  * @property string $anthropicApiKey The Anthropic API key
  * @property string $anthropicModel The Anthropic Model
  * @property string $anthropicImageDetailLevel The Anthropic Image Detail Level ('low', 'medium', 'high')
@@ -37,8 +37,12 @@ use craft\models\Site;
  * @property string $langdockReasoningEffort The reasoning effort level for Langdock's OpenAI API
  * @property string $openRouterApiKey The OpenRouter API key
  * @property string $openRouterModel The OpenRouter model to use, as named by OpenRouter
+ * @property string $openRouterRouting How OpenRouter picks the provider that runs the model ('fastest', 'cheapest', or empty for its default)
  * @property string $openRouterImageInputDetailLevel The image detail level for OpenRouter's Responses API
  * @property string $openRouterReasoningEffort The reasoning effort level for OpenRouter's Responses API
+ * @property string $huggingFaceApiKey The Hugging Face token
+ * @property string $huggingFaceModel The Hugging Face model to use, as `org/model`
+ * @property string $huggingFaceRouting Which inference provider runs the Hugging Face model: `fastest`, `cheapest`, an inference provider, or empty to let the router choose
  * @property int $animationFrames How many frames of an animated GIF or WebP to send (1 to 20, or more from a config file)
  */
 class Settings extends Model
@@ -163,6 +167,12 @@ class Settings extends Model
     public string $openRouterModel = '';
 
     /**
+     * @var string How OpenRouter picks the provider that runs the model: `fastest` (the `:nitro` suffix, highest
+     * throughput), `cheapest` (the `:floor` suffix, lowest price) or empty for OpenRouter's default routing
+     */
+    public string $openRouterRouting = '';
+
+    /**
      * @var string The image detail level for OpenRouter's Responses API
      *
      * Options: low, high, auto, original
@@ -175,6 +185,23 @@ class Settings extends Model
      * Options: none, minimal, low, medium, high, xhigh
      */
     public string $openRouterReasoningEffort = 'low';
+
+    /**
+     * @var string The Hugging Face token, which needs the "Make calls to Inference Providers" permission
+     */
+    public string $huggingFaceApiKey = '';
+
+    /**
+     * @var string The Hugging Face model to use, as `org/model` (e.g. `deepseek-ai/DeepSeek-V4.1-Flash-1017`), must have
+     * vision capabilities
+     */
+    public string $huggingFaceModel = '';
+
+    /**
+     * @var string Which inference provider runs the Hugging Face model: `fastest`, `cheapest` or an inference provider
+     * such as `deepinfra`, which is added to the model as a `:` suffix. Empty lets Hugging Face's router choose.
+     */
+    public string $huggingFaceRouting = '';
 
     /**
      * @var bool Whether to save the translated result to each Site's Asset's translatable alt text field
@@ -236,7 +263,7 @@ class Settings extends Model
                 ['aiProvider'],
                 function($attribute) {
                     $val = App::parseEnv($this->$attribute);
-                    if (!in_array($val, ['openai', 'anthropic', 'google', 'langdock', 'openrouter'], true)) {
+                    if (!in_array($val, ['openai', 'anthropic', 'google', 'langdock', 'openrouter', 'huggingface'], true)) {
                         $this->addError($attribute, 'Invalid AI Provider configured.');
                     }
                 }
@@ -285,10 +312,13 @@ class Settings extends Model
             ['langdockReasoningEffort', 'string'],
             [['langdockReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid Langdock Reasoning Effort configured.']],
             [['openRouterApiKey', 'openRouterModel'], 'string'],
+            ['openRouterRouting', 'string'],
+            [['openRouterRouting'], 'validateOneOf', 'params' => ['allowed' => ['fastest', 'cheapest', ''], 'message' => 'Invalid OpenRouter Routing configured.']],
             ['openRouterImageInputDetailLevel', 'string'],
             [['openRouterImageInputDetailLevel'], 'validateOneOf', 'params' => ['allowed' => ['low', 'high', 'auto', 'original', ''], 'message' => 'Invalid OpenRouter Image Input Detail Level configured.']],
             ['openRouterReasoningEffort', 'string'],
             [['openRouterReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid OpenRouter Reasoning Effort configured.']],
+            [['huggingFaceApiKey', 'huggingFaceModel', 'huggingFaceRouting'], 'string'],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],

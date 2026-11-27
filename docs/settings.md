@@ -8,12 +8,14 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 | Setting | Description |
 |---------|-------------|
-| **AI Provider** | Choose between OpenAI, Anthropic, Google, Langdock or OpenRouter. |
-| **OpenAI/Anthropic/Google/Langdock/OpenRouter API Key** | Your provider's API key. |
-| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-5-5`). For Google, use its Gemini name, e.g. `gemini-3.5-flash-lite`. For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. |
+| **AI Provider** | Choose between OpenAI, Anthropic, Google, Langdock, OpenRouter or Hugging Face. |
+| **OpenAI/Anthropic/Google/Langdock/OpenRouter API Key, Hugging Face Token** | Your provider's API key. |
+| **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-5-5`). For Google, use its Gemini name, e.g. `gemini-3.5-flash-lite`. For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. For Hugging Face, use the model's id, e.g. `deepseek-ai/DeepSeek-V4.1-Flash-1017`. |
+| **Hugging Face Routing** | Hugging Face only. Which inference provider runs the model: **Default** (Hugging Face's router weighs price, speed and reliability, and tries another provider if one fails), **Fastest**, **Cheapest**, or one of the model's inference providers, e.g. `deepinfra`. Choosing a provider that doesn't serve the model fails. The dropdown lists the providers that serve the chosen model, cheapest first, with their price and speed. It's added to the model as a suffix, e.g. `:cheapest`. |
 | **Langdock Model Author** | Langdock only. `Anthropic` (models such as Claude) or `OpenAI` (models such as GPT). It must be the author of the model, and decides which of Langdock's compatible APIs requests are sent to. |
 | **Langdock Image Detail Level** | Langdock with the `OpenAI` model author only. Works like the OpenAI image detail level, `low`, `high` or `auto`. |
 | **Langdock Reasoning Effort** | Langdock with the `OpenAI` model author only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). |
+| **OpenRouter Routing** | OpenRouter only. How OpenRouter picks the provider that runs the model: **Default** (price, speed and reliability, with another provider tried if one fails), **Fastest** (`:nitro`, sorted by throughput, and can use priority endpoints that cost more) or **Cheapest** (`:floor`, sorted by price, and can use cheaper flex endpoints). A free model, e.g. `google/gemma-4-26b-a4b-it:free`, only has Default. |
 | **OpenRouter Image Detail Level** | OpenRouter only. Works like the OpenAI image detail level, `low`, `high`, `original` or `auto`. OpenAI and Gemini models use it, and in testing Qwen, GLM and Grok models ignored it. For Claude models it picks the size limit, as the Anthropic setting does. |
 | **OpenRouter Reasoning Effort** | OpenRouter only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). Only sent to OpenAI reasoning models. |
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |
@@ -94,6 +96,8 @@ Which values work depends on the model, as tested on 19 October 2026:
 **Langdock** with the `Anthropic` model author has no image detail setting: images are scaled to the `low` size (500px x 500px) and always sent as base64, since Langdock does not accept image URLs. With the `OpenAI` model author, **Langdock Image Detail Level** (`low`, `high` or `auto`) and **Langdock Reasoning Effort** work like the OpenAI settings above (both default to `low`).
 
 **OpenRouter** always sends images as base64. It scales them as OpenAI does, except for Claude models (`anthropic/…`), which are scaled as on the Anthropic API: the detail level picks the long-edge limit (500px at `low`, 1000px at `auto`, 1568px at `high` or `original`) as the Anthropic setting does, and a token budget of about 1,600 tokens (about 1.2 megapixels) also applies, and the smaller of the two sets the size of larger photos. OpenAI models use **OpenRouter Image Detail Level** and **OpenRouter Reasoning Effort** (both default to `low`). The image detail level is sent to every model, and Gemini models also change how many tokens they use with it, while Qwen, GLM and Grok models ignored it in testing. The reasoning effort is only sent to OpenAI reasoning models, and other models use their own defaults.
+
+**Hugging Face** also always sends images as base64, and has no image detail or reasoning setting of its own, see [AI providers](providers.md#hugging-face).
 
 For more information, refer to the [OpenAI](https://platform.openai.com/docs/guides/images) and [Anthropic](https://docs.anthropic.com/en/docs/build-with-claude/vision) documentation.
 

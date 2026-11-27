@@ -104,7 +104,8 @@
     { label: 'OpenAI', value: 'openai' },
     { label: 'Google', value: 'google' },
     { label: 'Langdock', value: 'langdock' },
-    { label: 'OpenRouter', value: 'openrouter' }
+    { label: 'OpenRouter', value: 'openrouter' },
+    { label: 'Hugging Face', value: 'huggingface' }
 ] %}
 {% set providerValues = providerOptions|map(o => o.value) %}
 
@@ -421,6 +422,26 @@
     }) }}
 
     {{ forms.selectizeField({
+        label: 'OpenRouter Routing'|t('ai-alt-text'),
+        id: 'openRouterRouting',
+        name: 'openRouterRouting',
+        warning: config.openRouterRouting is defined ? configWarning('openRouterRouting'),
+        instructions: "How OpenRouter picks the provider that runs the model. **Default** weighs price, speed and reliability, and tries another provider if one fails. **Fastest** sorts providers by throughput (the [`:nitro`](https://openrouter.ai/docs/guides/routing/model-variants) suffix) and **Cheapest** by price (`:floor`). Both can use provider endpoints billed at their own rate: a priority one for Fastest, which costs more, and a flex one for Cheapest. A free model, e.g. `…:free`, only has Default."|t("ai-alt-text"),
+        options: [
+            { label: 'Default'|t('ai-alt-text'), value: '', data: { hint: 'the best mix of price, speed and reliability'|t('ai-alt-text') } },
+            { label: 'Fastest'|t('ai-alt-text'), value: 'fastest', data: { hint: 'the highest throughput, may cost more'|t('ai-alt-text') } },
+            { label: 'Cheapest'|t('ai-alt-text'), value: 'cheapest', data: { hint: 'the lowest price'|t('ai-alt-text') } },
+        ],
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        selectizeOptions: {
+            allowEmptyOption: true,
+        },
+        value: settings.openRouterRouting,
+        errors: settings.getErrors('openRouterRouting'),
+    }) }}
+
+    {{ forms.selectizeField({
         label: 'OpenRouter Image Detail Level'|t('ai-alt-text'),
         id: 'openRouterImageInputDetailLevel',
         name: 'openRouterImageInputDetailLevel',
@@ -458,6 +479,288 @@
         errors: settings.getErrors('openRouterReasoningEffort')
     }) }}
 </div>
+
+
+<div id="provider-huggingface" class="{{ 'huggingface' in hiddenProviders ? 'hidden' }}">
+    <hr />
+
+    <h3>Hugging Face Settings</h3>
+
+    {{ forms.autosuggestField({
+        label: "Hugging Face Token"|t("ai-alt-text"),
+        instructions: "A [fine-grained token](https://huggingface.co/settings/tokens/new?ownUserPermissions=inference.serverless.write&tokenType=fineGrained) with the **Make calls to Inference Providers** permission. The account needs Inference Providers credit."|t("ai-alt-text"),
+        id: "huggingFaceApiKey",
+        name: "huggingFaceApiKey",
+        warning: config.huggingFaceApiKey is defined ? configWarning('huggingFaceApiKey'),
+        placeholder: '$HF_TOKEN',
+        suggestEnvVars: true,
+        value: settings.huggingFaceApiKey,
+        errors: settings.getErrors("huggingFaceApiKey"),
+    }) }}
+
+    {# As for OpenRouter's, the saved value is added if the list lacks it, e.g. a model typed in or set by an environment variable #}
+    {% set huggingFaceModelOptions = [{ value: '', label: ' ' }]|merge(
+        (huggingFaceModelSuggestions|first.data ?? [])|map(m => { value: m.name, label: m.name, data: { hint: m.hint } })
+    ) %}
+    {% set savedHuggingFaceModel = settings.huggingFaceModel %}
+    {% if savedHuggingFaceModel and savedHuggingFaceModel not in huggingFaceModelOptions|column('value') and savedHuggingFaceModel not in craft.cp.getEnvOptions()|column('value') %}
+        {% set huggingFaceModelOptions = huggingFaceModelOptions|push({ value: savedHuggingFaceModel, label: savedHuggingFaceModel }) %}
+    {% endif %}
+
+    {{ forms.selectizeField({
+        label: 'Hugging Face Model'|t('ai-alt-text'),
+        id: 'huggingFaceModel',
+        name: 'huggingFaceModel',
+        warning: config.huggingFaceModel is defined ? configWarning('huggingFaceModel'),
+        instructions: "The model's id on Hugging Face, e.g. `deepseek-ai/DeepSeek-V4.1-Flash-1017`. It must accept image input and give text. The dropdown lists every model Hugging Face's router serves that does, with the cheapest inference provider's price per million input tokens, or you can [browse them on Hugging Face](https://huggingface.co/models?pipeline_tag=image-text-to-text&inference_provider=all). You can type any model id. Choose which inference provider runs it with **Hugging Face Routing**."|t("ai-alt-text"),
+        options: huggingFaceModelOptions,
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        selectizeOptions: {
+            create: true,
+            createOnBlur: true,
+            allowEmptyOption: true,
+            placeholder: 'deepseek-ai/DeepSeek-V4.1-Flash-1017',
+        },
+        value: settings.huggingFaceModel,
+        errors: settings.getErrors('huggingFaceModel'),
+    }) }}
+
+    {# Each model's inference providers, for the routing options. The chosen model's are rendered here, and the script swaps them when the model changes #}
+    {% set huggingFaceProviders = {} %}
+    {% for m in huggingFaceModelSuggestions|first.data ?? [] %}
+        {% set huggingFaceProviders = huggingFaceProviders|merge({ (m.name): m.providers }) %}
+    {% endfor %}
+    {% set huggingFaceRoutingGroups = { automatic: 'Automatic'|t('ai-alt-text'), providers: 'Inference providers'|t('ai-alt-text') } %}
+    {% set huggingFaceProviderOptions = (huggingFaceProviders[settings.huggingFaceModel|split(':')|first] ?? [])|map(p => { value: p.name, label: p.name, data: { hint: p.hint } }) %}
+    {% set savedHuggingFaceRouting = settings.huggingFaceRouting %}
+    {% if savedHuggingFaceRouting and savedHuggingFaceRouting not in ['fastest', 'cheapest'] and savedHuggingFaceRouting not in huggingFaceProviderOptions|column('value') and savedHuggingFaceRouting not in craft.cp.getEnvOptions()|column('value') %}
+        {% set huggingFaceProviderOptions = huggingFaceProviderOptions|push({ value: savedHuggingFaceRouting, label: savedHuggingFaceRouting }) %}
+    {% endif %}
+    {# The empty hint on the group headings stops Craft adding one from a value they don't have, as it does to every option when environment variables are allowed #}
+    {% set huggingFaceRoutingOptions = [
+        { optgroup: huggingFaceRoutingGroups.automatic, data: { hint: '' } },
+        { value: '', label: 'Default'|t('ai-alt-text'), data: { hint: 'the best mix of price, speed and reliability'|t('ai-alt-text') } },
+        { value: 'fastest', label: 'Fastest'|t('ai-alt-text'), data: { hint: 'the highest throughput'|t('ai-alt-text') } },
+        { value: 'cheapest', label: 'Cheapest'|t('ai-alt-text'), data: { hint: 'the lowest price'|t('ai-alt-text') } },
+    ] %}
+    {% if huggingFaceProviderOptions %}
+        {% set huggingFaceRoutingOptions = huggingFaceRoutingOptions|merge([{ optgroup: huggingFaceRoutingGroups.providers, data: { hint: '' } }])|merge(huggingFaceProviderOptions) %}
+    {% endif %}
+
+    {{ forms.selectizeField({
+        label: 'Hugging Face Routing'|t('ai-alt-text'),
+        id: 'huggingFaceRouting',
+        name: 'huggingFaceRouting',
+        warning: config.huggingFaceRouting is defined ? configWarning('huggingFaceRouting'),
+        instructions: "Which inference provider runs the model. **Default** lets Hugging Face's router weigh price, speed and reliability, and try another provider if one fails. **Fastest** picks the highest throughput and **Cheapest** the lowest price, or choose an inference provider, which fails if it doesn't serve the model. The dropdown lists the providers that serve the chosen model, cheapest first, with their price per million input tokens and speed. It's added to the model as a suffix, e.g. `:cheapest`."|t("ai-alt-text"),
+        options: huggingFaceRoutingOptions,
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        selectizeOptions: {
+            allowEmptyOption: true,
+        },
+        value: settings.huggingFaceRouting,
+        errors: settings.getErrors('huggingFaceRouting'),
+    }) }}
+</div>
+
+{# The page only fetches the model suggestions for the saved provider, so fetch them when OpenRouter or Hugging Face is chosen #}
+{% js %}
+(() => {
+    const fields = {
+        openrouter: { id: {{ 'openRouterModel'|namespaceInputId|json_encode|raw }}, loaded: {{ (openRouterModelSuggestions is not empty)|json_encode|raw }} },
+        huggingface: { id: {{ 'huggingFaceModel'|namespaceInputId|json_encode|raw }}, loaded: {{ (huggingFaceModelSuggestions is not empty)|json_encode|raw }} },
+    };
+
+    const providers = Object.assign({}, {{ huggingFaceProviders|json_encode|raw }});
+    const model = $('#' + fields.huggingface.id);
+    const routing = $('#' + {{ 'huggingFaceRouting'|namespaceInputId|json_encode|raw }}).data('selectize');
+    const fixed = ['', 'fastest', 'cheapest'];
+    const groups = {{ huggingFaceRoutingGroups|json_encode|raw }};
+
+    // The routing options are the chosen model's inference providers, after the fixed ones and before any environment variables
+    const refreshRouting = () => {
+        const served = providers[(model.val() || '').split(':')[0]];
+        const isOwn = key => !fixed.includes(key) && !key.startsWith('$');
+        let current = routing.getValue();
+
+        Object.keys(routing.options).filter(isOwn).forEach(key => routing.removeOption(key, true));
+
+        // The providers' group is only rendered with the page if the saved model has some, and goes between the fixed options and the environment variables
+        const group = options => {
+            if (!routing.optgroups[groups.providers]) {
+                routing.addOptionGroup(groups.providers, { label: groups.providers, $order: routing.optgroups[groups.automatic].$order + 0.5 });
+            }
+
+            return { optgroup: groups.providers, ...options };
+        };
+
+        if (served) {
+            served.forEach((p, i) => routing.addOption(group({
+                value: p.name,
+                text: p.name,
+                hint: p.hint,
+                $order: routing.options.cheapest.$order + (i + 1) / (served.length + 1),
+            })));
+
+            // An inference provider that doesn't serve the new model would fail, so go back to the default
+            if (isOwn(current) && !served.some(p => p.name === current)) {
+                current = '';
+            }
+        } else if (isOwn(current)) {
+            // A model that isn't in the list, e.g. one typed in or set by an environment variable, may serve it
+            routing.addOption(group({ value: current, text: current }));
+        }
+
+        // Not setValue(), which doesn't select the empty option (Default)
+        routing.addItem(current, true);
+        routing.refreshOptions(false);
+    };
+
+    // Selectize doesn't keep an option with an empty value (Default) selected, which shows a blank field. It's left
+    // unselected when the page loads, and Craft clears a select when it's focused and only puts back the previous
+    // value if that isn't empty, so Default is lost when the select is left without choosing. Select it again.
+    const openRouterRouting = $('#' + {{ 'openRouterRouting'|namespaceInputId|json_encode|raw }}).data('selectize');
+
+    [routing, openRouterRouting].forEach(select => {
+        const keepDefault = () => {
+            if (!select.items.length) {
+                select.addItem('', true);
+            }
+        };
+        const onBlur = select.onBlur;
+
+        select.onBlur = function() {
+            const result = onBlur.apply(this, arguments);
+            keepDefault();
+
+            return result;
+        };
+
+        keepDefault();
+    });
+
+    // A free model has one price and no faster or cheaper provider to pick, so it only has Default
+    const openRouterModel = $('#' + fields.openrouter.id);
+    const sortedRouting = ['fastest', 'cheapest'].map(key => ({ ...openRouterRouting.options[key] }));
+
+    const refreshOpenRouterRouting = () => {
+        const isFree = /:free(:|$)/.test(openRouterModel.val() || '');
+        let current = openRouterRouting.getValue();
+
+        sortedRouting.forEach(option => {
+            openRouterRouting.removeOption(option.value, true);
+
+            if (!isFree) {
+                openRouterRouting.addOption({ ...option });
+            }
+        });
+
+        if (isFree && sortedRouting.some(option => option.value === current)) {
+            current = '';
+        }
+
+        // Not setValue(), which doesn't select the empty option (Default)
+        openRouterRouting.addItem(current, true);
+        openRouterRouting.refreshOptions(false);
+    };
+
+    refreshOpenRouterRouting();
+    openRouterModel.on('change', refreshOpenRouterRouting);
+    model.on('change', refreshRouting);
+
+    // Craft clears a single select when it's focused and puts the old value back when it's left, before the field's
+    // create-on-blur runs, so a model name typed or extended (e.g. with `:cheapest`) is lost unless Enter is pressed. Keep it.
+    Object.values(fields).forEach(({ id }) => {
+        const selectize = $('#' + id).data('selectize');
+        const onBlur = selectize.onBlur;
+
+        selectize.onBlur = function() {
+            if (selectize.$control_input.val().trim() !== '') {
+                selectize.createItem(null, false);
+            }
+
+            return onBlur.apply(this, arguments);
+        };
+
+        // Choosing an option hides a single select's text input (it stays focused but typing goes nowhere, and only the
+        // first character gets in), so a model name can't be extended until the field is clicked out of and into. Put it
+        // back as it is on clicking in, the name in the box, with the caret at the end so typing adds to it.
+        selectize.on('item_add', value => {
+            setTimeout(() => {
+                if (!selectize.isFocused || selectize.getValue() !== value) {
+                    return;
+                }
+
+                selectize.clear(true);
+                selectize.setTextboxValue(value);
+                selectize.$control_input[0].setSelectionRange(value.length, value.length);
+            }, 0);
+        });
+    });
+
+    // Craft clears a single select when it's focused and puts the old value back when it's left, but its Cmd+S shortcut
+    // saves without leaving it, so the select being edited was saved empty. Settle it as leaving it would: keep a model
+    // name that was typed or extended, otherwise put the previous value back.
+    const settleFocusedSelects = () => {
+        model.closest('form').find('select').each(function() {
+            const select = $(this).data('selectize');
+
+            if (!select || !select.isFocused) {
+                return;
+            }
+
+            if (select.settings.create && select.$control_input.val().trim() !== '') {
+                select.createItem(null, false);
+            } else if (!select.items.length) {
+                select.addItem([].concat(select.lastValidValue ?? [])[0] ?? '', true);
+            }
+        });
+    };
+
+    window.addEventListener('keydown', event => {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+            settleFocusedSelects();
+        }
+    }, true);
+    model.closest('form')[0].addEventListener('submit', settleFocusedSelects, true);
+
+    $('#' + {{ 'aiProvider'|namespaceInputId|json_encode|raw }}).on('change', function() {
+        const provider = this.value;
+        const field = fields[provider];
+
+        if (!field || field.loaded) {
+            return;
+        }
+
+        field.loaded = true;
+
+        Craft.sendActionRequest('GET', 'ai-alt-text/settings/model-suggestions', { params: { provider } })
+            .then(({ data }) => {
+                const selectize = $('#' + field.id).data('selectize');
+                const start = selectize.options['']?.$order ?? 0;
+
+                // Ordered between the blank option and the environment variables, as when the page renders them
+                data.models.forEach((model, i) => selectize.addOption({
+                    value: model.name,
+                    text: model.name,
+                    hint: model.hint,
+                    $order: start + (i + 1) / (data.models.length + 1),
+                }));
+                selectize.refreshOptions(false);
+
+                if (provider === 'huggingface') {
+                    data.models.forEach(m => providers[m.name] = m.providers);
+                    refreshRouting();
+                }
+            })
+            .catch(() => {
+                field.loaded = false;
+            });
+    });
+})();
+{% endjs %}
 
 
 <hr />

@@ -25,7 +25,7 @@
 
 return [
     '*' => [
-        // The AI provider to use: 'anthropic', 'openai', 'google', 'langdock' or 'openrouter'. Only that provider's settings below are used.
+        // The AI provider to use: 'anthropic', 'openai', 'google', 'langdock', 'openrouter' or 'huggingface'. Only that provider's settings below are used.
         //'aiProvider' => '',
 
         // The Anthropic API key. Use an environment variable reference, e.g. '$ANTHROPIC_API_KEY'.
@@ -76,11 +76,23 @@ return [
         // The OpenRouter model to use, as OpenRouter names it, e.g. 'anthropic/claude-haiku-5.5'.
         //'openRouterModel' => '',
 
+        // How OpenRouter picks the provider that runs the model: '' (its default), 'fastest' (:nitro) or 'cheapest' (:floor).
+        //'openRouterRouting' => '',
+
         // The OpenRouter image detail level: 'low', 'high', 'auto' or 'original'.
         //'openRouterImageInputDetailLevel' => 'low',
 
         // The reasoning effort for OpenRouter: 'none', 'minimal', 'low', 'medium', 'high' or 'xhigh'.
         //'openRouterReasoningEffort' => 'low',
+
+        // The Hugging Face token. Use an environment variable reference, e.g. '$HF_TOKEN'.
+        //'huggingFaceApiKey' => '',
+
+        // The Hugging Face model id, e.g. 'deepseek-ai/DeepSeek-V4.1-Flash-1017'.
+        //'huggingFaceModel' => '',
+
+        // Which inference provider runs the Hugging Face model: '' (Hugging Face chooses), 'fastest', 'cheapest', or a provider such as 'deepinfra'.
+        //'huggingFaceRouting' => '',
 
         // The prompt sent to the provider, which can use `{asset.…}` and `{site.…}` variables.
         //'prompt' => \heavymetalavo\craftaialttext\models\Settings::DEFAULT_PROMPT,

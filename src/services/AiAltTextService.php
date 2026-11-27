@@ -304,22 +304,31 @@ class AiAltTextService extends Component
             return Craft::t('ai-alt-text', 'No AI provider is configured. Choose one in the AI Alt Text plugin settings.');
         }
 
-        if (!in_array($provider, ['openai', 'anthropic', 'google', 'langdock', 'openrouter'], true)) {
-            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Google, Langdock or OpenRouter in the AI Alt Text plugin settings.', ['provider' => $provider]);
+        if (!in_array($provider, ['openai', 'anthropic', 'google', 'langdock', 'openrouter', 'huggingface'], true)) {
+            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Google, Langdock, OpenRouter or Hugging Face in the AI Alt Text plugin settings.', ['provider' => $provider]);
         }
 
-        [$label, $apiKey] = match ($provider) {
-            'anthropic' => ['Anthropic', $settings->anthropicApiKey],
-            'google' => ['Google', $settings->googleApiKey],
-            'langdock' => ['Langdock', $settings->langdockApiKey],
-            'openai' => ['OpenAI', $settings->openAiApiKey],
-            'openrouter' => ['OpenRouter', $settings->openRouterApiKey],
+        // An empty Google model uses the default one, see GoogleService, so it's never missing
+        [$label, $apiKey, $model] = match ($provider) {
+            'anthropic' => ['Anthropic', $settings->anthropicApiKey, $settings->anthropicModel],
+            'google' => ['Google', $settings->googleApiKey, \heavymetalavo\craftaialttext\models\Settings::DEFAULT_GOOGLE_MODEL],
+            'langdock' => ['Langdock', $settings->langdockApiKey, $settings->langdockModel],
+            'openai' => ['OpenAI', $settings->openAiApiKey, $settings->openAiModel],
+            'openrouter' => ['OpenRouter', $settings->openRouterApiKey, $settings->openRouterModel],
+            'huggingface' => ['Hugging Face', $settings->huggingFaceApiKey, $settings->huggingFaceModel],
         };
 
         $apiKey = App::parseEnv($apiKey);
 
         if ($apiKey === '' || $apiKey === null) {
             return Craft::t('ai-alt-text', 'No API key is configured for the {provider} provider. Add one in the AI Alt Text plugin settings.', ['provider' => $label]);
+        }
+
+        // Without this the request is built and refused, with an error that reads "Model cannot be blank"
+        $model = App::parseEnv($model);
+
+        if ($model === '' || $model === null) {
+            return Craft::t('ai-alt-text', 'No model is configured for the {provider} provider. Set one in the AI Alt Text plugin settings.', ['provider' => $label]);
         }
 
         if ($provider === 'langdock' && !in_array(App::parseEnv($settings->langdockModelAuthor), ['anthropic', 'openai'], true)) {
@@ -368,6 +377,7 @@ class AiAltTextService extends Component
             'langdock' => $settings->langdockModel,
             'openai' => $settings->openAiModel,
             'openrouter' => $settings->openRouterModel,
+            'huggingface' => $settings->huggingFaceModel,
             default => '',
         };
 
@@ -391,6 +401,7 @@ class AiAltTextService extends Component
                 : $plugin->langdockAnthropicService,
             'openai' => $plugin->openAiService,
             'openrouter' => $plugin->openRouterService,
+            'huggingface' => $plugin->huggingFaceService,
         };
     }
 
