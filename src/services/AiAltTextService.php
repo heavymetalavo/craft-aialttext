@@ -11,6 +11,7 @@ use craft\helpers\{App, ArrayHelper};
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
+use Imagick;
 use Throwable;
 use yii\base\InvalidConfigException;
 
@@ -394,15 +395,18 @@ class AiAltTextService extends Component
             return Craft::t('ai-alt-text', 'No AI provider is configured. Choose one in the AI Alt Text plugin settings.');
         }
 
-        if (!in_array($provider, ['openai', 'anthropic', 'langdock', 'openrouter'], true)) {
-            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Langdock or OpenRouter in the AI Alt Text plugin settings.', ['provider' => $provider]);
+        if (!in_array($provider, ['openai', 'anthropic', 'google', 'langdock', 'openrouter', 'huggingface'], true)) {
+            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Google, Langdock, OpenRouter or Hugging Face in the AI Alt Text plugin settings.', ['provider' => $provider]);
         }
 
-        [$label, $apiKey] = match ($provider) {
-            'anthropic' => ['Anthropic', $settings->anthropicApiKey],
-            'langdock' => ['Langdock', $settings->langdockApiKey],
-            'openai' => ['OpenAI', $settings->openAiApiKey],
-            'openrouter' => ['OpenRouter', $settings->openRouterApiKey],
+        // An empty Google model uses the default one, see GoogleService, so it's never missing
+        [$label, $apiKey, $model] = match ($provider) {
+            'anthropic' => ['Anthropic', $settings->anthropicApiKey, $settings->anthropicModel],
+            'google' => ['Google', $settings->googleApiKey, \heavymetalavo\craftaialttext\models\Settings::DEFAULT_GOOGLE_MODEL],
+            'langdock' => ['Langdock', $settings->langdockApiKey, $settings->langdockModel],
+            'openai' => ['OpenAI', $settings->openAiApiKey, $settings->openAiModel],
+            'openrouter' => ['OpenRouter', $settings->openRouterApiKey, $settings->openRouterModel],
+            'huggingface' => ['Hugging Face', $settings->huggingFaceApiKey, $settings->huggingFaceModel],
         };
 
         $apiKey = App::parseEnv($apiKey);
@@ -411,11 +415,64 @@ class AiAltTextService extends Component
             return Craft::t('ai-alt-text', 'No API key is configured for the {provider} provider. Add one in the AI Alt Text plugin settings.', ['provider' => $label]);
         }
 
+        // Without this the request is built and refused, with an error that reads "Model cannot be blank"
+        $model = App::parseEnv($model);
+
+        if ($model === '' || $model === null) {
+            return Craft::t('ai-alt-text', 'No model is configured for the {provider} provider. Set one in the AI Alt Text plugin settings.', ['provider' => $label]);
+        }
+
         if ($provider === 'langdock' && !in_array(App::parseEnv($settings->langdockModelAuthor), ['anthropic', 'openai'], true)) {
             return Craft::t('ai-alt-text', 'The Langdock Model Author must be Anthropic or OpenAI. Choose one in the AI Alt Text plugin settings.');
         }
 
         return null;
+    }
+
+    /**
+     * How many seconds jobs for the configured provider and model should wait before sending another request, because
+     * one of them hit its rate limit, see pauseForRateLimit(). 0 if they needn't.
+     */
+    public function rateLimitWait(): int
+    {
+        $until = Craft::$app->getCache()->get($this->rateLimitCacheKey());
+
+        return $until === false ? 0 : max(0, (int)$until - time());
+    }
+
+    /**
+     * Makes jobs for the configured provider and model wait before sending another request, so a bulk run doesn't keep
+     * hitting a rate limit and slows to the rate the account allows. Shared through Craft's cache, so it reaches every
+     * queue worker.
+     *
+     * An existing pause that would last longer is kept, so a later rate limit never shortens it.
+     *
+     * @param int $seconds How long to wait
+     */
+    public function pauseForRateLimit(int $seconds): void
+    {
+        $seconds = max($seconds, $this->rateLimitWait());
+        Craft::$app->getCache()->set($this->rateLimitCacheKey(), time() + $seconds, $seconds);
+    }
+
+    /**
+     * The cache key of a rate limit pause: one per provider and model, as limits apply per model on OpenRouter.
+     */
+    private function rateLimitCacheKey(): string
+    {
+        $settings = AiAltText::getInstance()->getSettings();
+        $provider = (string)App::parseEnv($settings->aiProvider);
+        $model = match ($provider) {
+            'anthropic' => $settings->anthropicModel,
+            'google' => $settings->googleModel,
+            'langdock' => $settings->langdockModel,
+            'openai' => $settings->openAiModel,
+            'openrouter' => $settings->openRouterModel,
+            'huggingface' => $settings->huggingFaceModel,
+            default => '',
+        };
+
+        return 'ai-alt-text:rate-limit-pause:' . md5($provider . ':' . App::parseEnv($model));
     }
 
     /**
@@ -429,11 +486,13 @@ class AiAltTextService extends Component
 
         return match (App::parseEnv($settings->aiProvider)) {
             'anthropic' => $plugin->anthropicService,
+            'google' => $plugin->googleService,
             'langdock' => App::parseEnv($settings->langdockModelAuthor) === 'openai'
                 ? $plugin->langdockOpenAiService
                 : $plugin->langdockAnthropicService,
             'openai' => $plugin->openAiService,
             'openrouter' => $plugin->openRouterService,
+            'huggingface' => $plugin->huggingFaceService,
         };
     }
 
@@ -510,12 +569,20 @@ class AiAltTextService extends Component
     }
 
     /**
-     * Whether SVGs get alt text: the Process SVGs setting is on and Craft uses the Imagick image driver, as GD
-     * can't read SVGs.
+     * Whether SVGs get alt text: the Process SVGs setting is on and Craft's image driver can read SVGs, see
+     * canReadSvgs().
      */
     public function canProcessSvgs(): bool
     {
-        return AiAltText::getInstance()->getSettings()->processSvgs && Craft::$app->getImages()->getIsImagick();
+        return AiAltText::getInstance()->getSettings()->processSvgs && $this->canReadSvgs();
+    }
+
+    /**
+     * Whether Craft's image driver can read SVGs: it's ImageMagick, and ImageMagick has an SVG coder.
+     */
+    public function canReadSvgs(): bool
+    {
+        return Craft::$app->getImages()->getIsImagick() && !empty(Imagick::queryFormats('SVG'));
     }
 
     /**

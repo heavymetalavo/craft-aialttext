@@ -41,6 +41,8 @@ These are estimates, put together by an AI assistant (Claude) that ran the plugi
 | `google/gemma-4-31b-it:free` | Free | – | Rate limited upstream by Google when tested, which fails the queue job. |
 | `google/gemma-4-26b-a4b-it:free` | Free | – | Smaller version of Gemma 4 31B. Also rate limited upstream by Google when tested. |
 
+Hugging Face isn't in the table, as its price depends on the inference provider that runs the model. The **Hugging Face Model** dropdown shows each model's lowest price per million input tokens, and **Hugging Face Routing** lists the providers that serve the chosen model with their prices and speed.
+
 ## ⚠️ Avoiding unexpected charges
 
 If you are concerned about unexpected charges we recommend:
@@ -51,5 +53,6 @@ If you are concerned about unexpected charges we recommend:
 - **Prefer Generate missing.** **Generate all** regenerates every asset, including ones that already have alt text.
 - **Count your sites.** The bulk actions and console commands cover every site unless you pick one, and with **Save translated results for each site** each site is a request of its own, so the cost multiplies by the number of sites.
 - **Mind automatic generation.** With **Generate for new image assets** on, every upload and file replacement is a request, so a large upload is a large batch.
+- **Lower Animation frames to 1 if you don't need the motion described.** Each animated GIF or WebP is sent as that many images, or as many frames as it has if fewer, so at the default of 3 it costs roughly 3 times as much as a still image, and at 1 about the same. Other images aren't affected.
 - **Keep the default `low` settings.** `low` image detail and reasoning effort keep token use down: on `gpt-6-luna`, a large photo used 350 input tokens at `low` and about 2,000 at `high`, which made each alt text about four times the cost, and `xhigh` reasoning effort about doubled it. Consider raising them if the results aren't good enough in testing.
-- **Check your usage regularly** on your provider's usage page. OpenRouter's *Activity* page shows the cost of each request.
+- **Check your usage regularly** on your provider's usage page. OpenRouter's *Activity* page shows the cost of each request, and Hugging Face's [Inference Providers settings](https://huggingface.co/settings/inference-providers) show your usage by model and provider.

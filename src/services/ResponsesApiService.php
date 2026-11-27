@@ -9,6 +9,7 @@ use craft\helpers\{App, Json};
 use Exception;
 use GuzzleHttp\Exception\{GuzzleException, RequestException};
 use heavymetalavo\craftaialttext\AiAltText;
+use heavymetalavo\craftaialttext\errors\RateLimitException;
 use heavymetalavo\craftaialttext\models\api\{OpenAiRequest, OpenAiResponse};
 use heavymetalavo\craftaialttext\models\Settings;
 use yii\base\InvalidConfigException;
@@ -166,6 +167,16 @@ abstract class ResponsesApiService extends ApiService
                 $responseBody = (string) $e->getResponse()->getBody();
                 $errorData = json_decode($responseBody, true);
 
+                // OpenAI also answers 429 when the account is out of credit (`insufficient_quota`), which waiting
+                // won't fix, so that fails straight away rather than being retried as a rate limit. OpenRouter passes
+                // the upstream provider's error on in `error.metadata.raw`, as a string.
+                $rawError = $errorData['error']['metadata']['raw'] ?? null;
+                $outOfCredit = in_array('insufficient_quota', [$errorData['error']['code'] ?? null, $errorData['error']['type'] ?? null], true)
+                    || (is_string($rawError) && str_contains($rawError, 'insufficient_quota'));
+                if ($e->getResponse()->getStatusCode() === 429 && !$outOfCredit) {
+                    $errorResponse->rateLimitedFor = RateLimitException::retryAfter($e->getResponse()) ?? 0;
+                }
+
                 // Extract just the error message from the response. Langdock reports some errors
                 // as a flat {"message": "..."} rather than an error object.
                 $apiErrorMessage = $errorData['error']['message'] ?? $errorData['message'] ?? null;
@@ -230,22 +241,22 @@ abstract class ResponsesApiService extends ApiService
 
         $transformParams = $this->visionTransformParams($asset);
 
-        // Checked before setTransform(), after which the asset reports the transform's MIME type instead of GIF or SVG
-        $isAnimatedGif = $this->isAnimatedGif($asset);
+        // Checked before setTransform(), after which the asset reports the transform's MIME type instead of GIF, WebP or SVG
+        $isAnimated = $this->isAnimated($asset);
         $isSvg = AiAltText::getInstance()->aiAltTextService->isSvg($asset);
         // Transparent images are flattened here, as models don't reliably see transparency, see getFlattenedBase64()
-        $flattenedBase64 = ($isAnimatedGif || $isSvg) ? null : $this->getFlattenedBase64($asset, $transformParams);
+        $flattenedBase64 = ($isAnimated || $isSvg) ? null : $this->getFlattenedBase64($asset, $transformParams);
 
         if (!empty($transformParams)) {
             $asset->setTransform($transformParams);
         }
 
-        // The MIME type of the image sent: a JPG for a filled image and a PNG for an SVG, as both are rendered here
+        // The MIME type of the image sent: a JPG for a filled image and a WebP or PNG for an SVG, as both are rendered here
         // (an SVG can't use getMimeType(), which stays image/svg+xml when Craft's transformSvgs is off). Anything
         // else uses getMimeType(): the transform's output format after setTransform(), or the original's without one
         $mimeType = match (true) {
             $flattenedBase64 !== null => 'image/jpeg',
-            $isSvg => 'image/png',
+            $isSvg => 'image/' . $this->convertedFormat(),
             default => $asset->getMimeType(),
         };
         
@@ -253,24 +264,28 @@ abstract class ResponsesApiService extends ApiService
             throw new Exception("Asset transform produced unsupported MIME type: $mimeType. Supported formats are: " . implode(', ', self::ACCEPTED_MIME_TYPES));
         }
         
-        // Make sure that we do not get a "generate transform" url, but a real url with true. Animated GIFs, SVGs and
-        // transparent images are rendered here and sent as base64, see getFirstFrameBase64(), getSvgBase64() and getFlattenedBase64()
-        $imageUrl = ($isAnimatedGif || $isSvg || $flattenedBase64 !== null) ? null : $asset->getUrl($transformParams, true);
+        // Make sure that we do not get a "generate transform" url, but a real url with true. Animated images, SVGs and
+        // transparent images are rendered here and sent as base64, see getFramesBase64(), getSvgBase64() and getFlattenedBase64()
+        $imageUrl = ($isAnimated || $isSvg || $flattenedBase64 !== null) ? null : $asset->getUrl($transformParams, true);
 
         // If we have a URL, resolve root-relative URLs to the site base; leave absolute URLs as-is
         if (!empty($imageUrl)) {
             $imageUrl = $this->resolveAssetUrl($asset, $imageUrl);
         }
 
+        $imageUrls = [$imageUrl];
+
         // If no public URL is available, or base64 is forced
-        if ($forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls) {
-            $base64Image = match (true) {
-                $flattenedBase64 !== null => $flattenedBase64,
-                $isAnimatedGif => $this->getFirstFrameBase64($asset, $transformParams),
-                $isSvg => $this->getSvgBase64($asset, $transformParams),
-                default => $this->getAssetBase64String($asset, $transformParams),
+        if ($forceBase64 || empty($imageUrl) || !$asset->getVolume()->getFs()->hasUrls || AiAltText::getInstance()->getSettings()->sendImagesAsBase64) {
+            $base64Images = match (true) {
+                $flattenedBase64 !== null => [$flattenedBase64],
+                $isAnimated => $this->getFramesBase64($asset, $transformParams),
+                $isSvg => [$this->getSvgBase64($asset, $transformParams)],
+                default => [$this->getAssetBase64String($asset, $transformParams)],
             };
-            $imageUrl = "data:$mimeType;base64,$base64Image"; // Replace URL with data string
+            // Replace URL with data strings
+            $imageUrls = array_map(fn(string $base64Image) => "data:$mimeType;base64,$base64Image", $base64Images);
+            $imageUrl = $imageUrls[0];
         }
 
         // Use the configured detail level for images over 512px on either side. Smaller images keep the request
@@ -291,8 +306,8 @@ abstract class ResponsesApiService extends ApiService
         $request = new OpenAiRequest();
         $request->model = $this->model;
         $request->setInstructions($prompt)
-            ->setPrompt($this->generateTrigger())
-            ->setImageUrl($imageUrl)
+            ->setPrompt($this->generateTrigger(count($imageUrls)))
+            ->setImageUrls($imageUrls)
             ->setReasoningEffort($this->reasoningEffort());
             
         // Only set detail if the image is large enough
@@ -323,6 +338,10 @@ abstract class ResponsesApiService extends ApiService
             if ($errorDetails && isset($errorDetails['type']) && $errorDetails['type'] === 'invalid_request_error' && !$forceBase64 && !$isBase64) {
                 Craft::warning('Can access the asset URL, but the provider could not, forcing base64 fallback', __METHOD__);
                 return $this->generateAltText($asset, $siteId, true);
+            }
+
+            if ($response->rateLimitedFor !== null) {
+                throw new RateLimitException($response->getErrorMessage(), $response->rateLimitedFor ?: null);
             }
 
             throw new Exception($response->getErrorMessage());

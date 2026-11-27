@@ -17,7 +17,7 @@ class AnthropicRequest extends Model
     private string $system = '';
     private string $prompt = '';
     private ?string $imageUrl = null;
-    private ?array $imageSource = null;
+    private array $imageSources = [];
 
     /**
      * Sets the system instructions for the request (task, output format, language, etc.), sent as
@@ -43,11 +43,12 @@ class AnthropicRequest extends Model
     }
 
     /**
-     * Sets the image source content for the request (e.g., base64 data and mime type)
+     * Sets the image sources for the request (e.g., base64 data and mime type), sent in order, e.g. the frames of an
+     * animated image. They're sent instead of the image URL.
      */
-    public function setImageSource(array $imageSource): self
+    public function setImageSources(array $imageSources): self
     {
-        $this->imageSource = $imageSource;
+        $this->imageSources = $imageSources;
         return $this;
     }
 
@@ -70,15 +71,15 @@ class AnthropicRequest extends Model
     {
         $content = [];
 
-        $source = $this->imageSource;
-        if (!$source && $this->imageUrl) {
-            $source = [
+        $sources = $this->imageSources;
+        if (!$sources && $this->imageUrl) {
+            $sources = [[
                 'type' => 'url',
                 'url' => $this->imageUrl,
-            ];
+            ]];
         }
 
-        if ($source) {
+        foreach ($sources as $source) {
             $content[] = [
                 'type' => 'image',
                 'source' => $source,
