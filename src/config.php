@@ -115,6 +115,11 @@ return [
 
         // How many times a queued job that hits a provider's rate limit is retried before it fails. 0 turns retrying off.
         //'maxRateLimitRetries' => 5,
+
+        // No alt text is generated for these, by any method: volume UIDs, and paths (a volume UID
+        // and a path in it: a folder and everything in it, or files such as `*.svg`, where `*` is a wildcard).
+        //'excludedVolumes' => [],
+        //'excludedPaths' => [['volumeUid' => '', 'path' => 'staff']],
     ],
 
     // Settings for one environment win over the ones above, e.g. a cheap model while developing. Uncomment the one for

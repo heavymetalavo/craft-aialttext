@@ -1,0 +1,162 @@
+/* AI Alt Text utility: the alt text bar. One segment per state (with alt text, missing, excluded), sized inline from
+   the counts. The numbers are in a tooltip, shown by utility.js when a segment is hovered or focused. */
+.aat-bar {
+  min-width: 160px;
+}
+
+.aat-bar-track {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+}
+
+.aat-seg {
+  flex: 0 1 auto;
+  min-width: 4px;
+  border-radius: 2px;
+}
+
+.aat-seg:first-child {
+  border-top-left-radius: 7px;
+  border-bottom-left-radius: 7px;
+}
+
+.aat-seg:last-child {
+  border-top-right-radius: 7px;
+  border-bottom-right-radius: 7px;
+}
+
+.aat-seg:hover,
+.aat-seg:focus-visible {
+  filter: brightness(0.9);
+}
+
+.aat-seg:focus-visible {
+  outline: 2px solid var(--blue-600, #2563eb);
+  outline-offset: 1px;
+}
+
+.aat-with {
+  background: var(--success-color, #0f766e);
+}
+
+.aat-missing {
+  background: var(--gray-300, #cbd5e1);
+}
+
+/* Striped, so excluded assets read as left out rather than as another amount of alt text */
+.aat-excluded {
+  background: repeating-linear-gradient(135deg, var(--gray-300, #cbd5e1) 0 2px, var(--gray-100, #f1f5f9) 2px 5px);
+}
+
+.aat-counts {
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+/* The tooltip's content sits in each segment, hidden, and utility.js shows it in .aat-tooltip */
+.aat-tip {
+  display: none;
+}
+
+.aat-tooltip {
+  --aat-slide: 6px;
+  --aat-scale: 0.94;
+  position: fixed;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  max-width: 280px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--gray-900, #1f2933);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  will-change: opacity, transform;
+  /* It grows out of the caret, so the segment it describes is where it appears from */
+  transform-origin: var(--aat-caret, 50%) 100%;
+  /* Hidden: faded out, nudged away from the segment and a little small, so it settles into place. It's laid out, so
+     it can be measured. */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(var(--aat-slide)) scale(var(--aat-scale));
+  transition: opacity 0.1s ease-in, transform 0.1s ease-in, visibility 0s 0.1s;
+}
+
+/* A caret points at the middle of the segment, wherever the tooltip had to move to stay on screen */
+.aat-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: var(--aat-caret, 50%);
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  background: inherit;
+  transform: rotate(45deg);
+}
+
+.aat-tooltip[data-placement='bottom']::after {
+  top: -4px;
+  bottom: auto;
+}
+
+/* Above the segment it rises into place, below it drops, growing from the top edge where the caret is */
+.aat-tooltip[data-placement='bottom'] {
+  --aat-slide: -6px;
+  transform-origin: var(--aat-caret, 50%) 0;
+}
+
+.aat-tooltip.aat-tooltip-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.16s ease-out, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s;
+}
+
+/* Moving to the next segment of a bar glides sideways. Its top isn't transitioned, as it only changes with the
+   tooltip's height, which the new text changes at once. */
+.aat-tooltip.aat-tooltip-visible.aat-tooltip-gliding {
+  transition: opacity 0.16s ease-out, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s, left 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.aat-tooltip.aat-tooltip-gliding::after {
+  transition: left 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.aat-tooltip.aat-tooltip-instant {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aat-tooltip,
+  .aat-tooltip.aat-tooltip-visible,
+  .aat-tooltip.aat-tooltip-visible.aat-tooltip-gliding {
+    --aat-slide: 0;
+    --aat-scale: 1;
+    transition: opacity 0.1s ease, visibility 0s;
+  }
+}
+
+.aat-tooltip code {
+  background: none;
+  color: inherit;
+}
+
+.aat-tip-note {
+  opacity: 0.75;
+}
+
+.aat-swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5);
+}

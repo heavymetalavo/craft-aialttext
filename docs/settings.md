@@ -27,6 +27,8 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **Save translated results for each site** | Follows the asset volume's **Alternative Text Translation Method**: sites that share alt text (all sites on Not translatable, or sites in the same site group or language) get one result between them, from one request, in the language of the site it's generated for. When on, every site gets alt text. When off, only the current site and the sites that share its alt text do. |
 | **Always send images as base64** | When off, the image's URL is sent first, then base64 if the provider can't download it. When on, base64 is always sent, preventing that failed first request. It can work well for local sites, or sites behind basic auth or a firewall. |
 | **Max rate limit retries** | How many times a queued job that hits the provider's rate limit is put back in the queue before it fails (default 5), see [Getting started](getting-started.md). Raise it for a large bulk run on an account with a daily limit. 0 turns retrying off. |
+| **Excluded volumes** | No alt text is generated for assets in these volumes by any method: bulk generation, upload or file replacement, the action menu, the asset's edit page or the console commands, e.g. for a volume of staff photos. |
+| **Excluded paths** | Like **Excluded volumes**, for a folder and everything in it, or for files. Each is a volume and a path in it relative to the volume, chosen in a table: `staff` covers the `staff` folder and its subfolders, and `*.svg` covers every SVG in the volume. `*` stands for any characters, including across folders, so `staff/*/headshots` covers `staff/amy/headshots` and the files in it. Paths aren't case-sensitive, and a path can't be only `*`: exclude the volume instead. Excluded assets aren't counted in the bulk actions utility's alt text coverage or by the `stats` console command, which say how many are left out. |
 
 ## 📁 Config file
 
@@ -103,6 +105,6 @@ For more information, refer to the [OpenAI](https://platform.openai.com/docs/gui
 
 ## 🔐 Permissions
 
-Bulk generation is gated by the **AI Alt Text Bulk Actions** utility permission, which Craft registers automatically for the plugin's utility. Grant it to the relevant user groups under **Settings → Users → (group or user) → Permissions → Utilities** after installing. Admins always have it. One checkbox covers viewing the utility and running its "Generate all" / "Generate missing" actions.
+Bulk generation is gated by the **AI Alt Text** utility permission, which Craft registers automatically for the plugin's utility. Grant it to the relevant user groups under **Settings → Users → (group or user) → Permissions → Utilities** after installing. Admins always have it. One checkbox covers viewing the utility and running its "Generate all" / "Generate missing" actions.
 
 Generating for a single asset doesn't have its own permission - it's available to anyone who can save the asset in question (for assets uploaded by other users this requires the "Save assets uploaded by other users" volume permission, matching what they could edit manually). Automatic generation on upload or file replacement is controlled by the "Generate for new image assets" setting alone.

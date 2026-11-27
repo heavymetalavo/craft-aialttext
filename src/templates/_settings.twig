@@ -865,5 +865,41 @@ document.getElementById({{ 'prompt-default'|namespaceInputId|json_encode|raw }})
 }) }}
 
 
+<hr />
+
+<h3>{{ 'Excluded assets'|t('ai-alt-text') }}</h3>
+
+<p>{{ "No alt text is generated for these assets by any method: bulk generation, upload or file replacement, the action menu, the asset's edit page or the console commands."|t('ai-alt-text')|markdown(inlineOnly=true) }}</p>
+
+{{ forms.checkboxSelectField({
+    label: 'Excluded volumes'|t('ai-alt-text'),
+    id: 'excludedVolumes',
+    name: 'excludedVolumes',
+    instructions: "Assets in these volumes are skipped, e.g. a volume of staff photos."|t('ai-alt-text'),
+    options: craft.app.volumes.allVolumes|map(v => { label: v.name, value: v.uid }),
+    warning: config.excludedVolumes is defined ? configWarning('excludedVolumes'),
+    values: settings.excludedVolumes,
+    errors: settings.getErrors('excludedVolumes'),
+}) }}
+
+{{ forms.editableTableField({
+    label: 'Excluded paths'|t('ai-alt-text'),
+    id: 'excludedPaths',
+    name: 'excludedPaths',
+    instructions: "Assets at these paths are skipped: a folder, with everything in it, or files. The path is relative to the volume, e.g. `staff` or `*.svg`. Use `*` for any characters, including across folders, e.g. `staff/*/headshots`."|t('ai-alt-text'),
+    warning: config.excludedPaths is defined ? configWarning('excludedPaths'),
+    cols: {
+        volumeUid: { heading: 'Volume'|t('ai-alt-text'), type: 'select', options: craft.app.volumes.allVolumes|map(v => { label: v.name, value: v.uid }) },
+        path: { heading: 'Path'|t('ai-alt-text'), type: 'singleline', placeholder: 'staff' },
+    },
+    rows: settings.excludedPaths,
+    allowAdd: true,
+    allowDelete: true,
+    addRowLabel: 'Add a path'|t('ai-alt-text'),
+    errors: settings.getErrors('excludedPaths'),
+}) }}
+
+
+
 
 

@@ -51,6 +51,12 @@ class GenerateAiAltText extends BaseJob
 
         $service = AiAltText::getInstance()->aiAltTextService;
 
+        // Excluded since the job was queued
+        if (($reason = $service->exclusionReason($asset)) !== null) {
+            Craft::info("Not generating alt text for {$asset->filename} (ID: {$asset->id}): $reason", __METHOD__);
+            return;
+        }
+
         // Another job hit the rate limit, so wait until it's lifted, without counting it as a retry
         if (($wait = $service->rateLimitWait()) > 0) {
             $this->requeue($wait, $this->rateLimitRetries);
