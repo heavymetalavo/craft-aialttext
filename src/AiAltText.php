@@ -6,8 +6,8 @@ use Craft;
 use craft\base\{Element, Plugin};
 use craft\elements\Asset;
 use craft\events\{ModelEvent, RegisterElementActionsEvent, DefineMenuItemsEvent, RegisterComponentTypesEvent, RegisterCpAlertsEvent, RegisterUrlRulesEvent, ReplaceAssetEvent};
-use craft\helpers\{Cp, Html, UrlHelper};
-use craft\services\{Assets, Utilities};
+use craft\helpers\{App, Cp, Html, UrlHelper};
+use craft\services\{Assets, ProjectConfig, Utilities};
 use craft\web\{View, UrlManager};
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
 use heavymetalavo\craftaialttext\models\Settings;
@@ -212,12 +212,59 @@ class AiAltText extends Plugin
     /**
      * @inheritdoc
      */
+    public function beforeSaveSettings(): bool
+    {
+        // The settings page shows config/ai-alt-text.php's values for the settings it sets, so the form posts them and
+        // Craft would save them to project config. A plain value, e.g. what App::env() returns, would then reach
+        // other environments, so keep what was saved instead, or the default if nothing was. An environment variable
+        // reference, e.g. '$AI_PROVIDER', is safe to save as it resolves per environment.
+        $settings = $this->getSettings();
+        $saved = Craft::$app->getProjectConfig()->get(ProjectConfig::PATH_PLUGINS . '.' . $this->handle . '.settings') ?? [];
+        $defaults = new Settings();
+
+        foreach ($this->configFileSettings() as $name => $value) {
+            if (is_string($value) && str_starts_with($value, '$')) {
+                continue;
+            }
+
+            if ($settings->hasProperty($name)) {
+                $settings->$name = $saved[$name] ?? $defaults->$name;
+            }
+        }
+
+        return parent::beforeSaveSettings();
+    }
+
+    /**
+     * The settings config/ai-alt-text.php sets, which win over the ones saved on the settings page.
+     */
+    private function configFileSettings(): array
+    {
+        $config = Craft::$app->getConfig()->getConfigFromFile($this->handle);
+
+        // The old name of the Langdock Model Author, still read, see Settings::setAttributes()
+        if (isset($config['langdockModelFamily'])) {
+            $config['langdockModelAuthor'] = $config['langdockModelFamily'];
+        }
+
+        return $config;
+    }
+
+    /**
+     * @inheritdoc
+     */
     protected function settingsHtml(): ?string
     {
         return Craft::$app->view->renderTemplate(
             'ai-alt-text/_settings',
             [
                 'settings' => $this->getSettings(),
+                // So their fields can say the file's values win
+                'config' => $this->configFileSettings(),
+                // Only fetched when OpenRouter is the saved provider, so other sites' settings pages don't call it
+                'openRouterModelSuggestions' => App::parseEnv($this->getSettings()->aiProvider) === 'openrouter'
+                    ? $this->openRouterService->visionModelSuggestions()
+                    : [],
             ]
         );
     }
