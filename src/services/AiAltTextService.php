@@ -11,6 +11,7 @@ use craft\helpers\{App, ArrayHelper};
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
 use heavymetalavo\craftaialttext\jobs\GenerateAiAltText as GenerateAiAltTextJob;
+use Imagick;
 use Throwable;
 
 /**
@@ -328,6 +329,50 @@ class AiAltTextService extends Component
     }
 
     /**
+     * How many seconds jobs for the configured provider and model should wait before sending another request, because
+     * one of them hit its rate limit, see pauseForRateLimit(). 0 if they needn't.
+     */
+    public function rateLimitWait(): int
+    {
+        $until = Craft::$app->getCache()->get($this->rateLimitCacheKey());
+
+        return $until === false ? 0 : max(0, (int)$until - time());
+    }
+
+    /**
+     * Makes jobs for the configured provider and model wait before sending another request, so a bulk run doesn't keep
+     * hitting a rate limit and slows to the rate the account allows. Shared through Craft's cache, so it reaches every
+     * queue worker.
+     *
+     * An existing pause that would last longer is kept, so a later rate limit never shortens it.
+     *
+     * @param int $seconds How long to wait
+     */
+    public function pauseForRateLimit(int $seconds): void
+    {
+        $seconds = max($seconds, $this->rateLimitWait());
+        Craft::$app->getCache()->set($this->rateLimitCacheKey(), time() + $seconds, $seconds);
+    }
+
+    /**
+     * The cache key of a rate limit pause: one per provider and model, as limits apply per model on OpenRouter.
+     */
+    private function rateLimitCacheKey(): string
+    {
+        $settings = AiAltText::getInstance()->getSettings();
+        $provider = (string)App::parseEnv($settings->aiProvider);
+        $model = match ($provider) {
+            'anthropic' => $settings->anthropicModel,
+            'langdock' => $settings->langdockModel,
+            'openai' => $settings->openAiModel,
+            'openrouter' => $settings->openRouterModel,
+            default => '',
+        };
+
+        return 'ai-alt-text:rate-limit-pause:' . md5($provider . ':' . App::parseEnv($model));
+    }
+
+    /**
      * Returns the service for the configured provider. Only call once getConfigurationError() is null.
      * An unrecognised provider throws an UnhandledMatchError rather than falling back to OpenAI.
      */
@@ -419,12 +464,20 @@ class AiAltTextService extends Component
     }
 
     /**
-     * Whether SVGs get alt text: the Process SVGs setting is on and Craft uses the Imagick image driver, as GD
-     * can't read SVGs.
+     * Whether SVGs get alt text: the Process SVGs setting is on and Craft's image driver can read SVGs, see
+     * canReadSvgs().
      */
     public function canProcessSvgs(): bool
     {
-        return AiAltText::getInstance()->getSettings()->processSvgs && Craft::$app->getImages()->getIsImagick();
+        return AiAltText::getInstance()->getSettings()->processSvgs && $this->canReadSvgs();
+    }
+
+    /**
+     * Whether Craft's image driver can read SVGs: it's ImageMagick, and ImageMagick has an SVG coder.
+     */
+    public function canReadSvgs(): bool
+    {
+        return Craft::$app->getImages()->getIsImagick() && !empty(Imagick::queryFormats('SVG'));
     }
 
     /**
