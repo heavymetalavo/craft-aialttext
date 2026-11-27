@@ -33,6 +33,17 @@ class GenerateAiAltTextForAssets extends BaseBatchedJob
     public bool $allSites = false;
 
     /**
+     * @var int|null Limits the run to this volume's assets, or all volumes when null.
+     */
+    public ?int $volumeId = null;
+
+    /**
+     * @var string|null Limits the run to a path in the volume, written like an excluded path, or the whole volume
+     * when null. Only used with $volumeId.
+     */
+    public ?string $path = null;
+
+    /**
      * @var array|null The queue's job info, fetched once per batch for the duplicate-job check. Cleared
      * after each batch because the next batch's job is a clone of this one and gets serialized.
      */
@@ -62,12 +73,23 @@ class GenerateAiAltTextForAssets extends BaseBatchedJob
         // Not filtered on hasAlt(false): batches are read by offset, and the per-asset jobs queued
         // by one batch run before the next batch does, so a shrinking result set would skip assets.
         // Assets that already have alt text are skipped in processItem() instead.
-        return new QueryBatcher(
-            Asset::find()
-                ->kind(Asset::KIND_IMAGE)
-                ->siteId($this->siteId)
-                ->orderBy(['elements.id' => SORT_ASC])
-        );
+        $query = Asset::find()
+            ->kind(Asset::KIND_IMAGE)
+            ->siteId($this->siteId)
+            ->orderBy(['elements.id' => SORT_ASC]);
+
+        if ($this->volumeId !== null) {
+            $volume = Craft::$app->getVolumes()->getVolumeById($this->volumeId);
+
+            if ($volume) {
+                AiAltText::getInstance()->aiAltTextService->withinScope($query, $volume, $this->path);
+            } else {
+                // The volume was deleted after the run was queued, so there's nothing left to process
+                $query->id(false);
+            }
+        }
+
+        return new QueryBatcher($query);
     }
 
     /**
@@ -98,12 +120,17 @@ class GenerateAiAltTextForAssets extends BaseBatchedJob
     protected function defaultDescription(): ?string
     {
         $description = Craft::t('ai-alt-text', 'Queueing AI alt text generation');
+        $scope = [];
 
         if (count(Craft::$app->getSites()->getAllSites()) > 1) {
             $site = Craft::$app->getSites()->getSiteById($this->siteId);
-            $description .= $site ? " ({$site->name})" : '';
+            $site && $scope[] = $site->name;
         }
 
-        return $description;
+        if ($this->volumeId !== null && ($volume = Craft::$app->getVolumes()->getVolumeById($this->volumeId))) {
+            $scope[] = $volume->handle . (trim($this->path ?? '', '/') !== '' ? '/' . trim($this->path, '/') : '');
+        }
+
+        return $scope ? "$description (" . implode(', ', $scope) . ')' : $description;
     }
 }

@@ -96,6 +96,40 @@ class AiAltTextUtility extends Utility
         
         $totalForAllSites = $totalAssetsWithAltTextForAllSites + $totalAssetsWithoutAltTextForAllSites;
 
+        // The same counts for each volume, added up across the sites like the all-sites row above
+        $volumes = Craft::$app->getVolumes()->getAllVolumes();
+        $volumeAltTextCounts = [];
+
+        foreach ($volumes as $volume) {
+            $counts = ['with' => 0, 'without' => 0, 'excluded' => 0, 'coverage' => null];
+
+            try {
+                foreach ($sites as $site) {
+                    $totalImageAssets = $service->withoutExcluded($service->withinScope(Asset::find()
+                        ->kind(Asset::KIND_IMAGE)
+                        ->siteId($site->id), $volume))
+                        ->count();
+                    $withAltCount = $service->withoutExcluded($service->withinScope(Asset::find()
+                        ->kind(Asset::KIND_IMAGE)
+                        ->siteId($site->id)
+                        ->hasAlt(true), $volume))
+                        ->count();
+
+                    $counts['with'] += $withAltCount;
+                    $counts['without'] += $totalImageAssets - $withAltCount;
+                    $counts['excluded'] += $service->countExcluded($site->id, $volume);
+                }
+
+                $counted = $counts['with'] + $counts['without'];
+                $counts['coverage'] = $counted > 0 ? ($counts['with'] / $counted * 100) : null;
+            } catch (Exception $e) {
+                Craft::error("Error counting assets for volume {$volume->handle}: " . $e->getMessage(), __METHOD__);
+            }
+
+            $counts['total'] = $counts['with'] + $counts['without'] + $counts['excluded'];
+            $volumeAltTextCounts[$volume->id] = $counts;
+        }
+
         return Craft::$app->getView()->renderTemplate(
             'ai-alt-text/_utility',
             [
@@ -105,6 +139,8 @@ class AiAltTextUtility extends Utility
                 'sites' => $sites,
                 'siteAltTextCounts' => $siteAltTextCounts,
                 'totalExcludedForAllSites' => $totalExcludedForAllSites,
+                'volumes' => $volumes,
+                'volumeAltTextCounts' => $volumeAltTextCounts,
             ]
         );
     }

@@ -9,6 +9,7 @@ use craft\elements\Asset;
 use craft\elements\db\AssetQuery;
 use craft\enums\MenuItemType;
 use craft\events\DefineMenuItemsEvent;
+use craft\models\Volume;
 use craft\helpers\{App, ArrayHelper};
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
@@ -206,6 +207,66 @@ class AiAltTextService extends Component
     }
 
     /**
+     * The IDs of a volume's assets whose path matches a path pattern, as a subquery, in SQL. The same rule as
+     * pathPatternRegex(): the path itself, or as a folder, everything in it.
+     */
+    private function pathMatchIds(int $volumeId, string $pattern): Query
+    {
+        // An asset's path in its volume is its folder's path, which has a trailing slash, e.g. `staff/sub/`, then
+        // its filename. `staff/%` is a folder and everything in it.
+        $like = strtr(addcslashes($pattern, '%_\\'), ['*' => '%']);
+        $assetPath = "CONCAT(COALESCE(f.path, ''), a.filename)";
+
+        return (new Query())
+            ->select('a.id')
+            ->from(['a' => Table::ASSETS])
+            ->innerJoin(['f' => Table::VOLUMEFOLDERS], '[[f.id]] = [[a.folderId]]')
+            ->where(['a.volumeId' => $volumeId])
+            ->andWhere(['or', ['like', $assetPath, $like, false], ['like', $assetPath, $like . '/%', false]]);
+    }
+
+    /**
+     * Limits an asset query to one volume, or to a path in it, for a bulk run of just that part of the library. A path
+     * is written, and matched, like an excluded path: a folder and everything in it, or files, with `*` for any
+     * characters. It doesn't override the Excluded assets settings, see withoutExcluded().
+     *
+     * @param string|null $path A path in the volume, already checked by scopePathError()
+     */
+    public function withinScope(AssetQuery $query, Volume $volume, ?string $path = null): AssetQuery
+    {
+        $query->volumeId($volume->id);
+        $pattern = trim($path ?? '', "/ \t");
+
+        if ($pattern !== '') {
+            $query->andWhere(['in', 'assets.id', $this->pathMatchIds($volume->id, $pattern)]);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Why a path for withinScope() can't be used, or null if it can, by the rules for an excluded path.
+     */
+    public function scopePathError(string $path): ?string
+    {
+        $path = trim($path, "/ \t");
+
+        if ($path === '') {
+            return Craft::t('ai-alt-text', 'Enter a path.');
+        }
+
+        if (trim($path, '*/') === '') {
+            return Craft::t('ai-alt-text', 'A path needs some text besides `*`. Leave it out to process the whole volume.');
+        }
+
+        if (preg_match('~(^|/)\.\.?(/|$)~', $path)) {
+            return Craft::t('ai-alt-text', 'Paths are relative to the volume, without `.` or `..` parts.');
+        }
+
+        return null;
+    }
+
+    /**
      * Leaves the assets in excluded volumes and at excluded paths out of an asset query, in SQL, so coverage figures can count
      * what generation can reach. The same rules as exclusionReason().
      */
@@ -233,16 +294,7 @@ class AiAltTextService extends Component
                 continue;
             }
 
-            // An asset's path in its volume is its folder's path, which has a trailing slash, e.g. `staff/sub/`, then
-            // its filename. `staff/%` is a folder and everything in it. The same rule as pathPatternRegex().
-            $like = strtr(addcslashes($pattern, '%_\\'), ['*' => '%']);
-            $assetPath = "CONCAT(COALESCE(f.path, ''), a.filename)";
-            $query->andWhere(['not in', 'assets.id', (new Query())
-                ->select('a.id')
-                ->from(['a' => Table::ASSETS])
-                ->innerJoin(['f' => Table::VOLUMEFOLDERS], '[[f.id]] = [[a.folderId]]')
-                ->where(['a.volumeId' => $volume->id])
-                ->andWhere(['or', ['like', $assetPath, $like, false], ['like', $assetPath, $like . '/%', false]])]);
+            $query->andWhere(['not in', 'assets.id', $this->pathMatchIds($volume->id, $pattern)]);
         }
 
         return $query;
@@ -250,9 +302,9 @@ class AiAltTextService extends Component
 
     /**
      * How many image assets on a site the Excluded volumes and Excluded paths settings leave out of the coverage
-     * figures.
+     * figures, in one volume if given.
      */
-    public function countExcluded(int $siteId): int
+    public function countExcluded(int $siteId, ?Volume $volume = null): int
     {
         $settings = AiAltText::getInstance()->getSettings();
 
@@ -261,6 +313,10 @@ class AiAltTextService extends Component
         }
 
         $all = Asset::find()->kind(Asset::KIND_IMAGE)->siteId($siteId);
+
+        if ($volume) {
+            $this->withinScope($all, $volume);
+        }
 
         return $all->count() - $this->withoutExcluded(clone $all)->count();
     }
