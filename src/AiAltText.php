@@ -261,9 +261,12 @@ class AiAltText extends Plugin
                 'settings' => $this->getSettings(),
                 // So their fields can say the file's values win
                 'config' => $this->configFileSettings(),
-                // Only fetched when OpenRouter is the saved provider, so other sites' settings pages don't call it
+                // Only fetched for the saved provider, so other sites' settings pages don't call them. Choosing the other one fetches its suggestions then
                 'openRouterModelSuggestions' => App::parseEnv($this->getSettings()->aiProvider) === 'openrouter'
                     ? $this->openRouterService->visionModelSuggestions()
+                    : [],
+                'huggingFaceModelSuggestions' => App::parseEnv($this->getSettings()->aiProvider) === 'huggingface'
+                    ? $this->huggingFaceService->visionModelSuggestions()
                     : [],
             ]
         );

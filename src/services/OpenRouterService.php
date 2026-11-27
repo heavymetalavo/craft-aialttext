@@ -56,9 +56,10 @@ class OpenRouterService extends ResponsesApiService
                     }
 
                     $price = (float)($model['pricing']['prompt'] ?? 0) * 1000000;
+                    $isFree = isset($model['pricing']['prompt']) && $price == 0 && !str_contains(strtolower($model['name'] ?? ''), '(free)');
                     $models[] = [
                         'name' => $model['id'],
-                        'hint' => ($model['name'] ?? $model['id']) . ($price > 0 ? ', $' . rtrim(rtrim(number_format($price, $price < 0.001 ? 6 : 3), '0'), '.') . '/M input tokens' : ''),
+                        'hint' => ($model['name'] ?? $model['id']) . ($price > 0 ? ', $' . rtrim(rtrim(number_format($price, $price < 0.001 ? 6 : 3), '0'), '.') . '/M input tokens' : ($isFree ? ', free' : '')),
                     ];
                 }
 
@@ -102,9 +103,33 @@ class OpenRouterService extends ResponsesApiService
      */
     protected function applySettings(Settings $settings): void
     {
-        $this->apiKey = App::parseEnv($settings->openRouterApiKey);
-        $this->model = App::parseEnv($settings->openRouterModel);
+        // An undefined environment variable parses to null, which would stop the settings page loading. getConfigurationError() reports a missing API key
+        $this->apiKey = (string) App::parseEnv($settings->openRouterApiKey);
+        $this->model = $this->modelWithRouting((string) App::parseEnv($settings->openRouterModel), (string) App::parseEnv($settings->openRouterRouting));
         $this->baseUrl = 'https://openrouter.ai/api/v1';
+    }
+
+    /**
+     * The OpenRouter Routing setting as a routing variant on the model: `:nitro` sorts the providers by throughput and
+     * `:floor` by price, e.g. `google/gemini-3.5-flash-lite:nitro`. A model that already names a sorting variant,
+     * `:nitro`, `:floor` or `:exacto`, is used as it is, as the last one in the id decides the sort. A free model,
+     * `:free`, is used as it is too, as the settings page only offers Default for one. Both can reach service tier
+     * endpoints that are billed at their own rate, a priority one for `:nitro` and a flex one for `:floor`.
+     * See https://openrouter.ai/docs/guides/routing/model-variants.
+     */
+    private function modelWithRouting(string $model, string $routing): string
+    {
+        $variant = match ($routing) {
+            'fastest' => 'nitro',
+            'cheapest' => 'floor',
+            default => '',
+        };
+
+        if ($model === '' || $variant === '' || preg_match('/:(nitro|floor|exacto|free)(:|$)/', $model)) {
+            return $model;
+        }
+
+        return $model . ':' . $variant;
     }
 
     /**

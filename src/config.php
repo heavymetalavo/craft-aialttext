@@ -70,6 +70,9 @@ return [
         // The OpenRouter model to use, as OpenRouter names it, e.g. 'anthropic/claude-haiku-5.5'.
         //'openRouterModel' => '',
 
+        // How OpenRouter picks the provider that runs the model: '' (its default), 'fastest' (:nitro) or 'cheapest' (:floor).
+        //'openRouterRouting' => '',
+
         // The OpenRouter image detail level: 'low', 'high', 'auto' or 'original'.
         //'openRouterImageInputDetailLevel' => 'low',
 
@@ -79,8 +82,11 @@ return [
         // The Hugging Face token. Use an environment variable reference, e.g. '$HF_TOKEN'.
         //'huggingFaceApiKey' => '',
 
-        // The Hugging Face model id, with an optional ':cheapest' or inference provider suffix, e.g. 'Qwen/Qwen2.5-VL-7B-Instruct'.
+        // The Hugging Face model id, e.g. 'deepseek-ai/DeepSeek-V4.1-Flash-1017'.
         //'huggingFaceModel' => '',
+
+        // Which inference provider runs the Hugging Face model: '' (Hugging Face chooses), 'fastest', 'cheapest', or a provider such as 'deepinfra'.
+        //'huggingFaceRouting' => '',
 
         // The prompt sent to the provider, which can use `{asset.…}` and `{site.…}` variables.
         //'prompt' => \heavymetalavo\craftaialttext\models\Settings::DEFAULT_PROMPT,
