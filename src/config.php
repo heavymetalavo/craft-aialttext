@@ -97,7 +97,7 @@ return [
         // The custom endpoint's base URL, without `/responses` or `/messages` at the end, e.g. 'https://gateway.example.com/v1'.
         //'customBaseUrl' => '',
 
-        // The request format the custom endpoint takes: 'responses' (OpenAI's Responses API) or 'messages' (Anthropic's Messages API).
+        // The request format the custom endpoint takes: 'responses' (OpenAI's Responses API), 'messages' (Anthropic's Messages API), 'chat-completions' (the Chat Completions API) or 'interactions' (Google's Interactions API).
         //'customApiFormat' => 'responses',
 
         // The custom endpoint's API key. Use an environment variable reference, e.g. '$CUSTOM_AI_API_KEY'.

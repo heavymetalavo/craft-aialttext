@@ -25,7 +25,7 @@ class CustomMessagesService extends MessagesApiService
         $this->apiKey = App::parseEnv($settings->customApiKey);
         $this->model = App::parseEnv($settings->customModel);
         $this->detailLevel = Settings::DEFAULT_ANTHROPIC_IMAGE_DETAIL_LEVEL;
-        $this->baseUrl = rtrim((string)App::parseEnv($settings->customBaseUrl), '/');
+        $this->baseUrl = rtrim(trim((string)App::parseEnv($settings->customBaseUrl)), '/');
     }
 
     /**

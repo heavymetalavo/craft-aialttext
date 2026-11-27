@@ -25,7 +25,7 @@ class CustomResponsesService extends ResponsesApiService
     {
         $this->apiKey = App::parseEnv($settings->customApiKey);
         $this->model = App::parseEnv($settings->customModel);
-        $this->baseUrl = rtrim((string)App::parseEnv($settings->customBaseUrl), '/');
+        $this->baseUrl = rtrim(trim((string)App::parseEnv($settings->customBaseUrl)), '/');
     }
 
     /**

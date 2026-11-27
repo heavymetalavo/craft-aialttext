@@ -46,7 +46,7 @@ use craft\models\Site;
  * @property string $huggingFaceModel The Hugging Face model to use, as `org/model`
  * @property string $huggingFaceRouting Which inference provider runs the Hugging Face model: `fastest`, `cheapest`, an inference provider, or empty to let the router choose
  * @property string $customBaseUrl The custom endpoint's base URL, e.g. `https://gateway.example.com/v1`
- * @property string $customApiFormat The request format the custom endpoint takes ('responses' or 'messages')
+ * @property string $customApiFormat The request format the custom endpoint takes ('responses', 'messages', 'chat-completions' or 'interactions')
  * @property string $customApiKey The custom endpoint's API key
  * @property string $customModel The model to use, as the custom endpoint names it
  * @property int $animationFrames How many frames of an animated GIF or WebP to send (1 to 20, or more from a config file)
@@ -210,7 +210,7 @@ class Settings extends Model
     public string $huggingFaceRouting = '';
 
     /**
-     * @var string The base URL of a gateway that takes the Responses API or Messages API request unchanged, without the
+     * @var string The base URL of a gateway that takes the Responses API, Messages API, Chat Completions API or Interactions API request unchanged, without the
      * `/responses` or `/messages` at the end, e.g. `https://gateway.example.com/v1`
      */
     public string $customBaseUrl = '';
@@ -369,7 +369,7 @@ class Settings extends Model
             [['openRouterReasoningEffort'], 'validateOneOf', 'params' => ['allowed' => ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', ''], 'message' => 'Invalid OpenRouter Reasoning Effort configured.']],
             [['huggingFaceApiKey', 'huggingFaceModel', 'huggingFaceRouting'], 'string'],
             [['customBaseUrl', 'customApiKey', 'customModel'], 'string'],
-            [['customApiFormat'], 'validateOneOf', 'params' => ['allowed' => ['responses', 'messages'], 'message' => 'Invalid Custom endpoint API format configured.']],
+            [['customApiFormat'], 'validateOneOf', 'params' => ['allowed' => ['responses', 'messages', 'chat-completions', 'interactions'], 'message' => 'Invalid Custom endpoint API format configured.']],
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],

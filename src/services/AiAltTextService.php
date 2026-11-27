@@ -451,8 +451,8 @@ class AiAltTextService extends Component
             return Craft::t('ai-alt-text', 'The custom endpoint needs a base URL starting with https:// or http://. Add one in the AI Alt Text plugin settings.');
         }
 
-        if ($provider === 'custom' && !in_array(App::parseEnv($settings->customApiFormat), ['responses', 'messages'], true)) {
-            return Craft::t('ai-alt-text', 'The custom endpoint API format must be the Responses API or the Messages API. Choose one in the AI Alt Text plugin settings.');
+        if ($provider === 'custom' && !in_array(App::parseEnv($settings->customApiFormat), ['responses', 'messages', 'chat-completions', 'interactions'], true)) {
+            return Craft::t('ai-alt-text', 'The custom endpoint API format must be the Responses API, the Messages API, the Chat Completions API or the Interactions API. Choose one in the AI Alt Text plugin settings.');
         }
 
         // Without this the request is built and refused, with an error that reads "Model cannot be blank"
@@ -534,9 +534,12 @@ class AiAltTextService extends Component
             'openai' => $plugin->openAiService,
             'openrouter' => $plugin->openRouterService,
             'huggingface' => $plugin->huggingFaceService,
-            'custom' => App::parseEnv($settings->customApiFormat) === 'messages'
-                ? $plugin->customMessagesService
-                : $plugin->customResponsesService,
+            'custom' => match (App::parseEnv($settings->customApiFormat)) {
+                'messages' => $plugin->customMessagesService,
+                'chat-completions' => $plugin->customChatCompletionsService,
+                'interactions' => $plugin->customInteractionsService,
+                default => $plugin->customResponsesService,
+            },
         };
     }
 
