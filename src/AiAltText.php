@@ -11,7 +11,7 @@ use craft\services\{Assets, ProjectConfig, Utilities};
 use craft\web\{View, UrlManager};
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
 use heavymetalavo\craftaialttext\models\Settings;
-use heavymetalavo\craftaialttext\services\{AiAltTextService, OpenAiService, AnthropicService, LangdockAnthropicService, LangdockOpenAiService, OpenRouterService};
+use heavymetalavo\craftaialttext\services\{AiAltTextService, OpenAiService, AnthropicService, GoogleService, LangdockAnthropicService, LangdockOpenAiService, OpenRouterService};
 use heavymetalavo\craftaialttext\utilities\AiAltTextUtility;
 use yii\base\Event;
 
@@ -23,6 +23,7 @@ use yii\base\Event;
  * @property AiAltTextService $aiAltTextService The service for generating alt text
  * @property OpenAiService $openAiService
  * @property AnthropicService $anthropicService
+ * @property GoogleService $googleService
  * @property LangdockAnthropicService $langdockAnthropicService
  * @property LangdockOpenAiService $langdockOpenAiService
  * @property OpenRouterService $openRouterService
@@ -50,6 +51,7 @@ class AiAltText extends Plugin
                 'aiAltTextService' => AiAltTextService::class,
                 'openAiService' => OpenAiService::class,
                 'anthropicService' => AnthropicService::class,
+                'googleService' => GoogleService::class,
                 'langdockAnthropicService' => LangdockAnthropicService::class,
                 'langdockOpenAiService' => LangdockOpenAiService::class,
                 'openRouterService' => OpenRouterService::class,
@@ -68,6 +70,7 @@ class AiAltText extends Plugin
             'aiAltTextService' => AiAltTextService::class,
             'openAiService' => OpenAiService::class,
             'anthropicService' => AnthropicService::class,
+            'googleService' => GoogleService::class,
             'langdockAnthropicService' => LangdockAnthropicService::class,
             'langdockOpenAiService' => LangdockOpenAiService::class,
             'openRouterService' => OpenRouterService::class,

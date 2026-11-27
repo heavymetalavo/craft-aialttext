@@ -304,12 +304,13 @@ class AiAltTextService extends Component
             return Craft::t('ai-alt-text', 'No AI provider is configured. Choose one in the AI Alt Text plugin settings.');
         }
 
-        if (!in_array($provider, ['openai', 'anthropic', 'langdock', 'openrouter'], true)) {
-            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Langdock or OpenRouter in the AI Alt Text plugin settings.', ['provider' => $provider]);
+        if (!in_array($provider, ['openai', 'anthropic', 'google', 'langdock', 'openrouter'], true)) {
+            return Craft::t('ai-alt-text', '"{provider}" is not a supported AI provider. Choose OpenAI, Anthropic, Google, Langdock or OpenRouter in the AI Alt Text plugin settings.', ['provider' => $provider]);
         }
 
         [$label, $apiKey] = match ($provider) {
             'anthropic' => ['Anthropic', $settings->anthropicApiKey],
+            'google' => ['Google', $settings->googleApiKey],
             'langdock' => ['Langdock', $settings->langdockApiKey],
             'openai' => ['OpenAI', $settings->openAiApiKey],
             'openrouter' => ['OpenRouter', $settings->openRouterApiKey],
@@ -363,6 +364,7 @@ class AiAltTextService extends Component
         $provider = (string)App::parseEnv($settings->aiProvider);
         $model = match ($provider) {
             'anthropic' => $settings->anthropicModel,
+            'google' => $settings->googleModel,
             'langdock' => $settings->langdockModel,
             'openai' => $settings->openAiModel,
             'openrouter' => $settings->openRouterModel,
@@ -383,6 +385,7 @@ class AiAltTextService extends Component
 
         return match (App::parseEnv($settings->aiProvider)) {
             'anthropic' => $plugin->anthropicService,
+            'google' => $plugin->googleService,
             'langdock' => App::parseEnv($settings->langdockModelAuthor) === 'openai'
                 ? $plugin->langdockOpenAiService
                 : $plugin->langdockAnthropicService,
