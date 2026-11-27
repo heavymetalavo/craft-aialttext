@@ -367,6 +367,7 @@ class AiAltTextService extends Component
             'langdock' => $settings->langdockModel,
             'openai' => $settings->openAiModel,
             'openrouter' => $settings->openRouterModel,
+            'huggingface' => $settings->huggingFaceModel,
             default => '',
         };
 

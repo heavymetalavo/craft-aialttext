@@ -25,7 +25,7 @@
 
 return [
     '*' => [
-        // The AI provider to use: 'anthropic', 'openai', 'langdock' or 'openrouter'. Only that provider's settings below are used.
+        // The AI provider to use: 'anthropic', 'openai', 'langdock', 'openrouter' or 'huggingface'. Only that provider's settings below are used.
         //'aiProvider' => '',
 
         // The Anthropic API key. Use an environment variable reference, e.g. '$ANTHROPIC_API_KEY'.
@@ -75,6 +75,12 @@ return [
 
         // The reasoning effort for OpenRouter: 'none', 'minimal', 'low', 'medium', 'high' or 'xhigh'.
         //'openRouterReasoningEffort' => 'low',
+
+        // The Hugging Face token. Use an environment variable reference, e.g. '$HF_TOKEN'.
+        //'huggingFaceApiKey' => '',
+
+        // The Hugging Face model id, with an optional ':cheapest' or inference provider suffix, e.g. 'Qwen/Qwen2.5-VL-7B-Instruct'.
+        //'huggingFaceModel' => '',
 
         // The prompt sent to the provider, which can use `{asset.…}` and `{site.…}` variables.
         //'prompt' => \heavymetalavo\craftaialttext\models\Settings::DEFAULT_PROMPT,
