@@ -883,20 +883,20 @@ document.getElementById({{ 'prompt-default'|namespaceInputId|json_encode|raw }})
 }) }}
 
 {{ forms.editableTableField({
-    label: 'Excluded folders'|t('ai-alt-text'),
-    id: 'excludedFolders',
-    name: 'excludedFolders',
-    instructions: "Assets in these folders, and their subfolders, are skipped. The path is relative to the volume, e.g. `staff`."|t('ai-alt-text'),
-    warning: config.excludedFolders is defined ? configWarning('excludedFolders'),
+    label: 'Excluded paths'|t('ai-alt-text'),
+    id: 'excludedPaths',
+    name: 'excludedPaths',
+    instructions: "Assets at these paths are skipped: a folder, with everything in it, or files. The path is relative to the volume, e.g. `staff` or `*.svg`. Use `*` for any characters, including across folders, e.g. `staff/*/headshots`."|t('ai-alt-text'),
+    warning: config.excludedPaths is defined ? configWarning('excludedPaths'),
     cols: {
         volumeUid: { heading: 'Volume'|t('ai-alt-text'), type: 'select', options: craft.app.volumes.allVolumes|map(v => { label: v.name, value: v.uid }) },
-        path: { heading: 'Folder path'|t('ai-alt-text'), type: 'singleline', placeholder: 'staff' },
+        path: { heading: 'Path'|t('ai-alt-text'), type: 'singleline', placeholder: 'staff' },
     },
-    rows: settings.excludedFolders,
+    rows: settings.excludedPaths,
     allowAdd: true,
     allowDelete: true,
-    addRowLabel: 'Add a folder'|t('ai-alt-text'),
-    errors: settings.getErrors('excludedFolders'),
+    addRowLabel: 'Add a path'|t('ai-alt-text'),
+    errors: settings.getErrors('excludedPaths'),
 }) }}
 
 

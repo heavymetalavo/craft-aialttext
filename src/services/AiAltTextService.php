@@ -196,7 +196,17 @@ class AiAltTextService extends Component
     }
 
     /**
-     * Leaves the assets in excluded volumes and folders out of an asset query, in SQL, so coverage figures can count
+     * The regular expression for an excluded path, which can use `*` for any characters, including across folders, and
+     * matches the path itself, or, as a folder, everything in it, ignoring case.
+     * e.g. `staff*` matches `staff/amy.jpg` and `staffing/bob.jpg`, and `*.svg` matches every SVG.
+     */
+    private static function pathPatternRegex(string $pattern): string
+    {
+        return '~^' . strtr(preg_quote($pattern, '~'), ['\\*' => '.*']) . '(?:/.*)?$~iu';
+    }
+
+    /**
+     * Leaves the assets in excluded volumes and at excluded paths out of an asset query, in SQL, so coverage figures can count
      * what generation can reach. The same rules as exclusionReason().
      */
     public function withoutExcluded(AssetQuery $query): AssetQuery
@@ -215,34 +225,38 @@ class AiAltTextService extends Component
             $query->andWhere(['not in', 'assets.volumeId', $volumeIds]);
         }
 
-        foreach ($settings->excludedFolders as $row) {
-            $folder = trim($row['path'] ?? '', "/ \t");
+        foreach ($settings->excludedPaths as $row) {
+            $pattern = trim($row['path'] ?? '', "/ \t");
             $volume = $volumes->getVolumeByUid($row['volumeUid'] ?? '');
 
-            if ($folder === '' || !$volume) {
+            if ($pattern === '' || !$volume) {
                 continue;
             }
 
-            // Folder paths are stored with a trailing slash, e.g. `staff/` and `staff/sub/`
-            $query->andWhere(['not in', 'assets.folderId', (new Query())
-                ->select('id')
-                ->from(Table::VOLUMEFOLDERS)
-                ->where(['volumeId' => $volume->id])
-                ->andWhere(['or', ['path' => "$folder/"], ['like', 'path', addcslashes($folder, '%_\\') . '/%', false]])]);
+            // An asset's path in its volume is its folder's path, which has a trailing slash, e.g. `staff/sub/`, then
+            // its filename. `staff/%` is a folder and everything in it. The same rule as pathPatternRegex().
+            $like = strtr(addcslashes($pattern, '%_\\'), ['*' => '%']);
+            $assetPath = "CONCAT(COALESCE(f.path, ''), a.filename)";
+            $query->andWhere(['not in', 'assets.id', (new Query())
+                ->select('a.id')
+                ->from(['a' => Table::ASSETS])
+                ->innerJoin(['f' => Table::VOLUMEFOLDERS], '[[f.id]] = [[a.folderId]]')
+                ->where(['a.volumeId' => $volume->id])
+                ->andWhere(['or', ['like', $assetPath, $like, false], ['like', $assetPath, $like . '/%', false]])]);
         }
 
         return $query;
     }
 
     /**
-     * How many image assets on a site the Excluded volumes and Excluded folders settings leave out of the coverage
+     * How many image assets on a site the Excluded volumes and Excluded paths settings leave out of the coverage
      * figures.
      */
     public function countExcluded(int $siteId): int
     {
         $settings = AiAltText::getInstance()->getSettings();
 
-        if (empty($settings->excludedVolumes) && empty($settings->excludedFolders)) {
+        if (empty($settings->excludedVolumes) && empty($settings->excludedPaths)) {
             return 0;
         }
 
@@ -256,7 +270,8 @@ class AiAltTextService extends Component
      * This covers every way of generating: bulk runs, upload and file replacement, and generating for chosen assets.
      *
      * - Its volume is an excluded volume.
-     * - Its folder is an excluded folder, or inside one. Each is a volume and a path in it, e.g. `staff`.
+     * - Its path in the volume matches an excluded path: a volume and a path in it, e.g. `staff`, for a folder and
+     *   everything in it, or `*.svg`, for files. `*` is a wildcard for any characters, including across folders.
      *
      * @return string|null The reason, e.g. `its volume is excluded`
      */
@@ -269,20 +284,20 @@ class AiAltTextService extends Component
             return "its volume ($volume->handle) is excluded";
         }
 
-        // A broken folder ID means no folder exclusion, rather than an error that could fail an upload
+        // A broken folder ID means no path exclusion, rather than an error that could fail an upload
         try {
-            // e.g. `staff/sub` for an asset in the sub folder of the staff folder, and `` for the volume's root
-            $path = trim($asset->getFolder()->path ?? '', '/');
+            // e.g. `staff/sub/amy.jpg` for a file in the sub folder of the staff folder, and `amy.jpg` in the root
+            $path = ltrim(($asset->getFolder()->path ?? '') . $asset->getFilename(), '/');
         } catch (InvalidConfigException) {
             $path = null;
         }
 
-        foreach ($settings->excludedFolders as $row) {
-            $folder = trim($row['path'] ?? '', "/ \t");
-            if ($path !== null && $folder !== '' && ($row['volumeUid'] ?? null) === $volume->uid
-                && ($path === $folder || str_starts_with($path, $folder . '/'))
+        foreach ($settings->excludedPaths as $row) {
+            $pattern = trim($row['path'] ?? '', "/ \t");
+            if ($path !== null && $pattern !== '' && ($row['volumeUid'] ?? null) === $volume->uid
+                && preg_match(self::pathPatternRegex($pattern), $path)
             ) {
-                return "its folder ($volume->handle/$folder) is excluded";
+                return "it matches the excluded path ($volume->handle/$pattern)";
             }
         }
 

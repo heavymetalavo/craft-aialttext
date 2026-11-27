@@ -41,7 +41,7 @@ use craft\models\Site;
  * @property string $openRouterImageInputDetailLevel The image detail level for OpenRouter's Responses API
  * @property string $openRouterReasoningEffort The reasoning effort level for OpenRouter's Responses API
  * @property string[] $excludedVolumes UIDs of the volumes whose assets bulk and automatic generation skip
- * @property array<int, array{volumeUid: string, path: string}> $excludedFolders Folders whose assets are skipped, each as a volume's UID and a path in it
+ * @property array<int, array{volumeUid: string, path: string}> $excludedPaths Paths whose assets are skipped, each as a volume's UID and a path in it
  * @property string $huggingFaceApiKey The Hugging Face token
  * @property string $huggingFaceModel The Hugging Face model to use, as `org/model`
  * @property string $huggingFaceRouting Which inference provider runs the Hugging Face model: `fastest`, `cheapest`, an inference provider, or empty to let the router choose
@@ -226,10 +226,11 @@ class Settings extends Model
     public array $excludedVolumes = [];
 
     /**
-     * @var array<int, array{volumeUid: string, path: string}> Folders whose assets, including those in subfolders, are
-     * skipped by generation: a volume's UID and the folder's path in it, e.g. `staff`
+     * @var array<int, array{volumeUid: string, path: string}> Paths whose assets are skipped by generation: a volume's
+     * UID and a path in it, e.g. `staff` for a folder and everything in it, or `*.svg` for files. `*` matches any
+     * characters, including across folders
      */
-    public array $excludedFolders = [];
+    public array $excludedPaths = [];
 
     /**
      * @var int How many frames of an animated GIF or WebP to send, evenly spaced from the first to the last
@@ -263,7 +264,7 @@ class Settings extends Model
         }
 
         // A checkbox select or table with nothing in it posts an empty string
-        foreach (['excludedVolumes', 'excludedFolders'] as $key) {
+        foreach (['excludedVolumes', 'excludedPaths'] as $key) {
             if (is_array($values) && array_key_exists($key, $values) && !is_array($values[$key])) {
                 $values[$key] = array_filter([$values[$key]]);
             }
@@ -343,7 +344,7 @@ class Settings extends Model
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
             ['excludedVolumes', 'each', 'rule' => ['string']],
-            ['excludedFolders', 'validateExcludedFolders'],
+            ['excludedPaths', 'validateExcludedPaths'],
             ['animationFrames', 'integer', 'min' => 1, 'max' => 20],
             ['sendImagesAsBase64', 'boolean'],
             ['maxRateLimitRetries', 'integer', 'min' => 0],
@@ -362,9 +363,9 @@ class Settings extends Model
      * nor is a prompt applied from project config, so that runtime error stays as the safety net.
      */
     /**
-     * Each excluded folder needs a volume that exists and a path inside it.
+     * Each excluded path needs a volume that exists and a path inside it.
      */
-    public function validateExcludedFolders(string $attribute): void
+    public function validateExcludedPaths(string $attribute): void
     {
         $volumeUids = array_map(fn($volume) => $volume->uid, Craft::$app->getVolumes()->getAllVolumes());
 
@@ -372,11 +373,13 @@ class Settings extends Model
             $path = is_array($row) && is_string($row['path'] ?? null) ? trim($row['path'], "/ \t") : null;
 
             if (!is_array($row) || !in_array($row['volumeUid'] ?? null, $volumeUids, true)) {
-                $this->addError($attribute, Craft::t('ai-alt-text', 'Choose an existing volume for every excluded folder.'));
+                $this->addError($attribute, Craft::t('ai-alt-text', 'Choose an existing volume for every excluded path.'));
             } elseif ($path === null || $path === '') {
-                $this->addError($attribute, Craft::t('ai-alt-text', 'Enter a folder path for every excluded folder, or exclude the whole volume above.'));
+                $this->addError($attribute, Craft::t('ai-alt-text', 'Enter a path for every excluded path row, or exclude the whole volume above.'));
+            } elseif (trim($path, '*/') === '') {
+                $this->addError($attribute, Craft::t('ai-alt-text', 'An excluded path needs some text besides `*`, or exclude the whole volume above.'));
             } elseif (preg_match('~(^|/)\.\.?(/|$)~', $path)) {
-                $this->addError($attribute, Craft::t('ai-alt-text', 'Excluded folder paths are relative to the volume, without `.` or `..` parts.'));
+                $this->addError($attribute, Craft::t('ai-alt-text', 'Excluded paths are relative to the volume, without `.` or `..` parts.'));
             }
         }
     }
