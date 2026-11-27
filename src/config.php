@@ -85,6 +85,10 @@ return [
         // Generate alt text for SVGs, which needs Craft's Imagick image driver.
         //'processSvgs' => false,
 
+        // How many frames of an animated GIF or WebP to send, evenly spaced. The settings page allows 1 to 20; this file
+        // can set more, up to the provider's limit on images in one request, e.g. 100 for Anthropic's 200k-context models.
+        //'animationFrames' => 3,
+
         // Save translated results for each site, following the volume's Alternative Text Translation Method.
         //'saveTranslatedResultsToEachSite' => false,
 

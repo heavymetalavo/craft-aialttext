@@ -37,6 +37,7 @@ use craft\models\Site;
  * @property string $openRouterModel The OpenRouter model to use, as named by OpenRouter
  * @property string $openRouterImageInputDetailLevel The image detail level for OpenRouter's Responses API
  * @property string $openRouterReasoningEffort The reasoning effort level for OpenRouter's Responses API
+ * @property int $animationFrames How many frames of an animated GIF or WebP to send (1 to 20, or more from a config file)
  */
 class Settings extends Model
 {
@@ -174,6 +175,14 @@ class Settings extends Model
     public bool $processSvgs = false;
 
     /**
+     * @var int How many frames of an animated GIF or WebP to send, evenly spaced from the first to the last
+     *
+     * 1 sends the first frame only. The settings page allows up to 20. `config/ai-alt-text.php` isn't validated, so it
+     * can set more, up to the provider's limit on images in one request, e.g. 100 for Anthropic's 200k-context models
+     */
+    public int $animationFrames = 3;
+
+    /**
      * @var bool Whether to send images as base64 instead of as URLs the AI provider has to download
      */
     public bool $sendImagesAsBase64 = false;
@@ -265,6 +274,7 @@ class Settings extends Model
             ['saveTranslatedResultsToEachSite', 'boolean'],
             ['generateForNewAssets', 'boolean'],
             ['processSvgs', 'boolean'],
+            ['animationFrames', 'integer', 'min' => 1, 'max' => 20],
             ['sendImagesAsBase64', 'boolean'],
             ['maxRateLimitRetries', 'integer', 'min' => 0],
         ];

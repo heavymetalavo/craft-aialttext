@@ -482,6 +482,20 @@ document.getElementById({{ 'prompt-default'|namespaceInputId|json_encode|raw }})
     errors: settings.getErrors('processSvgs'),
 }) }}
 
+{{ forms.textField({
+    label: 'Animation frames'|t('ai-alt-text'),
+    id: 'animationFrames',
+    name: 'animationFrames',
+    type: 'number',
+    min: 1,
+    max: 20,
+    size: 5,
+    warning: config.animationFrames is defined ? configWarning('animationFrames'),
+    instructions: "How many frames of an animated GIF or WebP to send, from 1 (the first frame only) to 20, evenly spaced from the first to the last, so the alt text can describe the animation rather than only its first frame. An animation with fewer frames sends all of them. Each frame is sent as an image of its own, so the cost rises roughly with the number of frames. With Craft's GD image driver, only the first frame is sent."|t("ai-alt-text"),
+    value: settings.animationFrames,
+    errors: settings.getErrors('animationFrames'),
+}) }}
+
 {{ forms.lightswitchField({
     label: 'Save translated results for each site'|t('ai-alt-text'),
     id: 'saveTranslatedResultsToEachSite',
