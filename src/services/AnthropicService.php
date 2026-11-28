@@ -22,7 +22,7 @@ class AnthropicService extends MessagesApiService
     {
         $this->apiKey = App::parseEnv($settings->anthropicApiKey);
         $this->model = App::parseEnv($settings->anthropicModel);
-        $this->detailLevel = $settings->anthropicImageDetailLevel;
+        $this->detailLevel = App::parseEnv($settings->anthropicImageDetailLevel);
     }
 
     /**

@@ -13,11 +13,11 @@ Write alt text for every image on your Craft site with AI: one click, in bulk, o
 
 ## ✨ What you get
 
-- **Any vision model, one key.** Use Anthropic, OpenAI or Google directly, Langdock (hosted in the EU), OpenRouter, which offers over 300 image-capable models, including Claude, GPT, Gemini, Grok, Qwen and DeepSeek, or Hugging Face for open-weight models. Switching model is one setting. OpenAI and Anthropic models are supported, and more than 50 others worked in our tests. See [AI providers](docs/providers.md).
+- **Any vision model, one key.** Use Anthropic, OpenAI or Google directly, Langdock (hosted in the EU), OpenRouter, which offers over 300 image-capable models, including Claude, GPT, Gemini, Grok, Qwen and DeepSeek, or Hugging Face for open-weight models. Switching model is one setting. Through OpenRouter, OpenAI and Anthropic models are supported, and more than 50 others worked in our tests. See [AI providers](docs/providers.md).
 - **Pennies for a whole library.** With our top pick, `claude-haiku-5-5`, alt text for 1,000 images costs about 23 cents, or about 6 cents with `gpt-6-luna`. [Compare models](docs/costs.md).
 - **Every site's language.** Alt text is written in the site's language, and can be saved to each site of a multi-site install.
 - **One click, in bulk, or automatically.** From an asset's action menu, for selected assets, from the bulk actions utility, on upload or file replacement, or from the [command line](docs/console-commands.md). Bulk work runs through Craft's queue, where failed jobs can be retried.
-- **Awkward images handled.** Large images are scaled to each provider's limits, SVG, AVIF, HEIC and HEIF are converted, animated GIFs use their first frame, and private volumes are sent as base64. See [Images](docs/images.md).
+- **Awkward images handled.** Large images are scaled to each provider's limits, SVG, AVIF, HEIC and HEIF are converted, animated GIFs and WebPs are sent as a few frames so the motion can be described, and private volumes are sent as base64. See [Images](docs/images.md).
 - **Your prompt, your rules.** Edit the instructions sent to the AI, with `{asset.*}` and `{site.*}` variables. See [Settings](docs/settings.md#-default-prompt).
 - **Permissions built in.** Bulk generation has its own utility permission, and single assets follow the asset's own save permission.
 

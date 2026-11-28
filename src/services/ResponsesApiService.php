@@ -19,7 +19,7 @@ use yii\base\InvalidConfigException;
  *
  * The base for every provider that serves the Responses API (`POST {baseUrl}/responses`), which OpenAI designed and
  * the Open Responses spec (https://www.openresponses.org/) now describes. That is OpenAI itself and hosts such as
- * Langdock and OpenRouter. It builds the request, sends it, reads the response and generates the alt text.
+ * Langdock and OpenRouter, and a custom endpoint. It builds the request, sends it, reads the response and generates the alt text.
  *
  * A provider extends it to say where it lives (`baseUrl`), which settings it reads (`applySettings()`,
  * `imageDetailLevel()`, `reasoningEffort()`) and what to call itself in log lines and messages (`providerLabel`).

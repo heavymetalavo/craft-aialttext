@@ -15,10 +15,12 @@
  * well, so you can have different settings groups for each environment, just as
  * you do for 'general.php'
  *
- * ⚠ The settings page shows this file's values, and saving it writes what's shown to project config. A plain value,
- * e.g. `'dev' => ['aiProvider' => 'openai']` or `App::env('AI_PROVIDER')`, would be saved as `openai` and reach
- * production with the project config, so the plugin keeps the previously saved value for those instead. An
- * environment variable reference, `'$AI_PROVIDER'`, is saved as it is, since it resolves per environment.
+ * ⚠ The settings page shows this file's values, and Craft saves what's shown to project config. A plain value set
+ * for only some environments, e.g. `'dev' => ['aiProvider' => 'openai']`, or from `App::env('AI_PROVIDER')`, would
+ * be saved as `openai` and reach the environments this file doesn't set it for. Set it under '*' as well, or use an
+ * environment variable reference, `'$AI_PROVIDER'`, which is saved as it is and resolves per environment. The
+ * on/off and number settings, and the excluded volumes and paths, don't take environment variables, so set those
+ * under '*'.
  *
  * Docs: https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/settings.md
  */
@@ -94,7 +96,7 @@ return [
         // Which inference provider runs the Hugging Face model: '' (Hugging Face chooses), 'fastest', 'cheapest', or a provider such as 'deepinfra'.
         //'huggingFaceRouting' => '',
 
-        // The custom endpoint's base URL, without `/responses` or `/messages` at the end, e.g. 'https://gateway.example.com/v1'.
+        // The custom endpoint's base URL, without `/responses`, `/messages`, `/chat/completions` or `/interactions` at the end, e.g. 'https://gateway.example.com/v1'.
         //'customBaseUrl' => '',
 
         // The request format the custom endpoint takes: 'responses' (OpenAI's Responses API), 'messages' (Anthropic's Messages API), 'chat-completions' (the Chat Completions API) or 'interactions' (Google's Interactions API).

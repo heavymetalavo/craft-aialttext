@@ -4,7 +4,9 @@
 
 ## 💰 Estimated cost per alt text
 
-These are estimates, put together by an AI assistant (Claude) that ran the plugin on four JPEG photos, averaging about 2800 × 3000 pixels, with the default settings on 16 to 20 October 2026. The plugin scales images down before sending them, so a bigger original doesn't cost much more. Prices vary between providers, so check them on yours. Claude and GPT models are listed by their Anthropic and OpenAI names and the rest by their OpenRouter names. A few OpenRouter models also have a free version, with `:free` on the end of the name (the last rows are the most popular ones that accept images). It costs nothing but is [rate limited](https://openrouter.ai/docs/api/reference/limits), to 20 requests a minute and a daily maximum. Not all of them work in the plugin, as the notes say. The plugin doesn't handle rate limits yet, so a bulk run will pass them and leave failed jobs in the queue. If you want to use one, retry those jobs from the queue once you're back under the limit.
+Estimates from running the plugin, with the default settings, on four JPEG photos of about 2800 × 3000 pixels (16 to 20 October 2026, by an AI assistant, Claude). Images are scaled down before sending, so a bigger original doesn't cost much more. Prices vary between providers, so check yours.
+
+Claude and GPT models are listed by their Anthropic and OpenAI names, the rest by their OpenRouter names; with the Google provider, drop the `google/`, e.g. `gemini-3.5-flash-lite`. The last rows are free OpenRouter models (`:free`), which are [rate limited](https://openrouter.ai/docs/api/reference/limits) to 20 requests a minute and a daily maximum, and not all of them work, as the notes say. Queued jobs wait and retry on a rate limit, but a daily maximum can still leave failed jobs to retry from the queue later.
 
 | Model | Estimated cost per alt text | Approx alt texts per $1 | Notes |
 |---|---|---|---|
@@ -47,12 +49,12 @@ Hugging Face isn't in the table, as its price depends on the inference provider 
 
 If you are concerned about unexpected charges we recommend:
 - **Prepay a small amount.** Add credit manually, about $5 at a time. At about 18,000 alt texts per $1 with `gpt-6-luna`, that goes a long way.
-- **Turn off automatic top-ups**, so a mistake can only spend what's in the account: auto-reload (auto recharge) in OpenAI's [API billing overview](https://platform.openai.com/account/billing), auto-reload on the Anthropic Console's Billing page, auto top-up on OpenRouter. If you keep OpenAI's on, set its monthly recharge limit.
+- **Turn off automatic top-ups**, so a mistake can only spend what's in the account: auto recharge in OpenAI's [billing overview](https://platform.openai.com/account/billing) (or set its monthly limit), auto-reload on the Anthropic Console's Billing page, auto top-up on OpenRouter.
 - **Set a spending limit where your provider has one**, e.g. a monthly spend limit on the Anthropic Console's Billing page, or a credit limit on each [OpenRouter key](https://openrouter.ai/keys). OpenAI's prepaid balance isn't an instant cutoff, so a small negative balance is possible.
 - **Try a few assets first.** Select a handful in the **Assets** manager and generate for those, then check what they cost before running **Generate missing** or **Generate all**.
 - **Prefer Generate missing.** **Generate all** regenerates every asset, including ones that already have alt text.
-- **Count your sites.** The bulk actions and console commands cover every site unless you pick one, and with **Save translated results for each site** each site is a request of its own, so the cost multiplies by the number of sites.
+- **Count your sites.** The bulk actions and console commands cover every site unless you pick one, and with **Save translated results for each site** each site, or each group of sites that share alt text, is a request of its own, so the cost multiplies by the number of sites.
 - **Mind automatic generation.** With **Generate for new image assets** on, every upload and file replacement is a request, so a large upload is a large batch.
-- **Lower Animation frames to 1 if you don't need the motion described.** Each animated GIF or WebP is sent as that many images, or as many frames as it has if fewer, so at the default of 3 it costs roughly 3 times as much as a still image, and at 1 about the same. Other images aren't affected.
-- **Keep the default `low` settings.** `low` image detail and reasoning effort keep token use down: on `gpt-6-luna`, a large photo used 350 input tokens at `low` and about 2,000 at `high`, which made each alt text about four times the cost, and `xhigh` reasoning effort about doubled it. Consider raising them if the results aren't good enough in testing.
+- **Lower Animation frames to 1 if you don't need the motion described.** At the default of 3, an animated GIF or WebP costs roughly 3 times as much as a still image.
+- **Keep the default `low` settings.** On `gpt-6-luna`, `high` image detail made each alt text about four times the cost (2,000 input tokens rather than 350), and `xhigh` reasoning effort about doubled it. Raise them only if the results aren't good enough.
 - **Check your usage regularly** on your provider's usage page. OpenRouter's *Activity* page shows the cost of each request, and Hugging Face's [Inference Providers settings](https://huggingface.co/settings/inference-providers) show your usage by model and provider.

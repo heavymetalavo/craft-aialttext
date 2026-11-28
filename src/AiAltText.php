@@ -7,7 +7,7 @@ use craft\base\{Element, Plugin};
 use craft\elements\Asset;
 use craft\events\{ModelEvent, RegisterElementActionsEvent, DefineMenuItemsEvent, RegisterComponentTypesEvent, RegisterCpAlertsEvent, RegisterUrlRulesEvent, ReplaceAssetEvent};
 use craft\helpers\{App, Cp, Html, UrlHelper};
-use craft\services\{Assets, ProjectConfig, Utilities};
+use craft\services\{Assets, Utilities};
 use craft\web\{View, UrlManager};
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
 use heavymetalavo\craftaialttext\models\Settings;
@@ -224,32 +224,6 @@ class AiAltText extends Plugin
     protected function createSettingsModel(): Settings
     {
         return new Settings();
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function beforeSaveSettings(): bool
-    {
-        // The settings page shows config/ai-alt-text.php's values for the settings it sets, so the form posts them and
-        // Craft would save them to project config. A plain value, e.g. what App::env() returns, would then reach
-        // other environments, so keep what was saved instead, or the default if nothing was. An environment variable
-        // reference, e.g. '$AI_PROVIDER', is safe to save as it resolves per environment.
-        $settings = $this->getSettings();
-        $saved = Craft::$app->getProjectConfig()->get(ProjectConfig::PATH_PLUGINS . '.' . $this->handle . '.settings') ?? [];
-        $defaults = new Settings();
-
-        foreach ($this->configFileSettings() as $name => $value) {
-            if (is_string($value) && str_starts_with($value, '$')) {
-                continue;
-            }
-
-            if ($settings->hasProperty($name)) {
-                $settings->$name = $saved[$name] ?? $defaults->$name;
-            }
-        }
-
-        return parent::beforeSaveSettings();
     }
 
     /**

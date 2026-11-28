@@ -110,6 +110,7 @@ class Settings extends Model
      * - low: Faster, less detailed analysis on a 512x512 image, but cheaper
      * - high: More detailed analysis on higher quality image, more expensive
      * - auto: let the model decide
+     * - original: the image at its full resolution, for gpt-5.4 and later
      */
     public string $openAiImageInputDetailLevel = 'low';
 
@@ -211,7 +212,7 @@ class Settings extends Model
 
     /**
      * @var string The base URL of a gateway that takes the Responses API, Messages API, Chat Completions API or Interactions API request unchanged, without the
-     * `/responses` or `/messages` at the end, e.g. `https://gateway.example.com/v1`
+     * `/responses`, `/messages`, `/chat/completions` or `/interactions` at the end, e.g. `https://gateway.example.com/v1`
      */
     public string $customBaseUrl = '';
 
@@ -219,7 +220,9 @@ class Settings extends Model
      * @var string The request format the custom endpoint takes
      *
      * Options: responses (OpenAI's Responses API, as OpenAI, Langdock's GPT models and OpenRouter take it), messages
-     * (Anthropic's Messages API, as Anthropic and Langdock's Claude models take it)
+     * (Anthropic's Messages API, as Anthropic and Langdock's Claude models take it), chat-completions (the Chat
+     * Completions API, as OpenAI, OpenRouter, Hugging Face and many other hosts take it), interactions (Google's
+     * Interactions API, as Google's Gemini API takes it)
      */
     public string $customApiFormat = 'responses';
 
@@ -263,7 +266,7 @@ class Settings extends Model
     /**
      * @var int How many frames of an animated GIF or WebP to send, evenly spaced from the first to the last
      *
-     * 1 sends the first frame only. The settings page allows up to 20. `config/ai-alt-text.php` isn't validated, so it
+     * 1 sends the first frame only. The settings page allows up to 20. `config/ai-alt-text.php` isn't held to 20, so it
      * can set more, up to the provider's limit on images in one request, e.g. 100 for Anthropic's 200k-context models
      */
     public int $animationFrames = 3;
@@ -375,7 +378,10 @@ class Settings extends Model
             ['processSvgs', 'boolean'],
             ['excludedVolumes', 'each', 'rule' => ['string']],
             ['excludedPaths', 'validateExcludedPaths'],
-            ['animationFrames', 'integer', 'min' => 1, 'max' => 20],
+            ['animationFrames', 'integer', 'min' => 1],
+            // The settings page allows up to 20. A value from config/ai-alt-text.php can be higher, and the page posts it
+            // back, so it isn't held to 20, or the page couldn't be saved
+            ['animationFrames', 'integer', 'max' => 20, 'when' => fn() => !array_key_exists('animationFrames', Craft::$app->getConfig()->getConfigFromFile('ai-alt-text'))],
             ['sendImagesAsBase64', 'boolean'],
             ['maxRateLimitRetries', 'integer', 'min' => 0],
         ];
@@ -390,8 +396,6 @@ class Settings extends Model
      * field or generated field handle in any volume's field layout, `field:` and such a handle, an image transform's
      * handle, or `transform:` and anything. Whether the value can be used as text isn't checked: `{asset.volume}` passes,
      * and ApiService::resolvePrompt() still fails on it at generation time. An environment variable prompt isn't checked,
-     * nor is a prompt applied from project config, so that runtime error stays as the safety net.
-     */
     /**
      * Each excluded path needs a volume that exists and a path inside it.
      */
@@ -414,6 +418,17 @@ class Settings extends Model
         }
     }
 
+    /**
+     * Inline validator: the prompt's `{asset.…}` and `{site.…}` variables must name something an asset or a site has,
+     * so a typo like `{asset.filenmae}` is caught when the setting is saved rather than when alt text is generated.
+     *
+     * Only names that can be ruled out are rejected, as a false positive would block a prompt that works. An asset
+     * variable passes if an asset has the property (including custom fields' and other plugins' behaviours), if it's a
+     * field or generated field handle in any volume's field layout, `field:` and such a handle, an image transform's
+     * handle, or `transform:` and anything. Whether the value can be used as text isn't checked: `{asset.volume}` passes,
+     * and ApiService::resolvePrompt() still fails on it at generation time. An environment variable prompt isn't checked,
+     * nor is a prompt applied from project config, so that runtime error stays as the safety net.
+     */
     public function validatePromptVariables(string $attribute): void
     {
         if (App::parseEnv($this->$attribute) !== $this->$attribute) {

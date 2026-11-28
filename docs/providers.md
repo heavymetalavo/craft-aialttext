@@ -11,6 +11,13 @@ Setting up an API key for each provider, and choosing a model.
 3. Create a new API key and save it to an environment variable (`.env`).
 4. Ensure you have credits in your account under **Billing**.
 
+## OpenAI
+
+1. Sign up at [platform.openai.com](https://platform.openai.com/signup), then click the ⚙️ icon in the top right.
+2. Go to **Organization → API keys → Create new secret key**, name it and choose a project.
+3. Under **Permissions**, choose **Restricted** and set **Model capabilities** and **Responses API** to **Write**.
+4. Save the key to an environment variable (`.env`): it's only shown once. Then add credit under **Organization → Billing**: $5 goes a long way.
+
 ## Google
 
 Gemini models, called directly with an API key from Google AI Studio, through Google's [Interactions API](https://ai.google.dev/gemini-api/docs/interactions-overview).
@@ -32,7 +39,7 @@ Worth knowing:
 
 1. In [Langdock](https://langdock.com/), click your account name (bottom left), then go to **Settings → Products → API**. On the **Workspace API keys** tab tick only **Completion API**, which covers both the OpenAI and Anthropic endpoints this plugin uses (see the [Completion API overview](https://docs.langdock.com/en/developer/completion-api/completion-overview)), then click **Create API key**. Creating a workspace key needs a workspace admin. The **Personal API keys** tab on the same page also works, see [Personal API keys](https://docs.langdock.com/en/using-langdock/account/personal-api-keys).
 2. Copy the new key and save it to an environment variable (`.env`).
-3. Choose the **Model Author** of the model you want to use: `Anthropic` for models such as Claude, `OpenAI` for models such as GPT. Both use the same API key.
+3. Choose the **Langdock Model Author** of the model you want to use: `Anthropic` for models such as Claude, `OpenAI` for models such as GPT. Both use the same API key.
 
 Requests go to Langdock's EU region, where Langdock hosts its OpenAI and Anthropic models. Dedicated Langdock deployments are not supported yet: requests always go to `api.langdock.com`.
 
@@ -43,8 +50,8 @@ Requests go to Langdock's EU region, where Langdock hosts its OpenAI and Anthrop
 3. Go to [Keys](https://openrouter.ai/keys), create a key, and give it a name and, if you like, a credit limit.
 4. Copy the key and save it to an environment variable (`.env`), for example `OPENROUTER_API_KEY`.
 5. In the plugin settings, set **OpenRouter API Key** to that variable, e.g. `$OPENROUTER_API_KEY`.
-6. Set the **Model** to the model's OpenRouter name, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna` (see [OpenRouter models](#-openrouter-models) for how to find ones that accept images). A free model, one whose name ends in `:free`, is chosen here too.
-7. Optionally set **OpenRouter Routing** to choose how OpenRouter picks the provider that runs the model: **Default** weighs price, speed and reliability, and tries another provider if one fails, **Fastest** sorts providers by throughput and **Cheapest** by price. They're added to the model as OpenRouter's [`:nitro` and `:floor` suffixes](https://openrouter.ai/docs/guides/routing/model-variants), e.g. `google/gemini-3.5-flash-lite:nitro`. Both can use provider endpoints billed at their own rate, a priority one for Fastest, which costs more than the model's listed price, and a flex one for Cheapest, which costs less. A model with `:nitro`, `:floor` or `:exacto` already on it, or a free model (`:free`), is used as it is, so a free model only has **Default**. Picking a particular provider isn't supported, since OpenRouter takes that as a request setting rather than a suffix.
+6. Set the **OpenRouter Model** to the model's OpenRouter name, which starts with the model's author, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna` (see [OpenRouter models](#-openrouter-models) for how to find ones that accept images). A free model, one whose name ends in `:free`, is chosen here too.
+7. Optionally set **OpenRouter Routing**: **Default** weighs price, speed and reliability, and tries another provider if one fails; **Fastest** and **Cheapest** add OpenRouter's [`:nitro` and `:floor` suffixes](https://openrouter.ai/docs/guides/routing/model-variants), which can use endpoints billed at their own rate (priority, costing more, for Fastest; flex, costing less, for Cheapest). A model that already ends in `:nitro`, `:floor`, `:exacto` or `:free` is used as it is, so a free model only has **Default**. Picking a particular provider isn't supported.
 
 OpenRouter takes the same request for every model, so there is no model author to choose and any model that accepts image input can be used. The plugin is built for and tested with OpenAI and Anthropic models. Models from other authors aren't supported, but [the ones tested](costs.md) worked unchanged, and how good the alt text is varies between models. Worth knowing:
 
@@ -62,14 +69,14 @@ Hugging Face's [Inference Providers](https://huggingface.co/docs/inference-provi
 2. Make sure the account has Inference Providers credit: PRO accounts get some each month, otherwise buy some under **Billing**.
 3. Create a [fine-grained token with the "Make calls to Inference Providers" permission](https://huggingface.co/settings/tokens/new?ownUserPermissions=inference.serverless.write&tokenType=fineGrained).
 4. Copy the token and save it to an environment variable (`.env`), for example `HF_TOKEN`, then set **Hugging Face Token** to `$HF_TOKEN`.
-5. Set **Hugging Face Model** to a vision model's id, e.g. `deepseek-ai/DeepSeek-V4.1-Flash-1017`. The field's dropdown suggests every model Hugging Face's router serves that takes images and gives only text, with the cheapest inference provider's price per million input tokens. The list is fetched from the router's public models API, which needs no token, when Hugging Face is chosen as the provider, and cached for a day. You can also [browse the vision models](https://huggingface.co/models?pipeline_tag=image-text-to-text&inference_provider=all).
-6. Optionally set **Hugging Face Routing** to choose which inference provider runs the model. **Default** lets Hugging Face's router weigh price, speed and reliability, and try another provider if one fails. **Fastest** and **Cheapest** pick by throughput or price, or choose an inference provider such as `deepinfra`, which fails if it doesn't serve the model. The dropdown lists the providers that serve the chosen model, cheapest first, with their price per million input tokens and speed. It's added to the model as a suffix, e.g. `deepseek-ai/DeepSeek-V4.1-Flash-1017:cheapest`, and a model you type in with a suffix already is used as it is.
+5. Set **Hugging Face Model** to a vision model's id, e.g. `deepseek-ai/DeepSeek-V4.1-Flash-1017`. The dropdown suggests the vision models the router serves, with the cheapest provider's price per million input tokens, cached for a day, or [browse them on Hugging Face](https://huggingface.co/models?pipeline_tag=image-text-to-text&inference_provider=all).
+6. Optionally set **Hugging Face Routing**: **Default** lets the router weigh price, speed and reliability and retry elsewhere, **Fastest** and **Cheapest** pick by throughput or price, or choose one of the providers listed for the model, cheapest first, such as `deepinfra`. It's added to the model as a suffix, e.g. `…:cheapest`, unless the model already has one.
 
 This provider uses Hugging Face's Chat Completions API, not its Responses API: the Responses API is in beta and rejects a request over about 100 KB, which an image scaled for a vision model usually passes. Images are always sent as base64, as for OpenRouter, because in testing some models answered that they saw no image, with no error, when they couldn't use an image URL. There is no image detail or reasoning setting, so each model uses its own reasoning defaults, but the request always includes an image `detail` value: `low` for images 512px or smaller and `auto` for larger ones. How good the alt text is varies between models more than on the other providers.
 
 ## Custom endpoints
 
-For a gateway or provider the plugin doesn't support, which takes OpenAI's Responses API, Anthropic's Messages API, the Chat Completions API or Google's Interactions API request unchanged, as Langdock does. Custom endpoints aren't supported: the plugin is only tested with the providers above, so test one before relying on it. Use `https`: the endpoint receives each image and the API key, so only point it at a gateway you trust.
+For a gateway or provider the plugin doesn't support, which takes OpenAI's Responses API, Anthropic's Messages API, the Chat Completions API or Google's Interactions API request unchanged, as Langdock does. Custom endpoints aren't supported: the plugin is only tested with the other providers on this page, so test one before relying on it. Use `https`: the endpoint receives each image and the API key, so only point it at a gateway you trust.
 
 1. Set **AI Provider** to **Custom endpoint**.
 2. Set **Custom Endpoint Base URL** to the URL the requests go under, without `/responses`, `/messages`, `/chat/completions` or `/interactions` at the end, e.g. `https://gateway.example.com/v1`.
@@ -81,17 +88,6 @@ For a gateway or provider the plugin doesn't support, which takes OpenAI's Respo
 4. Set the API key and the model, as the endpoint names it.
 
 Images are always sent as base64, as a gateway may not be able to fetch URLs. With the Responses API and the Chat Completions API, the image detail level is `low`, images are scaled to 1024px on the long edge, and no reasoning setting is sent; with the Messages API, images are scaled as Anthropic's are at the `low` detail level; with the Interactions API, images are scaled as for Google.
-
-## OpenAI
-
-1. Visit [https://platform.openai.com/](https://platform.openai.com/) and [sign up](https://platform.openai.com/signup) in the top-right.
-2. Revisit [the API platform home page](https://platform.openai.com/) again
-3. Click the ⚙️ icon in the top-right
-4. Left menu > Organization > API keys > + Create new secret key (top-right)
-5. Create a name and assign to a suitable project
-6. Permissions > Restricted > set "Model capabilities" to "Write" and "Responses API" to "Write"
-7. Save API key to an env var, you wont get to see it again!
-8. Make sure you have a credit balance! Left menu > Organization > Billing, loading $5 is probably going to get you quite far, disabling auto recharge might be safer though that's up to you!
 
 ## 🧠 Model Options
 
@@ -109,7 +105,7 @@ To find out which models are capable of vision, check [the models page](https://
 The plugin doesn't keep a list of vision models, since OpenRouter's catalogue changes every week. For what some popular ones cost, see [Estimated cost per alt text](costs.md).
 
 **Check that a model accepts images**
-- Start typing in the **OpenRouter Model** field: it suggests every model OpenRouter lists as taking images and giving only text, except the `:batch` ones, which are for OpenRouter's Batch API and can't be used here, with its price per million input tokens. The list is fetched from OpenRouter's public models API, when OpenRouter is chosen as the provider, and cached for a day.
+- Start typing in the **OpenRouter Model** field: it suggests every model that takes images and gives only text, with its price per million input tokens, except `:batch` ones, which can't be used here. The list is cached for a day.
 - Open the [models page filtered to image input and text output](https://openrouter.ai/models?input_modalities=image&output_modalities=text). Every model listed can be used, and a model's own page shows the input modalities it accepts. Models on the page's *Image* tab generate images and return no text, so they can't write alt text.
-- Or ask the API, which needs no key: `curl -s 'https://openrouter.ai/api/v1/models?input_modalities=image' | jq -r '.data[].id'` prints the ids to use as the **Model**.
+- Or ask the API, which needs no key: `curl -s 'https://openrouter.ai/api/v1/models?input_modalities=image&output_modalities=text' | jq -r '.data[] | select(.architecture.output_modalities == ["text"]) | .id' | grep -v ':batch$'` prints the ids to use as the **OpenRouter Model**.
 - A model that can't read images is refused with "No endpoints found that support image input".

@@ -13,11 +13,11 @@ Write alt text for every image on your Craft site with AI: one click, in bulk, o
 
 ## ✨ What you get
 
-- **Any vision model, one key.** Use Anthropic, OpenAI or Google directly, Langdock (hosted in the EU), OpenRouter, which offers over 300 image-capable models, including Claude, GPT, Gemini, Grok, Qwen and DeepSeek, or Hugging Face for open-weight models. Switching model is one setting. OpenAI and Anthropic models are supported, and more than 50 others worked in our tests. See [AI providers](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/providers.md).
+- **Any vision model, one key.** Use Anthropic, OpenAI or Google directly, Langdock (hosted in the EU), OpenRouter, which offers over 300 image-capable models, including Claude, GPT, Gemini, Grok, Qwen and DeepSeek, or Hugging Face for open-weight models. Switching model is one setting. Through OpenRouter, OpenAI and Anthropic models are supported, and more than 50 others worked in our tests. See [AI providers](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/providers.md).
 - **Pennies for a whole library.** With our top pick, `claude-haiku-5-5`, alt text for 1,000 images costs about 23 cents, or about 6 cents with `gpt-6-luna`. [Compare models](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/costs.md).
 - **Every site's language.** Alt text is written in the site's language, and can be saved to each site of a multi-site install.
 - **One click, in bulk, or automatically.** From an asset's action menu, for selected assets, from the bulk actions utility, on upload or file replacement, or from the [command line](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/console-commands.md). Bulk work runs through Craft's queue, where failed jobs can be retried.
-- **Awkward images handled.** Large images are scaled to each provider's limits, SVG, AVIF, HEIC and HEIF are converted, animated GIFs use their first frame, and private volumes are sent as base64. See [Images](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/images.md).
+- **Awkward images handled.** Large images are scaled to each provider's limits, SVG, AVIF, HEIC and HEIF are converted, animated GIFs and WebPs are sent as a few frames so the motion can be described, and private volumes are sent as base64. See [Images](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/images.md).
 - **Your prompt, your rules.** Edit the instructions sent to the AI, with `{asset.*}` and `{site.*}` variables. See [Settings](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/settings.md#-default-prompt).
 - **Permissions built in.** Bulk generation has its own utility permission, and single assets follow the asset's own save permission.
 
@@ -51,7 +51,7 @@ Then use it in your templates:
 - [Getting started](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/getting-started.md) - requirements, installation, the `alt` field, generating alt text, troubleshooting
 - [AI providers](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/providers.md) - API keys for Anthropic, OpenAI, Google, Langdock, OpenRouter, Hugging Face and custom endpoints, and choosing a model
 - [Settings](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/settings.md) - every setting, the default prompt, image detail, reasoning effort and permissions
-- [Console commands](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/console-commands.md) - stats, missing, all and single
+- [Console commands](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/console-commands.md) - stats, missing, all, some and single
 - [Images](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/images.md) - supported file types, scaling and conversion, private volumes and limitations
 - [Costs](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/costs.md) - estimated cost per alt text by model, and avoiding unexpected charges
 

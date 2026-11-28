@@ -10,7 +10,7 @@ use Exception;
 /**
  * OpenAI Response Model
  *
- * Represents a response from a Responses API provider (OpenAI, or a host such as Langdock or OpenRouter).
+ * Represents a response from a Responses API provider (OpenAI, a host such as Langdock or OpenRouter, or a custom endpoint).
  * This model handles the structure and validation of API responses, including the generated content and any errors.
  */
 class OpenAiResponse extends Model

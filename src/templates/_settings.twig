@@ -579,6 +579,7 @@
         label: 'Custom Endpoint Base URL'|t('ai-alt-text'),
         id: 'customBaseUrl',
         name: 'customBaseUrl',
+        warning: config.customBaseUrl is defined ? configWarning('customBaseUrl'),
         instructions: "The base URL, without `/responses`, `/messages`, `/chat/completions` or `/interactions` at the end, e.g. `https://gateway.example.com/v1`."|t("ai-alt-text"),
         placeholder: 'https://gateway.example.com/v1',
         suggestEnvVars: true,
@@ -590,6 +591,7 @@
         label: 'Custom Endpoint API Format'|t('ai-alt-text'),
         id: 'customApiFormat',
         name: 'customApiFormat',
+        warning: config.customApiFormat is defined ? configWarning('customApiFormat'),
         instructions: "The request the endpoint takes. **Responses API** posts to `{base URL}/responses` as OpenAI, Langdock's GPT models and OpenRouter take it, with the key as a Bearer token. **Messages API** posts to `{base URL}/messages` as Anthropic and Langdock's Claude models take it, with the key both as `x-api-key` and as a Bearer token. **Chat Completions API** posts to `{base URL}/chat/completions` as OpenAI, OpenRouter, Hugging Face and many other hosts take it, with the key as a Bearer token. **Interactions API** posts to `{base URL}/interactions` as Google's Gemini API takes it, with the key as `x-goog-api-key`."|t("ai-alt-text"),
         options: [
             { label: 'Responses API (OpenAI)'|t('ai-alt-text'), value: 'responses' },
@@ -607,6 +609,7 @@
         label: 'Custom Endpoint API Key'|t('ai-alt-text'),
         id: 'customApiKey',
         name: 'customApiKey',
+        warning: config.customApiKey is defined ? configWarning('customApiKey'),
         placeholder: '$CUSTOM_AI_API_KEY',
         suggestEnvVars: true,
         value: settings.customApiKey,
@@ -617,6 +620,7 @@
         label: 'Custom Endpoint Model'|t('ai-alt-text'),
         id: 'customModel',
         name: 'customModel',
+        warning: config.customModel is defined ? configWarning('customModel'),
         instructions: "The model, as the endpoint names it. It must accept image input."|t("ai-alt-text"),
         suggestEnvVars: true,
         value: settings.customModel,
@@ -876,13 +880,14 @@ document.getElementById({{ 'prompt-default'|namespaceInputId|json_encode|raw }})
     errors: settings.getErrors('processSvgs'),
 }) }}
 
+{# No max when config/ai-alt-text.php sets it, as the file can set more than 20 and the browser would refuse to submit it #}
 {{ forms.textField({
     label: 'Animation frames'|t('ai-alt-text'),
     id: 'animationFrames',
     name: 'animationFrames',
     type: 'number',
     min: 1,
-    max: 20,
+    max: config.animationFrames is defined ? null : 20,
     size: 5,
     warning: config.animationFrames is defined ? configWarning('animationFrames'),
     instructions: "How many frames of an animated GIF or WebP to send, from 1 (the first frame only) to 20, evenly spaced from the first to the last, so the alt text can describe the animation rather than only its first frame. An animation with fewer frames sends all of them. Each frame is sent as an image of its own, so the cost rises roughly with the number of frames. With Craft's GD image driver, only the first frame is sent."|t("ai-alt-text"),
