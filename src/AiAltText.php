@@ -11,7 +11,7 @@ use craft\services\{Assets, ProjectConfig, Utilities};
 use craft\web\{View, UrlManager};
 use heavymetalavo\craftaialttext\elements\actions\GenerateAiAltText;
 use heavymetalavo\craftaialttext\models\Settings;
-use heavymetalavo\craftaialttext\services\{AiAltTextService, OpenAiService, AnthropicService, GoogleService, LangdockAnthropicService, LangdockOpenAiService, OpenRouterService, HuggingFaceService};
+use heavymetalavo\craftaialttext\services\{AiAltTextService, OpenAiService, AnthropicService, GoogleService, LangdockAnthropicService, LangdockOpenAiService, OpenRouterService, HuggingFaceService, CustomResponsesService, CustomMessagesService, CustomChatCompletionsService, CustomInteractionsService};
 use heavymetalavo\craftaialttext\utilities\AiAltTextUtility;
 use yii\base\Event;
 
@@ -28,6 +28,10 @@ use yii\base\Event;
  * @property LangdockOpenAiService $langdockOpenAiService
  * @property OpenRouterService $openRouterService
  * @property HuggingFaceService $huggingFaceService
+ * @property CustomResponsesService $customResponsesService
+ * @property CustomMessagesService $customMessagesService
+ * @property CustomChatCompletionsService $customChatCompletionsService
+ * @property CustomInteractionsService $customInteractionsService
  * @property Settings $settings The plugin settings
  */
 class AiAltText extends Plugin
@@ -57,6 +61,12 @@ class AiAltText extends Plugin
                 'langdockOpenAiService' => LangdockOpenAiService::class,
                 'openRouterService' => OpenRouterService::class,
                 'huggingFaceService' => HuggingFaceService::class,
+                'customResponsesService' => CustomResponsesService::class,
+                'customMessagesService' => CustomMessagesService::class,
+            'customChatCompletionsService' => CustomChatCompletionsService::class,
+            'customInteractionsService' => CustomInteractionsService::class,
+                'customChatCompletionsService' => CustomChatCompletionsService::class,
+                'customInteractionsService' => CustomInteractionsService::class,
             ],
         ];
     }
@@ -77,6 +87,10 @@ class AiAltText extends Plugin
             'langdockOpenAiService' => LangdockOpenAiService::class,
             'openRouterService' => OpenRouterService::class,
             'huggingFaceService' => HuggingFaceService::class,
+            'customResponsesService' => CustomResponsesService::class,
+            'customMessagesService' => CustomMessagesService::class,
+            'customChatCompletionsService' => CustomChatCompletionsService::class,
+            'customInteractionsService' => CustomInteractionsService::class,
         ]);
 
         // Register template path

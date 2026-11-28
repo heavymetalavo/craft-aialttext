@@ -60,8 +60,11 @@ class GenerateController extends Controller
 
         // Only the batch-processing actions read the batching, verbosity, confirmation and scope options.
         // `single` and `stats` would otherwise advertise options they ignore in `--help`.
-        if (in_array($actionID, ['missing', 'all'], true)) {
-            return array_merge($options, ['siteId', 'batchSize', 'verbose', 'force', 'volume', 'path']);
+        if (in_array($actionID, ['missing', 'all', 'some'], true)) {
+            $options = array_merge($options, ['siteId', 'batchSize', 'verbose', 'force']);
+
+            // Only these two can be limited to a volume, `some` is limited by its asset IDs
+            return $actionID === 'some' ? $options : array_merge($options, ['volume', 'path']);
         }
 
         return array_merge($options, ['siteId']);
@@ -199,6 +202,45 @@ class GenerateController extends Controller
         }
         
         return $this->processAssets(true);
+    }
+
+    /**
+     * Generate AI alt text for several assets by ID
+     *
+     * This command queues jobs for just the assets whose IDs you list, separated by commas,
+     * e.g. `some 71,72,83`. Useful for targeted bulk runs and for testing the queue.
+     *
+     * Assets that already have alt text are regenerated, as with `single`. Like `missing` and
+     * `all`, it processes ALL sites unless --site-id is specified.
+     *
+     * @param string $assetIds Comma-separated asset IDs, e.g. 71,72,83
+     * @return int Exit code
+     */
+    public function actionSome(string $assetIds): int
+    {
+        $ids = $this->parseAssetIds($assetIds);
+
+        if ($ids === null) {
+            $this->failure("Pass the asset IDs as a comma-separated list of numbers, e.g. 71,72,83");
+            return ExitCode::USAGE;
+        }
+
+        $this->success("Queueing AI alt text generation for " . count($ids) . " listed assets...");
+
+        $exitCode = $this->processAssets(true, $ids);
+
+        $usableIds = Asset::find()
+            ->kind(Asset::KIND_IMAGE)
+            ->id($ids)
+            ->siteId($this->siteId ?: '*')
+            ->ids();
+        $unusableIds = array_diff($ids, $usableIds);
+
+        if ($unusableIds) {
+            $this->warning("Not image assets on the targeted site(s), so not queued: " . implode(', ', $unusableIds));
+        }
+
+        return $exitCode;
     }
 
     /**
@@ -345,12 +387,32 @@ class GenerateController extends Controller
     }
 
     /**
+     * Parse a comma-separated list of asset IDs
+     *
+     * @param string $input e.g. "71, 72,83"
+     * @return int[]|null The unique IDs, or null if the list is empty or any item isn't a positive whole number
+     */
+    private function parseAssetIds(string $input): ?array
+    {
+        $tokens = array_filter(array_map('trim', explode(',', $input)), fn(string $token) => $token !== '');
+
+        foreach ($tokens as $token) {
+            if (!ctype_digit($token) || (int)$token < 1) {
+                return null;
+            }
+        }
+
+        return $tokens ? array_values(array_unique(array_map('intval', $tokens))) : null;
+    }
+
+    /**
      * Process assets for alt text generation
      *
      * @param bool $includeWithAltText Whether to include assets that already have alt text
+     * @param int[]|null $onlyAssetIds Limit the run to these asset IDs, or null for no limit
      * @return int Exit code
      */
-    private function processAssets(bool $includeWithAltText): int
+    private function processAssets(bool $includeWithAltText, ?array $onlyAssetIds = null): int
     {
         // Refuse up front rather than queueing jobs that would each fail with the same error
         $configurationError = AiAltText::getInstance()->aiAltTextService->getConfigurationError();
@@ -411,6 +473,7 @@ class GenerateController extends Controller
             foreach ($sites as $site) {
                 $query = $scope(Asset::find()
                     ->kind(Asset::KIND_IMAGE)
+                    ->id($onlyAssetIds)
                     ->siteId($site->id));
 
                 if (!$includeWithAltText) {
@@ -456,6 +519,7 @@ class GenerateController extends Controller
                     // Get asset IDs first (memory efficient)
                     $query = $scope(Asset::find()
                         ->kind(Asset::KIND_IMAGE)
+                        ->id($onlyAssetIds)
                         ->siteId($site->id))
                         ->orderBy(['elements.id' => SORT_ASC])
                         ->andWhere(['>', 'elements.id', $lastId])

@@ -67,6 +67,21 @@ Hugging Face's [Inference Providers](https://huggingface.co/docs/inference-provi
 
 This provider uses Hugging Face's Chat Completions API, not its Responses API: the Responses API is in beta and rejects a request over about 100 KB, which an image scaled for a vision model usually passes. Images are always sent as base64, as for OpenRouter, because in testing some models answered that they saw no image, with no error, when they couldn't use an image URL. There is no image detail or reasoning setting, so each model uses its own reasoning defaults, but the request always includes an image `detail` value: `low` for images 512px or smaller and `auto` for larger ones. How good the alt text is varies between models more than on the other providers.
 
+## Custom endpoints
+
+For a gateway or provider the plugin doesn't support, which takes OpenAI's Responses API, Anthropic's Messages API, the Chat Completions API or Google's Interactions API request unchanged, as Langdock does. Custom endpoints aren't supported: the plugin is only tested with the providers above, so test one before relying on it. Use `https`: the endpoint receives each image and the API key, so only point it at a gateway you trust.
+
+1. Set **AI Provider** to **Custom endpoint**.
+2. Set **Custom Endpoint Base URL** to the URL the requests go under, without `/responses`, `/messages`, `/chat/completions` or `/interactions` at the end, e.g. `https://gateway.example.com/v1`.
+3. Set **Custom Endpoint API Format**:
+   - **Responses API** posts to `{base URL}/responses`, the request OpenAI, Langdock's GPT models and OpenRouter take, with the key as a Bearer token (`Authorization: Bearer …`).
+   - **Messages API** posts to `{base URL}/messages`, the request Anthropic and Langdock's Claude models take, with the key sent both as `x-api-key` and as a Bearer token, and `anthropic-version: 2023-06-01`.
+   - **Chat Completions API** posts to `{base URL}/chat/completions`, the request OpenAI, OpenRouter, Hugging Face and many other hosts take, with the key as a Bearer token.
+   - **Interactions API** posts to `{base URL}/interactions`, the request Google's Gemini API takes, with the key sent as `x-goog-api-key`.
+4. Set the API key and the model, as the endpoint names it.
+
+Images are always sent as base64, as a gateway may not be able to fetch URLs. With the Responses API and the Chat Completions API, the image detail level is `low`, images are scaled to 1024px on the long edge, and no reasoning setting is sent; with the Messages API, images are scaled as Anthropic's are at the `low` detail level; with the Interactions API, images are scaled as for Google.
+
 ## OpenAI
 
 1. Visit [https://platform.openai.com/](https://platform.openai.com/) and [sign up](https://platform.openai.com/signup) in the top-right.

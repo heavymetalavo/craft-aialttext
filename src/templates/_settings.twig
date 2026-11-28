@@ -105,7 +105,8 @@
     { label: 'Google', value: 'google' },
     { label: 'Langdock', value: 'langdock' },
     { label: 'OpenRouter', value: 'openrouter' },
-    { label: 'Hugging Face', value: 'huggingface' }
+    { label: 'Hugging Face', value: 'huggingface' },
+    { label: 'Custom endpoint'|t('ai-alt-text'), value: 'custom' }
 ] %}
 {% set providerValues = providerOptions|map(o => o.value) %}
 
@@ -566,6 +567,64 @@
 </div>
 
 {# The page only fetches the model suggestions for the saved provider, so fetch them when OpenRouter or Hugging Face is chosen #}
+
+<div id="provider-custom" class="{{ 'custom' in hiddenProviders ? 'hidden' }}">
+    <hr />
+
+    <h3>Custom Endpoint Settings</h3>
+
+    <p>{{ "For a gateway or provider the plugin doesn't support that takes OpenAI's Responses API, Anthropic's Messages API, the Chat Completions API or Google's Interactions API request unchanged, as Langdock does. Images are always sent as base64. Custom endpoints aren't supported, so test one before relying on it."|t('ai-alt-text') }}</p>
+
+    {{ forms.autosuggestField({
+        label: 'Custom Endpoint Base URL'|t('ai-alt-text'),
+        id: 'customBaseUrl',
+        name: 'customBaseUrl',
+        instructions: "The base URL, without `/responses`, `/messages`, `/chat/completions` or `/interactions` at the end, e.g. `https://gateway.example.com/v1`."|t("ai-alt-text"),
+        placeholder: 'https://gateway.example.com/v1',
+        suggestEnvVars: true,
+        value: settings.customBaseUrl,
+        errors: settings.getErrors('customBaseUrl'),
+    }) }}
+
+    {{ forms.selectizeField({
+        label: 'Custom Endpoint API Format'|t('ai-alt-text'),
+        id: 'customApiFormat',
+        name: 'customApiFormat',
+        instructions: "The request the endpoint takes. **Responses API** posts to `{base URL}/responses` as OpenAI, Langdock's GPT models and OpenRouter take it, with the key as a Bearer token. **Messages API** posts to `{base URL}/messages` as Anthropic and Langdock's Claude models take it, with the key both as `x-api-key` and as a Bearer token. **Chat Completions API** posts to `{base URL}/chat/completions` as OpenAI, OpenRouter, Hugging Face and many other hosts take it, with the key as a Bearer token. **Interactions API** posts to `{base URL}/interactions` as Google's Gemini API takes it, with the key as `x-goog-api-key`."|t("ai-alt-text"),
+        options: [
+            { label: 'Responses API (OpenAI)'|t('ai-alt-text'), value: 'responses' },
+            { label: 'Messages API (Anthropic)'|t('ai-alt-text'), value: 'messages' },
+            { label: 'Chat Completions API'|t('ai-alt-text'), value: 'chat-completions' },
+            { label: 'Interactions API (Google)'|t('ai-alt-text'), value: 'interactions' }
+        ],
+        includeEnvVars: true,
+        allowedEnvValues: null,
+        value: settings.customApiFormat,
+        errors: settings.getErrors('customApiFormat'),
+    }) }}
+
+    {{ forms.autosuggestField({
+        label: 'Custom Endpoint API Key'|t('ai-alt-text'),
+        id: 'customApiKey',
+        name: 'customApiKey',
+        placeholder: '$CUSTOM_AI_API_KEY',
+        suggestEnvVars: true,
+        value: settings.customApiKey,
+        errors: settings.getErrors('customApiKey'),
+    }) }}
+
+    {{ forms.autosuggestField({
+        label: 'Custom Endpoint Model'|t('ai-alt-text'),
+        id: 'customModel',
+        name: 'customModel',
+        instructions: "The model, as the endpoint names it. It must accept image input."|t("ai-alt-text"),
+        suggestEnvVars: true,
+        value: settings.customModel,
+        errors: settings.getErrors('customModel'),
+    }) }}
+</div>
+
+
 {% js %}
 (() => {
     const fields = {

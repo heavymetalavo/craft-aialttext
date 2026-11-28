@@ -8,7 +8,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 
 | Setting | Description |
 |---------|-------------|
-| **AI Provider** | Choose between OpenAI, Anthropic, Google, Langdock, OpenRouter or Hugging Face. |
+| **AI Provider** | Choose between OpenAI, Anthropic, Google, Langdock, OpenRouter, Hugging Face or a custom endpoint. |
 | **OpenAI/Anthropic/Google/Langdock/OpenRouter API Key, Hugging Face Token** | Your provider's API key. |
 | **Model** | The AI model to use (e.g., `gpt-6-luna` or `claude-haiku-5-5`). For Google, use its Gemini name, e.g. `gemini-3.5-flash-lite`. For Langdock, use the model's name in Langdock. For OpenRouter, use its OpenRouter name, e.g. `anthropic/claude-haiku-5.5` or `openai/gpt-6-luna`. For Hugging Face, use the model's id, e.g. `deepseek-ai/DeepSeek-V4.1-Flash-1017`. |
 | **Hugging Face Routing** | Hugging Face only. Which inference provider runs the model: **Default** (Hugging Face's router weighs price, speed and reliability, and tries another provider if one fails), **Fastest**, **Cheapest**, or one of the model's inference providers, e.g. `deepinfra`. Choosing a provider that doesn't serve the model fails. The dropdown lists the providers that serve the chosen model, cheapest first, with their price and speed. It's added to the model as a suffix, e.g. `:cheapest`. |
@@ -18,6 +18,7 @@ After installation, configure the plugin at **Settings → AI Alt Text**:
 | **OpenRouter Routing** | OpenRouter only. How OpenRouter picks the provider that runs the model: **Default** (price, speed and reliability, with another provider tried if one fails), **Fastest** (`:nitro`, sorted by throughput, and can use priority endpoints that cost more) or **Cheapest** (`:floor`, sorted by price, and can use cheaper flex endpoints). A free model, e.g. `google/gemma-4-26b-a4b-it:free`, only has Default. |
 | **OpenRouter Image Detail Level** | OpenRouter only. Works like the OpenAI image detail level, `low`, `high`, `original` or `auto`. OpenAI and Gemini models use it, and in testing Qwen, GLM and Grok models ignored it. For Claude models it picks the size limit, as the Anthropic setting does. |
 | **OpenRouter Reasoning Effort** | OpenRouter only. Works like **OpenAI Reasoning Effort**, see [the options below](#-openai-reasoning-effort-options). Only sent to OpenAI reasoning models. |
+| **Custom Endpoint Base URL, API Format, API Key and Model** | Custom endpoint only, see [Custom endpoints](providers.md#custom-endpoints). |
 | **Detail Level**| How detailed the image analysis should be (controls resolution/scaling). |
 | **OpenAI Reasoning Effort**| The reasoning effort level for OpenAI reasoning models. |
 | **Prompt** | The instructions sent to the AI provider as the system / instruction message (example [below](#-default-prompt)). Supports `{asset.property}` and `{site.property}` variables, plus `{site.languageName}` for the language's display name (e.g. `English (United Kingdom)`). A variable that names nothing an asset or site has, such as `{asset.filenmae}`, is reported when the settings are saved. |
