@@ -56,7 +56,7 @@ To add this field:
 2. Ensure your volumes have the native `alt` field assigned to the field layout
 3. Ensure your templates are updated to use the `alt` field, you could consider a fallback `asset.alt ?: asset.title` if that what was used before
 4. Then generate some AI Alt text by performing one of the following actions:
-    1. Triggering a bulk action in the bulk actions utility
+    1. Triggering a bulk action in the bulk actions utility, for all sites, one site, one volume, or a path in a volume
     2. For individual or a group of specific assets find them in the <strong>Assets</strong> manager section, clicking the checkbox on a row, clicking the cog icon to reveal the Element actions menu and select <strong>Generate AI Alt Text</strong>
     3. When viewing a single asset's page, or from an asset's menu in an Assets field, open the action menu and select <strong>Generate AI Alt Text</strong>
     4. Upload a new image or replace an asset's file (if **Generate for new image assets** is enabled)

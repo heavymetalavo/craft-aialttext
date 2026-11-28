@@ -45,7 +45,7 @@
    Excluded paths settings, which coverage doesn't count. Hovering or focusing a segment shows its numbers in a
    tooltip (see utility.js). The counts are also written under the bar. The bar is always drawn when there are image
    assets, even if every one is excluded. #}
-{% macro altTextBar(with, without, excluded) %}
+{% macro altTextBar(with, without, excluded, excludedWith = 0) %}
     {%- set total = with + without + excluded -%}
     {%- if total == 0 -%}
         <span class="light">—</span>
@@ -53,7 +53,7 @@
         {%- set segments = [
             { label: 'With alt text'|t('ai-alt-text'), class: 'aat-with', count: with, note: null },
             { label: 'Missing'|t('ai-alt-text'), class: 'aat-missing', count: without, note: 'Use Generate missing to create it.'|t('ai-alt-text') },
-            { label: 'Excluded'|t('ai-alt-text'), class: 'aat-excluded', count: excluded, note: 'Left out by the Excluded volumes and Excluded paths settings, and not counted in coverage.'|t('ai-alt-text') },
+            { label: 'Excluded'|t('ai-alt-text'), class: 'aat-excluded', count: excluded, note: 'Left out by the Excluded volumes and Excluded paths settings, and not counted in coverage.'|t('ai-alt-text') ~ (excludedWith > 0 ? ' ' ~ '{count} of them already have alt text.'|t('ai-alt-text', { count: excludedWith|number }) : '') },
         ]|filter(segment => segment.count > 0) -%}
         <div class="aat-bar">
             <div class="aat-bar-track">
@@ -71,7 +71,7 @@
                 {%- endfor %}
             </div>
             <div class="light smalltext aat-counts">
-                {{- "{with} with · {without} missing"|t('ai-alt-text', { with: with|number, without: without|number }) -}}
+                {{- "{with} with · {without} missing"|t('ai-alt-text', { with: (with + excludedWith)|number, without: without|number }) -}}
                 {%- if excluded > 0 %} · {{ "{excluded} excluded"|t('ai-alt-text', { excluded: excluded|number }) }}{% endif -%}
             </div>
         </div>
@@ -107,7 +107,7 @@
         <tr class="totalcount">
             <td><strong>{% if sites|length > 1 %} {{ "All sites"|t('ai-alt-text') }} {% else %} {{ (sites|first).name }} {% endif %}</strong></td>
             <td>{{ totalAssetsWithAltTextForAllSites + totalAssetsWithoutAltTextForAllSites + totalExcludedForAllSites }}</td>
-            <td>{{ _self.altTextBar(totalAssetsWithAltTextForAllSites, totalAssetsWithoutAltTextForAllSites, totalExcludedForAllSites) }}</td>
+            <td>{{ _self.altTextBar(totalAssetsWithAltTextForAllSites, totalAssetsWithoutAltTextForAllSites, totalExcludedForAllSites, totalExcludedWithAltForAllSites) }}</td>
             <td>{{ _self.coverageRing(coverageForAllSites) }}</td>
             <td>
                 <div class="buttons">
@@ -129,7 +129,7 @@
             <tr>
                 <td>{{ site.name }}</td>
                 <td>{{ siteAltTextCounts[site.id].total }}</td>
-                <td>{{ _self.altTextBar(siteAltTextCounts[site.id].with, siteAltTextCounts[site.id].without, siteAltTextCounts[site.id].excluded) }}</td>
+                <td>{{ _self.altTextBar(siteAltTextCounts[site.id].with, siteAltTextCounts[site.id].without, siteAltTextCounts[site.id].excluded, siteAltTextCounts[site.id].excludedWith) }}</td>
                 <td>{{ _self.coverageRing(siteAltTextCounts[site.id].coverage) }}</td>
                 <td>
                     <div class="buttons">
@@ -153,3 +153,73 @@
     </tbody>
 </table>
 </div>
+
+{% if volumes|length %}
+<h2 style="margin-top: 32px;">{{ "By volume"|t('ai-alt-text') }}</h2>
+
+<p>{{ "Generate alt text for the image assets in one volume, across all sites. The <strong>Excluded volumes</strong> and <strong>Excluded paths</strong> settings still apply."|t('ai-alt-text')|raw }}</p>
+
+<div style="overflow-x: auto;" tabindex="0" role="region" aria-label="{{ 'Alt text coverage by volume'|t('ai-alt-text') }}">
+<table class="data fullwidth">
+    <thead>
+        <tr>
+            <th>{{ "Volume"|t('ai-alt-text') }}</th>
+            <th>{{ "Image assets"|t('ai-alt-text') }}</th>
+            <th>{{ "Alt text"|t('ai-alt-text') }}</th>
+            <th>{{ "Coverage"|t('ai-alt-text') }}</th>
+            <th>{{ "Actions"|t('ai-alt-text') }}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for volume in volumes %}
+            {% set counts = volumeAltTextCounts[volume.id] %}
+            {# Nothing to generate for a volume with no images, or one that's excluded in full #}
+            {% set nothingToGenerate = counts.with + counts.without == 0 %}
+            <tr>
+                <td>{{ volume.name }}</td>
+                <td>{{ counts.total }}</td>
+                <td>{{ _self.altTextBar(counts.with, counts.without, counts.excluded, counts.excludedWith) }}</td>
+                <td>{{ _self.coverageRing(counts.coverage) }}</td>
+                <td>
+                    <div class="buttons">
+                        <form method="post" accept-charset="UTF-8">
+                            {{ csrfInput() }}
+                            {{ actionInput('ai-alt-text/generate/generate-all-assets') }}
+                            {{ hiddenInput('volumeUid', volume.uid) }}
+                            <button type="submit" class="btn small submit{{ nothingToGenerate ? ' disabled' }}"{{ nothingToGenerate ? ' disabled' }}>{{ "Generate all"|t('ai-alt-text') }}</button>
+                        </form>
+                        <form method="post" accept-charset="UTF-8">
+                            {{ csrfInput() }}
+                            {{ actionInput('ai-alt-text/generate/generate-assets-without-alt-text') }}
+                            {{ hiddenInput('volumeUid', volume.uid) }}
+                            <button type="submit" class="btn small submit{{ nothingToGenerate ? ' disabled' }}"{{ nothingToGenerate ? ' disabled' }}>{{ "Generate missing"|t('ai-alt-text') }}</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<h3 style="margin-top: 24px;">{{ "By path"|t('ai-alt-text') }}</h3>
+
+<p>{{ "Limit it to a folder and everything in it, or to files, in one volume, across all sites. A path is relative to the volume and can use <code>*</code> for any characters, as in <strong>Excluded paths</strong>: <code>staff</code>, <code>staff/*/headshots</code> or <code>*.png</code>."|t('ai-alt-text')|raw }}</p>
+
+{# Generate missing comes first so pressing Enter in the path field submits it, rather than regenerating everything. #}
+<form method="post" accept-charset="UTF-8" class="flex" style="gap: 8px; align-items: center; flex-wrap: wrap;">
+    {{ csrfInput() }}
+    <label class="visually-hidden" for="aat-path-volume">{{ "Volume"|t('ai-alt-text') }}</label>
+    <div class="select">
+        <select id="aat-path-volume" name="volumeUid" required>
+            {% for volume in volumes %}
+                <option value="{{ volume.uid }}">{{ volume.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <label class="visually-hidden" for="aat-path">{{ "Path"|t('ai-alt-text') }}</label>
+    <input type="text" id="aat-path" name="path" class="text" style="min-width: 240px;" required placeholder="{{ 'staff or *.png'|t('ai-alt-text') }}">
+    <button type="submit" class="btn small submit" name="action" value="ai-alt-text/generate/generate-assets-without-alt-text">{{ "Generate missing"|t('ai-alt-text') }}</button>
+    <button type="submit" class="btn small submit" name="action" value="ai-alt-text/generate/generate-all-assets">{{ "Generate all"|t('ai-alt-text') }}</button>
+</form>
+{% endif %}

@@ -5,6 +5,7 @@ namespace heavymetalavo\craftaialttext\console\controllers;
 use Craft;
 use craft\console\Controller;
 use craft\elements\Asset;
+use craft\elements\db\AssetQuery;
 use craft\helpers\Console;
 use Exception;
 use heavymetalavo\craftaialttext\AiAltText;
@@ -41,16 +42,29 @@ class GenerateController extends Controller
     public $force = false;
 
     /**
+     * @var string|null Handle of a volume to limit `missing` and `all` to. If not specified, processes every volume.
+     */
+    public $volume;
+
+    /**
+     * @var string|null Path in the volume to limit `missing` and `all` to, written like an excluded path. Needs `--volume`.
+     */
+    public $path;
+
+    /**
      * @inheritdoc
      */
     public function options($actionID): array
     {
         $options = parent::options($actionID);
 
-        // Only the batch-processing actions read the batching, verbosity and confirmation options.
+        // Only the batch-processing actions read the batching, verbosity, confirmation and scope options.
         // `single` and `stats` would otherwise advertise options they ignore in `--help`.
         if (in_array($actionID, ['missing', 'all', 'some'], true)) {
-            return array_merge($options, ['siteId', 'batchSize', 'verbose', 'force']);
+            $options = array_merge($options, ['siteId', 'batchSize', 'verbose', 'force']);
+
+            // Only these two can be limited to a volume, `some` is limited by its asset IDs
+            return $actionID === 'some' ? $options : array_merge($options, ['volume', 'path']);
         }
 
         return array_merge($options, ['siteId']);
@@ -149,7 +163,9 @@ class GenerateController extends Controller
      * This is the recommended approach for most use cases as it avoids
      * regenerating alt text for assets that already have it.
      *
-     * By default, processes ALL sites unless --site-id is specified.
+     * By default, processes ALL sites unless --site-id is specified, and every volume
+     * unless --volume (a volume's handle) is, optionally with --path to limit it to a
+     * folder or files in the volume, e.g. --volume=images --path=staff or --path='*.png'.
      *
      * @return int Exit code
      */
@@ -167,7 +183,9 @@ class GenerateController extends Controller
      * have alt text. Use with caution as this will regenerate alt text for
      * assets that may already have manually crafted descriptions.
      *
-     * By default, processes ALL sites unless --site-id is specified.
+     * By default, processes ALL sites unless --site-id is specified, and every volume
+     * unless --volume (a volume's handle) is, optionally with --path to limit it to a
+     * folder or files in the volume, e.g. --volume=images --path=staff or --path='*.png'.
      *
      * @return int Exit code
      */
@@ -251,6 +269,7 @@ class GenerateController extends Controller
         $totalAssets = 0;
         $totalCounted = 0;
         $totalWithAlt = 0;
+        $totalWithAltIncludingExcluded = 0;
         $totalWithoutAlt = 0;
         $totalExcluded = 0;
         $siteStats = [];
@@ -275,13 +294,14 @@ class GenerateController extends Controller
             
             $siteWithoutAlt = $siteTotal - $siteWithAlt;
             $siteExcluded = $service->countExcluded($site->id);
+            $siteExcludedWithAlt = $service->countExcluded($site->id, null, true);
             
             // Collected rather than printed here so the all-sites row can lead the table, as it
             // does in the utility
             $siteStats[] = [
                 'name' => $site->name,
                 'total' => $siteTotal + $siteExcluded,
-                'with' => $siteWithAlt,
+                'with' => $siteWithAlt + $siteExcludedWithAlt,
                 'without' => $siteWithoutAlt,
                 'excluded' => $siteExcluded,
                 'coverage' => $siteTotal > 0 ? ($siteWithAlt / $siteTotal * 100) : 0,
@@ -290,6 +310,7 @@ class GenerateController extends Controller
             $totalAssets += $siteTotal + $siteExcluded;
             $totalCounted += $siteTotal;
             $totalWithAlt += $siteWithAlt;
+            $totalWithAltIncludingExcluded += $siteWithAlt + $siteExcludedWithAlt;
             $totalWithoutAlt += $siteWithoutAlt;
             $totalExcluded += $siteExcluded;
         }
@@ -311,7 +332,7 @@ class GenerateController extends Controller
             $rows[] = [
                 'site' => $this->ansiFormat('All sites', BaseConsole::BOLD),
                 'total' => [(string)$totalAssets, 'align' => 'right'],
-                'with' => [(string)$totalWithAlt, 'align' => 'right'],
+                'with' => [(string)$totalWithAltIncludingExcluded, 'align' => 'right'],
                 'missing' => [(string)$totalWithoutAlt, 'align' => 'right'],
                 'excluded' => [(string)$totalExcluded, 'align' => 'right'],
                 'coverage' => [$this->coverageCell($totalCoverage), 'align' => 'right'],
@@ -417,6 +438,30 @@ class GenerateController extends Controller
             return ExitCode::DATAERR;
         }
         
+        // Optionally limited to one volume, or a path in it
+        $service = AiAltText::getInstance()->aiAltTextService;
+        $volume = null;
+        $path = $this->path !== null ? trim($this->path, "/ \t") : null;
+
+        if ($this->volume !== null) {
+            $volume = Craft::$app->getVolumes()->getVolumeByHandle($this->volume);
+
+            if (!$volume) {
+                $this->failure("Invalid volume handle: {$this->volume}");
+                return ExitCode::DATAERR;
+            }
+        } elseif ($path !== null) {
+            $this->failure("--path needs --volume, as paths are relative to a volume.");
+            return ExitCode::USAGE;
+        }
+
+        if ($path !== null && ($pathError = $service->scopePathError($path)) !== null) {
+            $this->failure($pathError);
+            return ExitCode::USAGE;
+        }
+
+        $scope = fn(AssetQuery $query): AssetQuery => $volume ? $service->withinScope($query, $volume, $path) : $query;
+
         $totalCount = 0;
         $queuedCount = 0;
         $copiedCount = 0;
@@ -424,13 +469,15 @@ class GenerateController extends Controller
 
         try {
             // First, count total assets to process
-            $this->note("Counting assets to process...");
-            
+            $this->note($volume
+                ? "Counting assets to process in {$volume->handle}" . ($path !== null ? "/$path" : '') . "..."
+                : "Counting assets to process...");
+
             foreach ($sites as $site) {
-                $query = Asset::find()
+                $query = $scope(Asset::find()
                     ->kind(Asset::KIND_IMAGE)
                     ->id($onlyAssetIds)
-                    ->siteId($site->id);
+                    ->siteId($site->id));
 
                 if (!$includeWithAltText) {
                     $query->hasAlt(false);
@@ -473,10 +520,10 @@ class GenerateController extends Controller
                 
                 while ($hasMore) {
                     // Get asset IDs first (memory efficient)
-                    $query = Asset::find()
+                    $query = $scope(Asset::find()
                         ->kind(Asset::KIND_IMAGE)
                         ->id($onlyAssetIds)
-                        ->siteId($site->id)
+                        ->siteId($site->id))
                         ->orderBy(['elements.id' => SORT_ASC])
                         ->andWhere(['>', 'elements.id', $lastId])
                         ->limit($this->batchSize);

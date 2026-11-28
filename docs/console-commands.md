@@ -19,6 +19,8 @@
 | Option | Alias | Description | Default |
 |--------|-------|-------------|---------|
 | `--site-id=<id>` | `-s` | Process only specific site (if not set, processes all sites) | * |
+| `--volume=<handle>` | | Process only this volume's assets (`missing` and `all`), instead of every volume | * |
+| `--path=<path>` | | Process only a folder or files in the `--volume` (`missing` and `all`), written like an [excluded path](settings.md): `staff` for a folder and everything in it, `*` as a wildcard. Needs `--volume` | * |
 | `--batch-size=<n>` | `-b` | Assets per batch (memory efficiency) | `500` |
 | `--verbose` | `-v` | Show detailed progress | `false` |
 | `--force` | `-f` | Skip confirmations | `false` |
@@ -34,6 +36,15 @@
 
 # Queue for specific site with verbose output
 ./craft ai-alt-text/generate/missing --site-id=2 --verbose
+
+# Queue missing alt text for one volume
+./craft ai-alt-text/generate/missing --volume=images
+
+# Queue every image in a folder of a volume, and the folders in it, regenerating existing alt text
+./craft ai-alt-text/generate/all --volume=images --path=staff
+
+# Queue missing alt text for the PNGs in a volume (quote the * so the shell leaves it alone)
+./craft ai-alt-text/generate/missing --volume=images --path='*.png'
 
 # Queue several assets by ID, regenerating any that already have alt text
 ./craft ai-alt-text/generate/some 71,72,83

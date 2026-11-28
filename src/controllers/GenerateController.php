@@ -145,12 +145,36 @@ class GenerateController extends Controller
             $sites = Craft::$app->getSites()->getAllSites();
         }
 
+        // Optionally limited to one volume, or a path in it, whatever the sites
+        $volume = null;
+        $path = trim((string)$this->request->getParam('path'), "/ \t");
+        $volumeUid = $this->request->getParam('volumeUid');
+
+        if ($volumeUid) {
+            $volume = Craft::$app->getVolumes()->getVolumeByUid($volumeUid);
+
+            if (!$volume) {
+                Craft::$app->getSession()->setError(Craft::t('ai-alt-text', 'Invalid volume.'));
+                return $redirect;
+            }
+
+            if ($path !== '' && ($pathError = AiAltText::getInstance()->aiAltTextService->scopePathError($path)) !== null) {
+                Craft::$app->getSession()->setError($pathError);
+                return $redirect;
+            }
+        } elseif ($path !== '') {
+            Craft::$app->getSession()->setError(Craft::t('ai-alt-text', 'Choose a volume for the path.'));
+            return $redirect;
+        }
+
         try {
             foreach ($sites as $site) {
                 Craft::$app->getQueue()->push(new GenerateAiAltTextForAssets([
                     'siteId' => $site->id,
                     'includeExisting' => $includeExisting,
                     'allSites' => !$siteIdParam,
+                    'volumeId' => $volume?->id,
+                    'path' => $path !== '' ? $path : null,
                 ]));
             }
         } catch (Exception $e) {
@@ -159,6 +183,16 @@ class GenerateController extends Controller
             Craft::$app->getSession()->setError(
                 Craft::t('ai-alt-text', 'Error: {message}', ['message' => $e->getMessage()])
             );
+            return $redirect;
+        }
+
+        if ($volume) {
+            $scope = $volume->handle . ($path !== '' ? "/$path" : '');
+
+            Craft::$app->getSession()->setNotice($siteName !== null
+                ? Craft::t('ai-alt-text', 'Queueing alt text generation for {scope} on site {site}. Watch the queue for progress.', ['scope' => $scope, 'site' => $siteName])
+                : Craft::t('ai-alt-text', 'Queueing alt text generation for {scope} across all sites. Watch the queue for progress.', ['scope' => $scope]));
+
             return $redirect;
         }
 
