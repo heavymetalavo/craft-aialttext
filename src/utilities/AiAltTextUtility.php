@@ -51,6 +51,7 @@ class AiAltTextUtility extends Utility
         $totalAssetsWithAltTextForAllSites = 0;
         $totalAssetsWithoutAltTextForAllSites = 0;
         $totalExcludedForAllSites = 0;
+        $totalExcludedWithAltForAllSites = 0;
         $siteAltTextCounts = [];
         
         foreach ($sites as $site) {
@@ -77,18 +78,21 @@ class AiAltTextUtility extends Utility
                 
                 $withoutAltCount = $totalImageAssets - $withAltCount;
                 $excludedCount = $service->countExcluded($site->id);
+                $excludedWithAltCount = $service->countExcluded($site->id, null, true);
                 
                 $siteAltTextCounts[$site->id] = [
                     'total' => $totalImageAssets + $excludedCount,
                     'with' => $withAltCount,
                     'without' => $withoutAltCount,
                     'excluded' => $excludedCount,
+                    'excludedWith' => $excludedWithAltCount,
                     'coverage' => $totalImageAssets > 0 ? ($withAltCount / $totalImageAssets * 100) : null,
                 ];
                 
                 $totalAssetsWithAltTextForAllSites += $withAltCount;
                 $totalAssetsWithoutAltTextForAllSites += $withoutAltCount;
                 $totalExcludedForAllSites += $siteAltTextCounts[$site->id]['excluded'];
+                $totalExcludedWithAltForAllSites += $excludedWithAltCount;
             } catch (Exception $e) {
                 Craft::error("Error counting assets for site {$site->name}: " . $e->getMessage(), __METHOD__);
             }
@@ -101,7 +105,7 @@ class AiAltTextUtility extends Utility
         $volumeAltTextCounts = [];
 
         foreach ($volumes as $volume) {
-            $counts = ['with' => 0, 'without' => 0, 'excluded' => 0, 'coverage' => null];
+            $counts = ['with' => 0, 'without' => 0, 'excluded' => 0, 'excludedWith' => 0, 'coverage' => null];
 
             try {
                 foreach ($sites as $site) {
@@ -118,6 +122,7 @@ class AiAltTextUtility extends Utility
                     $counts['with'] += $withAltCount;
                     $counts['without'] += $totalImageAssets - $withAltCount;
                     $counts['excluded'] += $service->countExcluded($site->id, $volume);
+                    $counts['excludedWith'] += $service->countExcluded($site->id, $volume, true);
                 }
 
                 $counted = $counts['with'] + $counts['without'];
@@ -139,6 +144,7 @@ class AiAltTextUtility extends Utility
                 'sites' => $sites,
                 'siteAltTextCounts' => $siteAltTextCounts,
                 'totalExcludedForAllSites' => $totalExcludedForAllSites,
+                'totalExcludedWithAltForAllSites' => $totalExcludedWithAltForAllSites,
                 'volumes' => $volumes,
                 'volumeAltTextCounts' => $volumeAltTextCounts,
             ]

@@ -302,9 +302,9 @@ class AiAltTextService extends Component
 
     /**
      * How many image assets on a site the Excluded volumes and Excluded paths settings leave out of the coverage
-     * figures, in one volume if given.
+     * figures, in one volume if given, and only those that already have alt text if $withAlt.
      */
-    public function countExcluded(int $siteId, ?Volume $volume = null): int
+    public function countExcluded(int $siteId, ?Volume $volume = null, bool $withAlt = false): int
     {
         $settings = AiAltText::getInstance()->getSettings();
 
@@ -316,6 +316,10 @@ class AiAltTextService extends Component
 
         if ($volume) {
             $this->withinScope($all, $volume);
+        }
+
+        if ($withAlt) {
+            $all->hasAlt(true);
         }
 
         return $all->count() - $this->withoutExcluded(clone $all)->count();

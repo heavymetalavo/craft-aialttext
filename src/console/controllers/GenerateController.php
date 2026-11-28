@@ -269,6 +269,7 @@ class GenerateController extends Controller
         $totalAssets = 0;
         $totalCounted = 0;
         $totalWithAlt = 0;
+        $totalWithAltIncludingExcluded = 0;
         $totalWithoutAlt = 0;
         $totalExcluded = 0;
         $siteStats = [];
@@ -293,13 +294,14 @@ class GenerateController extends Controller
             
             $siteWithoutAlt = $siteTotal - $siteWithAlt;
             $siteExcluded = $service->countExcluded($site->id);
+            $siteExcludedWithAlt = $service->countExcluded($site->id, null, true);
             
             // Collected rather than printed here so the all-sites row can lead the table, as it
             // does in the utility
             $siteStats[] = [
                 'name' => $site->name,
                 'total' => $siteTotal + $siteExcluded,
-                'with' => $siteWithAlt,
+                'with' => $siteWithAlt + $siteExcludedWithAlt,
                 'without' => $siteWithoutAlt,
                 'excluded' => $siteExcluded,
                 'coverage' => $siteTotal > 0 ? ($siteWithAlt / $siteTotal * 100) : 0,
@@ -308,6 +310,7 @@ class GenerateController extends Controller
             $totalAssets += $siteTotal + $siteExcluded;
             $totalCounted += $siteTotal;
             $totalWithAlt += $siteWithAlt;
+            $totalWithAltIncludingExcluded += $siteWithAlt + $siteExcludedWithAlt;
             $totalWithoutAlt += $siteWithoutAlt;
             $totalExcluded += $siteExcluded;
         }
@@ -329,7 +332,7 @@ class GenerateController extends Controller
             $rows[] = [
                 'site' => $this->ansiFormat('All sites', BaseConsole::BOLD),
                 'total' => [(string)$totalAssets, 'align' => 'right'],
-                'with' => [(string)$totalWithAlt, 'align' => 'right'],
+                'with' => [(string)$totalWithAltIncludingExcluded, 'align' => 'right'],
                 'missing' => [(string)$totalWithoutAlt, 'align' => 'right'],
                 'excluded' => [(string)$totalExcluded, 'align' => 'right'],
                 'coverage' => [$this->coverageCell($totalCoverage), 'align' => 'right'],
