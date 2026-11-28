@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added the `ai-alt-text/generate/some` console command, which queues alt text generation for the asset IDs you list, e.g. `some 71,72,83`, regenerating any that already have alt text. It's useful for targeted bulk runs and for testing the queue. See [Console commands](docs/console-commands.md).
 - Added the **Excluded volumes** and **Excluded paths** settings, which stop alt text being generated for their assets by any method, e.g. a volume or folder of staff photos. A path is a folder and everything in it, or files, and can use `*` as a wildcard, such as `staff/*/headshots` or `*.svg`. Excluded assets aren't counted in the bulk actions utility's coverage or by the `stats` console command, which say how many are left out. See [Settings](docs/settings.md).
 - Added Google as an AI provider, which calls Gemini models directly through Google's Interactions API with an API key from Google AI Studio, using the new **Google API Key** and **Google Model** settings. Requests ask Google not to store them, and images are sent as base64. Vertex AI isn't supported. See [AI providers](docs/providers.md#google).
 - Added a **Reset to default** button under the **Prompt** setting, which fills the field with the plugin's current default prompt, to edit or save.
