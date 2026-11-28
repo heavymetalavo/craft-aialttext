@@ -63,7 +63,7 @@ To add this field:
     5. From the command line, e.g. `./craft ai-alt-text/generate/missing`, see the [console commands](console-commands.md)
 5. A single asset, selected in the **Assets** manager or on its own page, is generated straight away. Multiple selected assets, the bulk actions utility, the command line (apart from `single`), new uploads and replaced files, and the other sites when **Save translated results for each site** is enabled are queued as jobs instead
 
-![Where to generate alt text: on an asset's page, from its action menu; for selected assets in Assets, from the actions menu (the cog); from an asset's menu in an Assets field; from the bulk actions utility in Utilities, for all sites or one site at a time; from the command line, with ai-alt-text/generate/stats, missing or single; or automatically, with the "Generate for new image assets (on upload or file replacement)" setting turned on](images/where-to-generate.png)
+![Where to generate alt text: on an asset's page, from its action menu; for selected assets in Assets, from the actions menu (the cog); from an asset's menu in an Assets field; from the bulk actions utility in Utilities, for all sites, one site, one volume or a folder, with each site's alt text shown as a bar of images with alt text, missing it and excluded; from the command line, with ai-alt-text/generate/stats, missing (optionally for one volume or folder) or single; or automatically, with the "Generate for new image assets (on upload or file replacement)" setting turned on](images/where-to-generate.png)
 
 Example twig:
 
