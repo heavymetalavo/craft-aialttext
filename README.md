@@ -53,7 +53,7 @@ Then use it in your templates:
 - [Getting started](docs/getting-started.md) - requirements, installation, the `alt` field, generating alt text, troubleshooting
 - [AI providers](docs/providers.md) - API keys for Anthropic, OpenAI, Google, Langdock, OpenRouter, Hugging Face and custom endpoints, and choosing a model
 - [Settings](docs/settings.md) - every setting, the default prompt, image detail, reasoning effort and permissions
-- [Console commands](docs/console-commands.md) - stats, missing, all and single
+- [Console commands](docs/console-commands.md) - stats, missing, all, some and single
 - [Images](docs/images.md) - supported file types, scaling and conversion, private volumes and limitations
 - [Costs](docs/costs.md) - estimated cost per alt text by model, and avoiding unexpected charges
 
