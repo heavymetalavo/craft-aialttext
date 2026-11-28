@@ -2,7 +2,7 @@
 
 **README** · [Getting started](docs/getting-started.md) · [AI providers](docs/providers.md) · [Settings](docs/settings.md) · [Console commands](docs/console-commands.md) · [Images](docs/images.md) · [Costs](docs/costs.md)
 
-![AI Alt Text, for Anthropic, OpenAI, Google, Hugging Face, Langdock, OpenRouter and custom endpoints, on Craft 5 and Craft 4 (lite). A photo of a polar bear waving, with its alt text below: "A young polar bear standing upright on snow, raising one paw as if waving, with a grey sky behind it."](docs/images/banner.png)
+![AI Alt Text, for Anthropic, OpenAI, Google, OpenRouter, Hugging Face, Langdock and custom endpoints, on Craft 5 and Craft 4 (lite). A photo of a polar bear waving, with its alt text below: "A young polar bear standing upright on snow, raising one paw as if waving, with a grey sky behind it."](docs/images/banner.png)
 
 Write alt text for every image on your Craft site with AI: one click, in bulk, or as images are uploaded, in each site's language.
 
