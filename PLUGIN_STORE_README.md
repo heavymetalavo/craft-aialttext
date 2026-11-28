@@ -2,10 +2,11 @@
 
 **README** · [Getting started](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/getting-started.md) · [AI providers](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/providers.md) · [Settings](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/settings.md) · [Console commands](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/console-commands.md) · [Images](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/images.md) · [Costs](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/costs.md)
 
-![AI Alt Text, for Anthropic, OpenAI, Langdock, OpenRouter and custom endpoints, on Craft 5 and Craft 4 (lite). A photo of a polar bear waving, with its alt text below: "A young polar bear standing upright on snow, raising one paw as if waving, with a grey sky behind it."](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/5.x/docs/images/banner.png)
+![AI Alt Text, for Anthropic, OpenAI, Google, Hugging Face, Langdock, OpenRouter and custom endpoints, on Craft 5 and Craft 4 (lite). A photo of a polar bear waving, with its alt text below: "A young polar bear standing upright on snow, raising one paw as if waving, with a grey sky behind it."](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/5.x/docs/images/banner.png)
 
 Write alt text for every image on your Craft site with AI: one click, in bulk, or as images are uploaded, in each site's language.
 
+🚨 **New in 5.5:** Google, Hugging Face and custom endpoint providers, excluding volumes and folders, and bulk generation for one volume or folder.  
 🚨 **New in 5.3:** OpenRouter support, with hundreds of vision models behind one API key.  
 🚨 **New in 5.2:** Langdock support, for Claude and GPT models hosted in the EU.
 
@@ -21,7 +22,7 @@ Write alt text for every image on your Craft site with AI: one click, in bulk, o
 - **Your prompt, your rules.** Edit the instructions sent to the AI, with `{asset.*}` and `{site.*}` variables. See [Settings](https://github.com/heavymetalavo/craft-aialttext/blob/5.x/docs/settings.md#-default-prompt).
 - **Permissions built in.** Bulk generation has its own utility permission, and single assets follow the asset's own save permission.
 
-![How it works, in four steps. 1, triggered: on upload or file replacement, from an asset's action menu, for selected assets, from the bulk actions utility or the command line. 2, prepared: SVG, AVIF, HEIC, HEIF and animated GIFs are converted, and large images are scaled to the provider's limits. 3, described: sent with your prompt to a vision model through Anthropic, OpenAI, Langdock or OpenRouter, which writes the alt text in the site's language. 4, saved: written to the asset's native alt field for that site, and to its other sites if you choose.](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/5.x/docs/images/how-it-works.png)
+![How it works, in four steps. 1, triggered: on upload or file replacement, from an asset's action menu, for selected assets, from the bulk actions utility (all sites, a volume or a folder) or the command line. 2, prepared: SVG, AVIF, HEIC and HEIF are converted to WebP, animated GIFs and WebPs are sent as 3 frames, and large images are scaled to the provider's limits. 3, described: sent with your prompt to a vision model through Anthropic, OpenAI, Google, Hugging Face, Langdock, OpenRouter or a custom endpoint, which writes the alt text in the site's language. 4, saved: written to the asset's native alt field for that site and the sites that share it, and to your other sites if you choose. A single asset is generated straight away, everything else runs through Craft's queue where failed jobs can be retried and rate-limited jobs wait and try again, and excluded volumes and paths are skipped.](https://raw.githubusercontent.com/heavymetalavo/craft-aialttext/5.x/docs/images/how-it-works.png)
 
 ## 🎬 Video walkthrough
 
